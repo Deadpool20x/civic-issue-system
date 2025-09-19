@@ -1,0 +1,106 @@
+import { connectDB } from '@/lib/mongodb';
+import User from '@/models/User';
+import bcrypt from 'bcryptjs';
+import { generateToken } from '@/lib/auth';
+import { sendEmail } from '@/lib/email';
+import { cookies } from 'next/headers';
+
+export async function POST(req) {
+    try {
+        const { email, password } = await req.json();
+
+        console.log('Login attempt for email:', email); // Debug log
+
+        if (!email || !password) {
+            return new Response(
+                JSON.stringify({ error: 'Email and password are required' }),
+                { status: 400, headers: { 'Content-Type': 'application/json' } }
+            );
+        }
+
+        await connectDB();
+
+        const user = await User.findOne({ email }).select('+password');
+
+        console.log('User found:', !!user); // Debug log
+
+        if (!user) {
+            return new Response(
+                JSON.stringify({ error: 'Invalid credentials' }),
+                { status: 401, headers: { 'Content-Type': 'application/json' } }
+            );
+        }
+
+        // Try both comparison methods for backwards compatibility
+        let isPasswordValid = false;
+        try {
+            // First try the model method
+            isPasswordValid = await user.comparePassword(password);
+            console.log('Password valid with model method:', isPasswordValid);
+        } catch (error) {
+            console.log('Model method failed, trying direct bcrypt:', error.message);
+            // Fallback to direct bcrypt comparison for existing users
+            isPasswordValid = await bcrypt.compare(password, user.password);
+            console.log('Password valid with direct bcrypt:', isPasswordValid);
+        }
+
+        if (!isPasswordValid) {
+            return new Response(
+                JSON.stringify({ error: 'Invalid credentials' }),
+                { status: 401, headers: { 'Content-Type': 'application/json' } }
+            );
+        }
+
+        if (!user.isActive) {
+            return new Response(
+                JSON.stringify({ error: 'Account is deactivated' }),
+                { status: 403, headers: { 'Content-Type': 'application/json' } }
+            );
+        }
+
+        // Send welcome email on first login if not sent
+        if (!user.welcomeEmailSent) {
+          try {
+            const welcomeText = `Welcome back ${user.name}!\n\nThank you for logging into the Civic Issue System.\n\nYou can now report and track civic issues in your area.\n\nIf you have any questions, contact support.\n\nBest regards,\nCivic Issue System Team`;
+            await sendEmail(user.email, 'Welcome to Civic Issue System', welcomeText);
+            user.welcomeEmailSent = true;
+            await user.save();
+            console.log('Welcome email sent to:', user.email);
+          } catch (emailError) {
+            console.error('Failed to send welcome email:', emailError);
+            // Continue with login
+          }
+        }
+
+        const token = await generateToken(user);
+        const cookieStore = await cookies();
+
+        // Set cookie with better configuration
+        cookieStore.set('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax', // Changed from 'strict' to 'lax' for better compatibility
+            maxAge: 7 * 24 * 60 * 60, // 7 days
+            path: '/' // Ensure cookie is available on all paths
+        });
+
+        const userResponse = {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            department: user.department
+        };
+
+        return new Response(
+            JSON.stringify({ message: 'Login successful', user: userResponse }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
+    } catch (error) {
+        console.error('Login error:', error);
+        return new Response(
+            JSON.stringify({ error: 'Internal server error' }),
+            { status: 500, headers: { 'Content-Type': 'application/json' } }
+        );
+    }
+}
