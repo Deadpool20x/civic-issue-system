@@ -1,11 +1,11 @@
 import { connectDB } from '@/lib/mongodb';
-import { authMiddleware } from '@/lib/auth';
+import { withAuth, withValidation, createErrorResponse, isValidCategory, isValidPriority } from '@/lib/utils';
 import { filterSensitiveData } from '@/lib/security';
 import Issue from '@/models/Issue';
 import User from '@/models/User';
 import { sendEmail } from '@/lib/email';
 
-export const GET = authMiddleware(async (req) => {
+export const GET = withAuth(async (req) => {
     try {
         await connectDB();
 
@@ -14,6 +14,14 @@ export const GET = authMiddleware(async (req) => {
         const status = searchParams.get('status');
         const priority = searchParams.get('priority');
         const assignedDepartment = searchParams.get('department');
+
+        // Validate query parameters
+        if (category && !isValidCategory(category)) {
+            return createErrorResponse('Invalid category', 400);
+        }
+        if (priority && !isValidPriority(priority)) {
+            return createErrorResponse('Invalid priority', 400);
+        }
 
         // Build query based on filters
         const query = {};
@@ -38,7 +46,6 @@ export const GET = authMiddleware(async (req) => {
                 .populate('departmentHead', 'name email')
                 .sort({ createdAt: -1 });
         } catch (populateError) {
-            // Fallback if some fields don't exist in the schema
             console.log('Some populate fields not available, using fallback:', populateError.message);
             issues = await Issue.find(query)
                 .populate('reportedBy', 'name email')
@@ -57,14 +64,17 @@ export const GET = authMiddleware(async (req) => {
         });
     } catch (error) {
         console.error('Error fetching issues:', error);
-        return new Response(
-            JSON.stringify({ error: 'Internal server error' }),
-            { status: 500, headers: { 'Content-Type': 'application/json' } }
-        );
+        return createErrorResponse('Failed to fetch issues', 500);
     }
 });
 
-export const POST = authMiddleware(async (req) => {
+export const POST = withValidation({
+    required: ['title', 'description', 'category'],
+    validators: {
+        category: isValidCategory,
+        priority: isValidPriority
+    }
+})(withAuth(async (req) => {
     try {
         const {
             title,
@@ -73,15 +83,15 @@ export const POST = authMiddleware(async (req) => {
             category,
             priority,
             images
-        } = await req.json();
+        } = req.validatedBody;
 
-        console.log('Creating issue with data:', {
+        console.log('Creating issue with validated data:', {
             title,
             description,
             location,
             category,
             priority,
-            images: images?.length || 0,
+            imagesCount: images?.length || 0,
             reportedBy: req.user.userId
         });
 
@@ -93,8 +103,6 @@ export const POST = authMiddleware(async (req) => {
             coordinates: location?.coordinates || [0, 0]
         };
 
-        console.log('Processed location:', processedLocation);
-
         // Determine ward based on location (simplified logic)
         const ward = location?.address ?
             `Ward ${Math.floor(Math.random() * 20) + 1}` : // Placeholder logic
@@ -104,7 +112,7 @@ export const POST = authMiddleware(async (req) => {
         const now = new Date();
         let hoursToAdd = 72; // Default for medium/low
         const effectivePriority = priority || 'medium';
-        
+
         switch (effectivePriority) {
             case 'urgent':
                 hoursToAdd = 24;
@@ -119,7 +127,7 @@ export const POST = authMiddleware(async (req) => {
                 hoursToAdd = 120;
                 break;
         }
-        
+
         const slaDeadline = new Date(now.getTime() + (hoursToAdd * 60 * 60 * 1000));
         const dueTime = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
@@ -133,7 +141,7 @@ export const POST = authMiddleware(async (req) => {
             reportedBy: req.user.userId,
             assignedDepartment: category,
             ward,
-            zone: ward, // Using ward as zone for now
+            zone: ward,
             sla: {
                 deadline: slaDeadline
             },
@@ -144,27 +152,27 @@ export const POST = authMiddleware(async (req) => {
 
         console.log('Issue created successfully:', issue._id);
 
-        // Send emails
+        // Send emails (non-blocking)
         try {
-          // User confirmation email
-          const userEmail = issue.reportedBy.email;
-          const userText = `Dear ${issue.reportedBy.name},\n\nYour issue "${issue.title}" has been reported successfully.\n\nDescription: ${issue.description}\nCategory: ${issue.category}\nPriority: ${issue.priority}\nLocation: ${issue.location.address || 'Not specified'}\n\nIssue ID: ${issue._id}\n\nYou will be notified of updates.\n\nBest regards,\nCivic Issue System Team`;
-          await sendEmail(userEmail, 'Issue Reported Successfully - Civic Issue System', userText);
-          console.log('User confirmation email sent to:', userEmail);
+            // User confirmation email
+            const userEmail = issue.reportedBy.email;
+            const userText = `Dear ${issue.reportedBy.name},\n\nYour issue \"${title}\" has been reported successfully.\n\nDescription: ${description}\nCategory: ${category}\nPriority: ${priority}\nLocation: ${issue.location.address || 'Not specified'}\n\nIssue ID: ${issue._id}\n\nYou will be notified of updates.\n\nBest regards,\nCivic Issue System Team`;
+            await sendEmail(userEmail, 'Issue Reported Successfully - Civic Issue System', userText);
+            console.log('User confirmation email sent to:', userEmail);
 
-          // Admin alert emails
-          const admins = await User.find({ role: 'admin' }, 'email');
-          if (admins.length > 0) {
-            const adminPromises = admins.map(async (admin) => {
-              const adminText = `New civic issue reported:\n\nTitle: ${issue.title}\nDescription: ${issue.description}\nCategory: ${issue.category}\nPriority: ${issue.priority}\nLocation: ${issue.location.address || 'Not specified'}\nReported by: ${issue.reportedBy.name} (${userEmail})\nIssue ID: ${issue._id}\n\nPlease review and assign.\n\nCivic Issue System`;
-              return sendEmail(admin.email, 'New Civic Issue Reported - Action Required', adminText);
-            });
-            await Promise.all(adminPromises);
-            console.log(`Admin alerts sent to ${admins.length} admins`);
-          }
+            // Admin alert emails
+            const admins = await User.find({ role: 'admin' }, 'email');
+            if (admins.length > 0) {
+                const adminPromises = admins.map(async (admin) => {
+                    const adminText = `New civic issue reported:\n\nTitle: ${title}\nDescription: ${description}\nCategory: ${category}\nPriority: ${priority}\nLocation: ${issue.location.address || 'Not specified'}\nReported by: ${issue.reportedBy.name} (${userEmail})\nIssue ID: ${issue._id}\n\nPlease review and assign.\n\nCivic Issue System`;
+                    return sendEmail(admin.email, 'New Civic Issue Reported - Action Required', adminText);
+                });
+                await Promise.all(adminPromises);
+                console.log(`Admin alerts sent to ${admins.length} admins`);
+            }
         } catch (emailError) {
-          console.error('Failed to send issue emails:', emailError);
-          // Continue without failing issue creation
+            console.error('Failed to send issue emails:', emailError);
+            // Continue without failing issue creation
         }
 
         return new Response(JSON.stringify(issue), {
@@ -173,18 +181,6 @@ export const POST = authMiddleware(async (req) => {
         });
     } catch (error) {
         console.error('Error creating issue:', error);
-        console.error('Error details:', {
-            name: error.name,
-            message: error.message,
-            stack: error.stack
-        });
-
-        return new Response(
-            JSON.stringify({
-                error: 'Internal server error',
-                details: error.message
-            }),
-            { status: 500, headers: { 'Content-Type': 'application/json' } }
-        );
+        return createErrorResponse('Failed to create issue', 500);
     }
-});
+}));

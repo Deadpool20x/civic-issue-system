@@ -15,30 +15,35 @@ export const POST = authMiddleware(async (req) => {
             );
         }
 
-        await connectDB();
-
-        const issue = await Issue.findById(issueId);
-        if (!issue) {
-            return new Response(
-                JSON.stringify({ error: 'Issue not found' }),
-                { status: 404, headers: { 'Content-Type': 'application/json' } }
-            );
+        let updatedIssue;
+        if (action === 'upvote') {
+            updatedIssue = await Issue.addUpvote(issueId, req.user.userId);
+        } else {
+            updatedIssue = await Issue.removeUpvote(issueId, req.user.userId);
         }
 
-        if (action === 'upvote') {
-            await issue.addUpvote(req.user.userId);
-        } else {
-            await issue.removeUpvote(req.user.userId);
+        if (!updatedIssue) {
+            const issue = await Issue.findById(issueId);
+            if (!issue) {
+                return new Response(
+                    JSON.stringify({ error: 'Issue not found' }),
+                    { status: 404, headers: { 'Content-Type': 'application/json' } }
+                );
+            }
+            // if issue exists, it means user has already voted/not voted.
+            // for now, we just return the issue without making any changes.
+            // in a real app, we might want to return a more specific error message.
+            updatedIssue = issue;
         }
 
         // Populate user info for the response
-        await issue.populate('reportedBy', 'name email');
-        await issue.populate('assignedTo', 'name department');
+        await updatedIssue.populate('reportedBy', 'name email');
+        await updatedIssue.populate('assignedTo', 'name department');
 
         return new Response(
             JSON.stringify({
                 message: 'Action completed successfully',
-                issue: issue.toObject()
+                issue: updatedIssue.toObject()
             }),
             { status: 200, headers: { 'Content-Type': 'application/json' } }
         );

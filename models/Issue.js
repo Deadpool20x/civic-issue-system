@@ -275,25 +275,28 @@ issueSchema.methods.getEscalationTarget = function() {
     }
 };
 
-// Method to add upvote
-issueSchema.methods.addUpvote = function(userId) {
-    if (!this.upvotedBy.includes(userId)) {
-        this.upvotedBy.push(userId);
-        this.upvotes += 1;
-        return this.save();
-    }
-    return Promise.resolve(this);
+// Static method to add upvote atomically
+issueSchema.statics.addUpvote = function(issueId, userId) {
+    return this.findOneAndUpdate(
+        { _id: issueId, upvotedBy: { $ne: userId } }, // find the issue only if the user has NOT upvoted it
+        {
+            $inc: { upvotes: 1 },
+            $addToSet: { upvotedBy: userId }
+        },
+        { new: true }
+    );
 };
 
-// Method to remove upvote
-issueSchema.methods.removeUpvote = function(userId) {
-    const index = this.upvotedBy.indexOf(userId);
-    if (index > -1) {
-        this.upvotedBy.splice(index, 1);
-        this.upvotes = Math.max(0, this.upvotes - 1);
-        return this.save();
-    }
-    return Promise.resolve(this);
+// Static method to remove upvote atomically
+issueSchema.statics.removeUpvote = function(issueId, userId) {
+    return this.findOneAndUpdate(
+        { _id: issueId, upvotedBy: userId }, // find the issue only if the user has upvoted it
+        {
+            $inc: { upvotes: -1 },
+            $pull: { upvotedBy: userId }
+        },
+        { new: true }
+    );
 };
 
 // Method to submit feedback

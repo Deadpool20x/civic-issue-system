@@ -245,13 +245,13 @@ export const POST = roleMiddleware(['municipal', 'admin'])(async (req) => {
 
         return new Response(
             JSON.stringify({ message: 'Performance metrics updated successfully' }),
-            { status: 200, headers: { 'Content-Type': 'application/json' }
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
         );
     } catch (error) {
         console.error('Error updating performance metrics:', error);
         return new Response(
             JSON.stringify({ error: 'Internal server error' }),
-            { status: 500, headers: { 'Content-Type': 'application/json' }
+            { status: 500, headers: { 'Content-Type': 'application/json' } }
         );
     }
 });

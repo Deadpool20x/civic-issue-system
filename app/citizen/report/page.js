@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import toast from 'react-hot-toast';
@@ -428,24 +429,27 @@ export default function ReportIssuePage() {
                                         </p>
                                     </label>
                                 </div>
-
                                 {images.length > 0 && (
                                     <div className="mt-6">
                                         <h4 className="text-sm font-medium text-gray-700 mb-3">Uploaded Images ({images.length})</h4>
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                             {images.map((image, index) => (
                                                 <div key={index} className="relative group">
-                                                    <img
+                                                    <Image
                                                         src={image.url}
                                                         alt={`Upload ${index + 1}`}
+                                                        width={300}
+                                                        height={180}
                                                         className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                                                        sizes="(max-width: 768px) 50vw, 25vw"
+                                                        unoptimized
                                                     />
                                                     <button
                                                         type="button"
                                                         onClick={() => removeImage(index)}
                                                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors shadow-lg"
                                                     >
-                                                        ×
+                                                        &times;
                                                     </button>
                                                 </div>
                                             ))}

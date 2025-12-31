@@ -58,7 +58,7 @@ export const GET = async (req) => {
         console.error('Error fetching public issues:', error);
         return new Response(
             JSON.stringify({ error: 'Internal server error' }),
-            { status: 500, headers: { 'Content-Type': 'application/json' }
+            { status: 500, headers: { 'Content-Type': 'application/json' } }
         );
     }
 };

@@ -9,7 +9,6 @@ export default function DashboardLayout({ children }) {
     const { user, loading, logout } = useUser();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-    // Show loading state if still loading
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -18,7 +17,6 @@ export default function DashboardLayout({ children }) {
         );
     }
 
-    // If no user after loading, don't render dashboard content
     if (!user) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -27,7 +25,6 @@ export default function DashboardLayout({ children }) {
         );
     }
 
-    // If user exists but role is not defined, show error
     if (!user.role) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -60,8 +57,7 @@ export default function DashboardLayout({ children }) {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Sidebar */}
+        <div className="min-h-screen bg-gray-50 lg:flex">
             <div
                 className={`fixed inset-y-0 left-0 z-50 w-64 bg-white/95 backdrop-blur-sm shadow-xl border-r border-gray-200 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
                     } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}
@@ -124,9 +120,8 @@ export default function DashboardLayout({ children }) {
                 </div>
             </div>
 
-            {/* Main content */}
-            <div className="lg:pl-64 flex flex-col">
-                <div className="sticky top-0 z-10 flex items-center gap-4 h-16 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200 px-4">
+            <div className="flex flex-1 flex-col">
+                <div className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-gray-200 bg-white/95 px-4 shadow-sm backdrop-blur-sm sm:px-6 lg:px-8">
                     <button
                         type="button"
                         className="lg:hidden -ml-0.5 -mt-0.5 h-12 w-12 inline-flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
@@ -157,14 +152,13 @@ export default function DashboardLayout({ children }) {
                     </div>
                 </div>
 
-                <main className="flex-1 md:ml-64 px-6 lg:px-8 xl:px-10 pt-0">
-                    <div className="max-w-7xl 2xl:max-w-[88rem] mx-auto pt-0">
+                <main className="flex-1 px-4 pb-12 pt-6 sm:px-6 lg:px-8 xl:px-10">
+                    <div className="mx-auto max-w-7xl 2xl:max-w-[90rem]">
                         {children}
                     </div>
                 </main>
             </div>
 
-            {/* Mobile sidebar backdrop */}
             {isSidebarOpen && (
                 <div
                     className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"

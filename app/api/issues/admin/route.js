@@ -51,7 +51,7 @@ export const GET = roleMiddleware(['admin', 'municipal'])(async (req) => {
         console.error('Error fetching admin issues:', error);
         return new Response(
             JSON.stringify({ error: 'Internal server error' }),
-            { status: 500, headers: { 'Content-Type': 'application/json' }
+            { status: 500, headers: { 'Content-Type': 'application/json' } }
         );
     }
 });
@@ -86,7 +86,7 @@ export const PATCH = roleMiddleware(['admin', 'municipal'])(async (req) => {
         console.error('Error updating issue:', error);
         return new Response(
             JSON.stringify({ error: 'Internal server error' }),
-            { status: 500, headers: { 'Content-Type': 'application/json' }
+            { status: 500, headers: { 'Content-Type': 'application/json' } }
         );
     }
 });
