@@ -1,9 +1,10 @@
 import { connectDB } from '@/lib/mongodb';
-import { withAuth, withValidation, createErrorResponse, isValidCategory, isValidPriority } from '@/lib/utils';
+import { withAuth, createErrorResponse, isValidCategory, isValidPriority } from '@/lib/utils';
 import { filterSensitiveData } from '@/lib/security';
 import Issue from '@/models/Issue';
 import User from '@/models/User';
 import { sendEmail } from '@/lib/email';
+import { createIssueSchema } from '@/lib/schemas';
 
 export const GET = withAuth(async (req) => {
     try {
@@ -68,14 +69,21 @@ export const GET = withAuth(async (req) => {
     }
 });
 
-export const POST = withValidation({
-    required: ['title', 'description', 'category'],
-    validators: {
-        category: isValidCategory,
-        priority: isValidPriority
-    }
-})(withAuth(async (req) => {
+export const POST = withAuth(async (req) => {
     try {
+        let body;
+        try {
+            body = await req.json();
+        } catch (e) {
+            return createErrorResponse('Invalid JSON body', 400);
+        }
+
+        const validationResult = createIssueSchema.safeParse(body);
+
+        if (!validationResult.success) {
+            return createErrorResponse(validationResult.error.errors[0].message, 400);
+        }
+
         const {
             title,
             description,
@@ -83,7 +91,7 @@ export const POST = withValidation({
             category,
             priority,
             images
-        } = req.validatedBody;
+        } = validationResult.data;
 
         console.log('Creating issue with validated data:', {
             title,
@@ -152,28 +160,29 @@ export const POST = withValidation({
 
         console.log('Issue created successfully:', issue._id);
 
-        // Send emails (non-blocking)
-        try {
-            // User confirmation email
-            const userEmail = issue.reportedBy.email;
-            const userText = `Dear ${issue.reportedBy.name},\n\nYour issue \"${title}\" has been reported successfully.\n\nDescription: ${description}\nCategory: ${category}\nPriority: ${priority}\nLocation: ${issue.location.address || 'Not specified'}\n\nIssue ID: ${issue._id}\n\nYou will be notified of updates.\n\nBest regards,\nCivic Issue System Team`;
-            await sendEmail(userEmail, 'Issue Reported Successfully - Civic Issue System', userText);
-            console.log('User confirmation email sent to:', userEmail);
+        // Send emails asynchronously (fire and forget)
+        (async () => {
+            try {
+                // User confirmation email
+                const userEmail = issue.reportedBy.email;
+                const userText = `Dear ${issue.reportedBy.name},\n\nYour issue "${title}" has been reported successfully.\n\nDescription: ${description}\nCategory: ${category}\nPriority: ${priority}\nLocation: ${issue.location.address || 'Not specified'}\n\nIssue ID: ${issue._id}\n\nYou will be notified of updates.\n\nBest regards,\nCivic Issue System Team`;
+                await sendEmail(userEmail, 'Issue Reported Successfully - Civic Issue System', userText);
+                console.log('User confirmation email sent to:', userEmail);
 
-            // Admin alert emails
-            const admins = await User.find({ role: 'admin' }, 'email');
-            if (admins.length > 0) {
-                const adminPromises = admins.map(async (admin) => {
-                    const adminText = `New civic issue reported:\n\nTitle: ${title}\nDescription: ${description}\nCategory: ${category}\nPriority: ${priority}\nLocation: ${issue.location.address || 'Not specified'}\nReported by: ${issue.reportedBy.name} (${userEmail})\nIssue ID: ${issue._id}\n\nPlease review and assign.\n\nCivic Issue System`;
-                    return sendEmail(admin.email, 'New Civic Issue Reported - Action Required', adminText);
-                });
-                await Promise.all(adminPromises);
-                console.log(`Admin alerts sent to ${admins.length} admins`);
+                // Admin alert emails
+                const admins = await User.find({ role: 'admin' }, 'email');
+                if (admins.length > 0) {
+                    const adminPromises = admins.map(async (admin) => {
+                        const adminText = `New civic issue reported:\n\nTitle: ${title}\nDescription: ${description}\nCategory: ${category}\nPriority: ${priority}\nLocation: ${issue.location.address || 'Not specified'}\nReported by: ${issue.reportedBy.name} (${userEmail})\nIssue ID: ${issue._id}\n\nPlease review and assign.\n\nCivic Issue System`;
+                        return sendEmail(admin.email, 'New Civic Issue Reported - Action Required', adminText);
+                    });
+                    await Promise.all(adminPromises);
+                    console.log(`Admin alerts sent to ${admins.length} admins`);
+                }
+            } catch (emailError) {
+                console.error('Failed to send issue emails:', emailError);
             }
-        } catch (emailError) {
-            console.error('Failed to send issue emails:', emailError);
-            // Continue without failing issue creation
-        }
+        })();
 
         return new Response(JSON.stringify(issue), {
             status: 201,
@@ -183,4 +192,4 @@ export const POST = withValidation({
         console.error('Error creating issue:', error);
         return createErrorResponse('Failed to create issue', 500);
     }
-}));
+});

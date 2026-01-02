@@ -42,28 +42,8 @@ export const GET = authMiddleware(async (req, { params }) => {
 // Update issue
 export const PATCH = authMiddleware(async (req, { params }) => {
     try {
-        // Development no-op: allow UI interaction without a database
-        const allowDemo = process.env.ALLOW_DEMO !== 'false';
-        if (allowDemo && process.env.NODE_ENV !== 'production') {
-            return new Response(
-                JSON.stringify({ message: 'Development no-op: status updated', id: params.id }),
-                { status: 200, headers: { 'Content-Type': 'application/json' } }
-            );
-        }
         const updates = await req.json();
-        try {
-            await connectDB();
-        } catch (connErr) {
-            // If demo mode is allowed, succeed without DB
-            if (allowDemo) {
-                console.warn('[issues PATCH] DB connect failed in demo mode, returning no-op 200:', connErr?.message);
-                return new Response(
-                    JSON.stringify({ message: 'Development no-op: status updated (no DB)', id: params.id }),
-                    { status: 200, headers: { 'Content-Type': 'application/json' } }
-                );
-            }
-            throw connErr;
-        }
+        await connectDB();
 
         const issue = await Issue.findById(params.id);
 
@@ -130,14 +110,6 @@ export const PATCH = authMiddleware(async (req, { params }) => {
         });
     } catch (error) {
         console.error('Error updating issue:', error);
-        const allowDemo = process.env.ALLOW_DEMO !== 'false';
-        if (allowDemo) {
-            console.warn('[issues PATCH] Returning demo no-op 200 due to error');
-            return new Response(
-                JSON.stringify({ message: 'Development no-op: status updated (error fallback)', id: params.id }),
-                { status: 200, headers: { 'Content-Type': 'application/json' } }
-            );
-        }
         return new Response(
             JSON.stringify({ error: 'Internal server error' }),
             { status: 500, headers: { 'Content-Type': 'application/json' } }

@@ -4,33 +4,36 @@ import bcrypt from 'bcryptjs';
 import { generateToken } from '@/lib/auth';
 import { sendEmail } from '@/lib/email';
 import { cookies } from 'next/headers';
+import { userRegisterSchema } from '@/lib/schemas';
 
 export async function POST(req) {
     try {
-        const { name, email, password, phone, role = 'citizen', department, address } = await req.json();
-
-        console.log('Registration attempt for email:', email, 'role:', role); // Debug log
-
-        // Validate required fields
-        if (!name || !email || !password || !phone) {
+        let body;
+        try {
+            body = await req.json();
+        } catch (e) {
             return new Response(
-                JSON.stringify({ error: 'Missing required fields' }),
+                JSON.stringify({ error: 'Invalid JSON body' }),
                 { status: 400, headers: { 'Content-Type': 'application/json' } }
             );
         }
+
+        const result = userRegisterSchema.safeParse(body);
+        if (!result.success) {
+             return new Response(
+                JSON.stringify({ error: result.error.errors[0].message }),
+                { status: 400, headers: { 'Content-Type': 'application/json' } }
+            );
+        }
+
+        const { name, email, password, phone, role, department, address } = result.data;
+
+        console.log('Registration attempt for email:', email, 'role:', role); // Debug log
 
         // Validate department for department role
         if (role === 'department' && !department) {
             return new Response(
                 JSON.stringify({ error: 'Department is required for department role' }),
-                { status: 400, headers: { 'Content-Type': 'application/json' } }
-            );
-        }
-
-        // Validate password strength
-        if (password.length < 6) {
-            return new Response(
-                JSON.stringify({ error: 'Password must be at least 6 characters long' }),
                 { status: 400, headers: { 'Content-Type': 'application/json' } }
             );
         }
@@ -60,15 +63,16 @@ export async function POST(req) {
 
         console.log('User created successfully with ID:', user._id); // Debug log
 
-        // Send confirmation email
-        try {
-          const confirmationText = `Welcome ${user.name}!\n\nYour account has been created successfully on the Civic Issue System.\n\nYou can now report and track civic issues.\n\nBest regards,\nCivic Issue System Team`;
-          await sendEmail(user.email, 'Registration Confirmation - Civic Issue System', confirmationText);
-          console.log('Confirmation email sent to:', user.email);
-        } catch (emailError) {
-          console.error('Failed to send confirmation email:', emailError);
-          // Continue without failing registration
-        }
+        // Send confirmation email asynchronously
+        (async () => {
+            try {
+              const confirmationText = `Welcome ${user.name}!\n\nYour account has been created successfully on the Civic Issue System.\n\nYou can now report and track civic issues.\n\nBest regards,\nCivic Issue System Team`;
+              await sendEmail(user.email, 'Registration Confirmation - Civic Issue System', confirmationText);
+              console.log('Confirmation email sent to:', user.email);
+            } catch (emailError) {
+              console.error('Failed to send confirmation email:', emailError);
+            }
+        })();
 
         // Generate token
         const token = await generateToken(user);

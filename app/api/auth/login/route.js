@@ -4,19 +4,31 @@ import bcrypt from 'bcryptjs';
 import { generateToken } from '@/lib/auth';
 import { sendEmail } from '@/lib/email';
 import { cookies } from 'next/headers';
+import { loginSchema } from '@/lib/schemas';
 
 export async function POST(req) {
     try {
-        const { email, password } = await req.json();
-
-        console.log('Login attempt for email:', email); // Debug log
-
-        if (!email || !password) {
+        let body;
+        try {
+            body = await req.json();
+        } catch (e) {
             return new Response(
-                JSON.stringify({ error: 'Email and password are required' }),
+                JSON.stringify({ error: 'Invalid JSON body' }),
                 { status: 400, headers: { 'Content-Type': 'application/json' } }
             );
         }
+
+        const result = loginSchema.safeParse(body);
+        if (!result.success) {
+             return new Response(
+                JSON.stringify({ error: result.error.errors[0].message }),
+                { status: 400, headers: { 'Content-Type': 'application/json' } }
+            );
+        }
+
+        const { email, password } = result.data;
+
+        console.log('Login attempt for email:', email); // Debug log
 
         await connectDB();
 
@@ -60,16 +72,17 @@ export async function POST(req) {
 
         // Send welcome email on first login if not sent
         if (!user.welcomeEmailSent) {
-          try {
-            const welcomeText = `Welcome back ${user.name}!\n\nThank you for logging into the Civic Issue System.\n\nYou can now report and track civic issues in your area.\n\nIf you have any questions, contact support.\n\nBest regards,\nCivic Issue System Team`;
-            await sendEmail(user.email, 'Welcome to Civic Issue System', welcomeText);
-            user.welcomeEmailSent = true;
-            await user.save();
-            console.log('Welcome email sent to:', user.email);
-          } catch (emailError) {
-            console.error('Failed to send welcome email:', emailError);
-            // Continue with login
-          }
+          (async () => {
+              try {
+                const welcomeText = `Welcome back ${user.name}!\n\nThank you for logging into the Civic Issue System.\n\nYou can now report and track civic issues in your area.\n\nIf you have any questions, contact support.\n\nBest regards,\nCivic Issue System Team`;
+                await sendEmail(user.email, 'Welcome to Civic Issue System', welcomeText);
+                user.welcomeEmailSent = true;
+                await user.save();
+                console.log('Welcome email sent to:', user.email);
+              } catch (emailError) {
+                console.error('Failed to send welcome email:', emailError);
+              }
+          })();
         }
 
         const token = await generateToken(user);
