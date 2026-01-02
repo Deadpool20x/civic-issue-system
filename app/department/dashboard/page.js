@@ -27,7 +27,7 @@ export default function DepartmentDashboard() {
 
     const fetchIssues = useCallback(async () => {
         if (!user?.department) return;
-        
+
         try {
             let url = `/api/issues?department=${user.department}`;
             if (filters.status !== 'all') url += `&status=${filters.status}`;
@@ -132,7 +132,7 @@ export default function DepartmentDashboard() {
     return (
         <DashboardLayout>
             <ErrorBoundary>
-                <div className="space-y-6 pt-0 md:pt-0">
+                <div className="max-w-7xl mx-auto px-4 space-y-6 pt-0 md:pt-0">
                     {/* Department Header */}
                     <div className="bg-white rounded-lg shadow p-6">
                         <h1 className="text-2xl font-semibold text-gray-900 mb-2">
@@ -144,7 +144,7 @@ export default function DepartmentDashboard() {
                     </div>
 
                     {/* Summary Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                         <div className="bg-white rounded-lg shadow p-4">
                             <h3 className="text-lg font-medium text-gray-900">Total Issues</h3>
                             <p className="mt-2 text-3xl font-semibold">{issues.length}</p>
@@ -170,7 +170,7 @@ export default function DepartmentDashboard() {
                     {/* Priority Breakdown */}
                     <div className="bg-white rounded-lg shadow p-6">
                         <h3 className="text-lg font-medium text-gray-900 mb-4">Priority Breakdown</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="text-center">
                                 <div className="text-2xl font-semibold text-red-600">{prioritySummary.urgent || 0}</div>
                                 <div className="text-sm text-gray-600">Urgent</div>
@@ -191,9 +191,9 @@ export default function DepartmentDashboard() {
                     </div>
 
                     {/* Filters */}
-                    <div className="flex flex-wrap gap-4 bg-white p-4 rounded-lg shadow">
+                    <div className="flex flex-col sm:flex-row flex-wrap gap-4 bg-white p-4 rounded-lg shadow">
                         <select
-                            className="border rounded-md px-3 py-2"
+                            className="border rounded-md px-3 py-3 min-h-[44px]"
                             value={filters.status}
                             onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
                         >
@@ -205,7 +205,7 @@ export default function DepartmentDashboard() {
                         </select>
 
                         <select
-                            className="border rounded-md px-3 py-2"
+                            className="border rounded-md px-3 py-3 min-h-[44px]"
                             value={filters.priority}
                             onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
                         >
@@ -218,14 +218,14 @@ export default function DepartmentDashboard() {
 
                         <button
                             onClick={() => setFilters({ status: 'pending', priority: 'all' })}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                            className="px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 min-h-[44px]"
                         >
                             Show Unassigned
                         </button>
                     </div>
 
                     {/* Issues Grid */}
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-6">
                         {issues.map((issue) => (
                             <div key={issue._id} className="relative">
                                 <IssueCard
@@ -237,7 +237,7 @@ export default function DepartmentDashboard() {
                                     <div className="absolute top-2 right-2">
                                         <button
                                             onClick={() => handleTakeIssue(issue._id)}
-                                            className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                                            className="px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 min-h-[44px]"
                                         >
                                             Take Issue
                                         </button>

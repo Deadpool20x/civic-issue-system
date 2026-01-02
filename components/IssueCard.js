@@ -21,12 +21,12 @@ function IssueHeader({ issue }) {
     };
 
     return (
-        <div className="p-6 pb-4">
-            <div className="flex justify-between items-start mb-4">
+        <div className="p-4 sm:p-6 pb-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 gap-3 sm:gap-0">
                 <div className="flex items-center gap-3">
                     <span className="text-2xl">{categoryIcons[issue.category] || '📝'}</span>
                     <div>
-                        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors break-words min-h-[44px] flex items-center">
                             {issue.title}
                         </h3>
                         <p className="text-sm text-gray-500 capitalize">{issue.category} Issue</p>
@@ -43,19 +43,21 @@ function IssueHeader({ issue }) {
 function IssueContent({ issue, isExpanded, onToggleExpanded }) {
     return (
         <>
-            <p className="text-gray-600 text-sm leading-relaxed mb-4">
+            <p className="text-gray-600 text-sm leading-relaxed mb-4 px-4 sm:px-0">
                 {isExpanded ? issue.description : `${issue.description.slice(0, 120)}...`}
                 {issue.description.length > 120 && (
                     <button
                         onClick={onToggleExpanded}
-                        className="text-indigo-600 hover:text-indigo-800 ml-2 font-medium"
+                        className="text-indigo-600 hover:text-indigo-800 ml-2 font-medium text-sm min-h-[44px] py-2 px-2 flex items-center"
                     >
                         {isExpanded ? 'Show less' : 'Read more'}
                     </button>
                 )}
             </p>
 
-            <ImageGallery images={issue.images} maxDisplay={3} />
+            <div className="px-4 sm:px-0">
+                <ImageGallery images={issue.images} maxDisplay={3} />
+            </div>
         </>
     );
 }
@@ -74,8 +76,8 @@ function IssueFooter({ issue, userRole, onStatusChange, onUpvote, isUpvoting }) 
 
     return (
         <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
-            <div className="flex justify-between items-center text-sm mb-3">
-                <div className="text-gray-500">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-sm mb-3 gap-2 sm:gap-0">
+                <div className="text-gray-500 mb-2 sm:mb-0">
                     <span className="font-medium text-gray-700">Reported by:</span>
                     {user && user.userId === issue.reportedBy._id ?
                         issue.reportedBy.name :
@@ -90,7 +92,7 @@ function IssueFooter({ issue, userRole, onStatusChange, onUpvote, isUpvoting }) 
                     <button
                         onClick={onUpvote}
                         disabled={isUpvoting}
-                        className="flex items-center gap-1 px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 border border-blue-300 transition-colors disabled:opacity-50"
+                        className="flex items-center justify-center gap-1 px-3 py-3 text-sm bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 border border-blue-300 transition-colors disabled:opacity-50 min-h-[44px] w-full sm:w-auto"
                     >
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.834a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
@@ -104,7 +106,7 @@ function IssueFooter({ issue, userRole, onStatusChange, onUpvote, isUpvoting }) 
             {(userRole === 'admin' || userRole === 'municipal') && (
                 <>
                     {issue.sla && (
-                        <div className="flex items-center justify-between text-xs text-gray-600 mb-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-gray-600 mb-3">
                             <span>SLA Deadline:</span>
                             <span className={`font-medium ${issue.sla.isOverdue ? 'text-red-600' : 'text-gray-600'}`}>
                                 {issue.sla.isOverdue ?
@@ -131,10 +133,10 @@ function IssueFooter({ issue, userRole, onStatusChange, onUpvote, isUpvoting }) 
             )}
 
             {/* Action Buttons */}
-            <div className="flex justify-between items-center mt-3">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mt-3 gap-3 sm:gap-0">
                 <Link
                     href={`/issues/${issue._id}`}
-                    className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 text-sm font-medium group !ml-0"
+                    className="inline-flex items-center justify-center gap-1 text-indigo-600 hover:text-indigo-800 text-sm font-medium group !ml-0 py-2 min-h-[44px] px-2"
                 >
                     View Details
                     <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -142,13 +144,13 @@ function IssueFooter({ issue, userRole, onStatusChange, onUpvote, isUpvoting }) 
                     </svg>
                 </Link>
 
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2 min-h-[44px]">
                     {/* Edit button for issue owner */}
                     {user && user.userId === issue.reportedBy._id && (
                         <StarBorderButton
                             as={Link}
                             href={`/issues/${issue._id}/edit`}
-                            className="text-xs"
+                            className="text-xs min-h-[44px] flex items-center justify-center px-3"
                             thickness={0}
                             color="#6366f1"
                         >
@@ -159,7 +161,7 @@ function IssueFooter({ issue, userRole, onStatusChange, onUpvote, isUpvoting }) 
                     {/* Status change dropdown for authorized users */}
                     {(userRole === 'admin' || userRole === 'municipal' || userRole === 'department') && (
                         <select
-                            className="border border-gray-300 rounded-md px-2 py-1 text-xs bg-white text-gray-800 hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="border border-gray-300 rounded-md px-3 py-3 text-xs bg-white text-gray-800 hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px] w-full sm:w-auto"
                             value={issue.status}
                             onChange={(e) => handleStatusChange(e.target.value)}
                         >
@@ -186,24 +188,24 @@ function CommentsSection({ comments }) {
 
     return (
         <div className="border-t bg-blue-50 p-4">
-            <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2 px-0 sm:px-0">
                 <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
                 Comments ({comments.length})
             </h4>
-            <div className="space-y-3">
+            <div className="space-y-3 px-0 sm:px-0">
                 {comments.slice(0, 2).map((comment, index) => (
-                    <div key={index} className="bg-white rounded-lg p-3 text-sm border border-blue-200">
-                        <div className="flex justify-between items-start mb-1">
+                    <div key={index} className="bg-white rounded-lg p-3 text-sm border border-blue-200 min-h-[44px] flex flex-col justify-center">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-1 gap-2 sm:gap-0">
                             <span className="font-medium text-gray-900">{comment.user.name}</span>
-                            <span className="text-xs text-gray-500">{new Date(comment.createdAt).toLocaleDateString()}</span>
+                            <span className="text-xs text-gray-500 self-start sm:self-auto">{new Date(comment.createdAt).toLocaleDateString()}</span>
                         </div>
                         <p className="text-gray-600">{comment.text}</p>
                     </div>
                 ))}
                 {comments.length > 2 && (
-                    <p className="text-xs text-blue-600 font-medium">+{comments.length - 2} more comments</p>
+                    <p className="text-xs text-blue-600 font-medium px-0 sm:px-0 min-h-[44px] flex items-center justify-center">+{comments.length - 2} more comments</p>
                 )}
             </div>
         </div>
@@ -258,10 +260,9 @@ export default function IssueCard({ issue, onStatusChange, userRole, showSensiti
     }
 
     return (
-        <SpotlightCard className="group rounded-3xl border border-gray-200 bg-white/95 p-0 shadow-lg transition-shadow duration-300 hover:shadow-2xl">
+        <SpotlightCard className="w-full rounded-3xl border border-gray-200 bg-white/95 p-0 shadow-lg transition-shadow duration-300 hover:shadow-2xl">
             <IssueHeader issue={issue} />
-
-            <div className="px-6 pb-4">
+            <div className="px-4 sm:px-6 pb-4">
                 <StatusBadge
                     status={issue.status}
                     priority={issue.priority}

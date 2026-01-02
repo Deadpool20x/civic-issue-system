@@ -132,7 +132,7 @@ export default function CitizenDashboard() {
 
     return (
         <DashboardLayout>
-            <div className="space-y-8">
+            <div className="max-w-7xl mx-auto px-4 space-y-8">
                 {/* Privacy Notice */}
                 <PrivacyNotice userRole={user?.role} showDetails={true} />
 
@@ -145,7 +145,7 @@ export default function CitizenDashboard() {
                         </div>
                         <div className="flex flex-1 flex-col items-stretch gap-4 md:flex-row md:items-center md:justify-end">
                             <select
-                                className="w-full rounded-2xl border border-white/30 bg-white/10 px-4 py-2 text-sm font-medium text-white outline-none transition focus:border-white/60 focus:ring-2 focus:ring-white/70 md:w-auto"
+                                className="w-full rounded-2xl border border-white/30 bg-white/10 px-4 py-3 text-sm font-medium text-white outline-none transition focus:border-white/60 focus:ring-2 focus:ring-white/70 md:w-auto min-h-[44px]"
                                 value={filter}
                                 onChange={(e) => setFilter(e.target.value)}
                             >
@@ -159,7 +159,7 @@ export default function CitizenDashboard() {
                                 as={Link}
                                 href="/citizen/report"
                                 color="rgba(255,255,255,0.9)"
-                                className="text-sm font-semibold text-indigo-900"
+                                className="text-sm font-semibold text-indigo-900 min-h-[44px] flex items-center justify-center"
                                 thickness={0}
                             >
                                 Report New Issue
@@ -195,7 +195,7 @@ export default function CitizenDashboard() {
 
             {/* Issues Grid */}
             <div>
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
                     <h2 className="text-xl font-semibold text-gray-900">Recent Issues</h2>
                     <div className="flex items-center gap-2 text-sm text-gray-500">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -205,7 +205,7 @@ export default function CitizenDashboard() {
                     </div>
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-6">
                     {filteredIssues.map((issue) => (
                         <IssueCard
                             key={issue._id}

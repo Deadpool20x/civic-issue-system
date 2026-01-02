@@ -72,9 +72,9 @@ export default function AdminDashboard() {
 
     return (
         <DashboardLayout>
-            <div className="space-y-6">
+            <div className="max-w-7xl mx-auto px-4 space-y-6">
                 {/* Summary Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 gap-6">
                     <div className="bg-white rounded-lg shadow p-6">
                         <h3 className="text-lg font-medium text-gray-900">Total Issues</h3>
                         <p className="mt-2 text-3xl font-semibold">{stats.totalIssues}</p>
@@ -100,7 +100,7 @@ export default function AdminDashboard() {
                         <div className="space-y-4">
                             {Object.entries(stats.departmentStats).map(([dept, data]) => (
                                 <div key={dept} className="border-b pb-4">
-                                    <div className="flex justify-between items-center mb-2">
+                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2">
                                         <h4 className="text-sm font-medium text-gray-900 capitalize">
                                             {dept}
                                         </h4>

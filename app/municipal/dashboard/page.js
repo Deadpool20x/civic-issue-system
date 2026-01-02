@@ -100,9 +100,9 @@ export default function MunicipalDashboard() {
     return (
         <DashboardLayout>
             <ErrorBoundary>
-                <div className="space-y-6 pt-0 md:pt-0">
+                <div className="max-w-7xl mx-auto px-4 space-y-6 pt-0 md:pt-0">
                     {/* Summary Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                         <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
                             <h3 className="text-lg font-medium text-gray-900">Total Issues</h3>
                             <p className="mt-2 text-3xl font-semibold text-gray-800">{issues.length}</p>
@@ -125,38 +125,38 @@ export default function MunicipalDashboard() {
                     <PrivacyNotice userRole={user?.role} showDetails={true} />
 
                     {/* Quick Actions */}
-                    <div className="flex space-x-4">
+                    <div className="flex flex-col sm:flex-row gap-4">
                         <Link
                             href="/admin/secure-dashboard"
-                            className="bg-purple-600 text-white hover:bg-purple-700 px-4 py-2 rounded-md text-sm font-medium"
+                            className="bg-purple-600 text-white hover:bg-purple-700 px-4 py-3 rounded-md text-sm font-medium min-h-[44px] flex items-center justify-center"
                         >
                             🔒 Secure Admin View
                         </Link>
                         <Link
                             href="/municipal/sla-dashboard"
-                            className="bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-md text-sm font-medium"
+                            className="bg-red-600 text-white hover:bg-red-700 px-4 py-3 rounded-md text-sm font-medium min-h-[44px] flex items-center justify-center"
                         >
                             📊 SLA Dashboard
                         </Link>
                         <Link
                             href="/municipal/departments"
-                            className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium"
+                            className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-3 rounded-md text-sm font-medium min-h-[44px] flex items-center justify-center"
                         >
                             🏢 Manage Departments
                         </Link>
                         <Link
                             href="/public-dashboard"
                             target="_blank"
-                            className="bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-md text-sm font-medium"
+                            className="bg-green-600 text-white hover:bg-green-700 px-4 py-3 rounded-md text-sm font-medium min-h-[44px] flex items-center justify-center"
                         >
                             🌐 Public Dashboard
                         </Link>
                     </div>
 
                     {/* Filters */}
-                    <div className="flex flex-wrap gap-4 bg-white p-4 rounded-lg shadow border border-gray-200">
+                    <div className="flex flex-col sm:flex-row flex-wrap gap-4 bg-white p-4 rounded-lg shadow border border-gray-200">
                         <select
-                            className="border border-gray-300 rounded-md px-3 py-2 text-gray-800 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="border border-gray-300 rounded-md px-3 py-3 text-gray-800 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
                             value={filters.status}
                             onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
                         >
@@ -168,7 +168,7 @@ export default function MunicipalDashboard() {
                         </select>
 
                         <select
-                            className="border border-gray-300 rounded-md px-3 py-2 text-gray-800 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="border border-gray-300 rounded-md px-3 py-3 text-gray-800 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
                             value={filters.department}
                             onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
                         >
@@ -182,7 +182,7 @@ export default function MunicipalDashboard() {
                         </select>
 
                         <select
-                            className="border border-gray-300 rounded-md px-3 py-2 text-gray-800 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="border border-gray-300 rounded-md px-3 py-3 text-gray-800 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
                             value={filters.priority}
                             onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
                         >
@@ -195,7 +195,7 @@ export default function MunicipalDashboard() {
                     </div>
 
                     {/* Issues Grid */}
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-6">
                         {issues.map((issue) => (
                             <IssueCard
                                 key={issue._id}
