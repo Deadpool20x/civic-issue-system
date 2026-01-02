@@ -22,6 +22,7 @@ export default function RegisterPage() {
     });
 
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -44,22 +45,20 @@ export default function RegisterPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
         setLoading(true);
 
-        try {
-            const result = await register(formData);
+        const result = await register(formData);
 
-            if (result.success) {
-                toast.success('Registration successful!');
-                // Navigation is handled by UserContext
-            } else {
-                throw new Error(result.error);
-            }
-        } catch (error) {
-            toast.error(error.message || 'Registration failed');
-        } finally {
-            setLoading(false);
+        if (result.success) {
+            toast.success('Registration successful!');
+            // Navigation is handled by UserContext
+        } else {
+            setError(result.error || 'Registration failed');
+            toast.error(result.error || 'Registration failed');
         }
+        
+        setLoading(false);
     };
 
     return (
@@ -71,6 +70,17 @@ export default function RegisterPage() {
                     </h2>
                 </div>
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+                    {error && (
+                        <div className="rounded-md bg-red-50 p-4 border border-red-200">
+                            <div className="flex">
+                                <div className="ml-3">
+                                    <h3 className="text-sm font-medium text-red-800">
+                                        {error}
+                                    </h3>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     <div className="rounded-md shadow-sm -space-y-px">
                         <div>
                             <label htmlFor="name" className="sr-only">Full Name</label>

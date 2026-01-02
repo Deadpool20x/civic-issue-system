@@ -10,6 +10,7 @@ export default function LoginPage() {
         password: ''
     });
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const { login } = useUser();
 
     const handleChange = (e) => {
@@ -22,12 +23,16 @@ export default function LoginPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
         setLoading(true);
+        
         const result = await login(formData);
+        
         if (!result.success) {
+            setError(result.error);
             toast.error(result.error);
         }
-        // The redirect will be handled by the UserContext
+        
         setLoading(false);
     };
 
@@ -40,6 +45,17 @@ export default function LoginPage() {
                     </h2>
                 </div>
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+                    {error && (
+                        <div className="rounded-md bg-red-50 p-4 border border-red-200">
+                            <div className="flex">
+                                <div className="ml-3">
+                                    <h3 className="text-sm font-medium text-red-800">
+                                        {error}
+                                    </h3>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     {/* Form inputs remain the same */}
                     <div className="rounded-md shadow-sm -space-y-px">
                         <div>
