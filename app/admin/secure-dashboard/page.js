@@ -5,6 +5,8 @@ import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import IssueCard from '@/components/IssueCard';
+import StatCard from '@/components/ui/StatCard';
+import Card from '@/components/ui/Card';
 import toast from 'react-hot-toast';
 
 export default function SecureAdminDashboard() {
@@ -53,9 +55,9 @@ export default function SecureAdminDashboard() {
                     'Content-Type': 'application/json',
                 },
                 credentials: 'include',
-                body: JSON.stringify({ 
-                    issueId, 
-                    updates: { status: newStatus } 
+                body: JSON.stringify({
+                    issueId,
+                    updates: { status: newStatus }
                 }),
             });
 
@@ -130,48 +132,64 @@ export default function SecureAdminDashboard() {
                     </div>
 
                     {/* Security Notice */}
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <Card className="bg-amber-50 border border-amber-200">
                         <div className="flex">
                             <div className="flex-shrink-0">
-                                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                <svg className="h-5 w-5 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
                                     <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                                 </svg>
                             </div>
                             <div className="ml-3">
-                                <h3 className="text-sm font-medium text-yellow-800">
+                                <h3 className="text-sm font-medium text-amber-800">
                                     🔒 Secure Admin Access
                                 </h3>
-                                <div className="mt-2 text-sm text-yellow-700">
+                                <div className="mt-2 text-sm text-amber-700">
                                     <p>This dashboard shows <strong>ALL SENSITIVE DATA</strong> including personal details, exact locations, internal comments, and escalation history. This information is only visible to admin and municipal users.</p>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </Card>
 
                     {/* Summary Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="bg-white rounded-lg shadow p-4">
-                            <h3 className="text-lg font-medium text-gray-900">Total Issues</h3>
-                            <p className="mt-2 text-3xl font-semibold">{issues.length}</p>
-                        </div>
-                        <div className="bg-red-50 rounded-lg shadow p-4">
-                            <h3 className="text-lg font-medium text-red-800">Escalated</h3>
-                            <p className="mt-2 text-3xl font-semibold">{escalationSummary.escalated || 0}</p>
-                        </div>
-                        <div className="bg-orange-50 rounded-lg shadow p-4">
-                            <h3 className="text-lg font-medium text-orange-800">Overdue</h3>
-                            <p className="mt-2 text-3xl font-semibold">{escalationSummary.overdue || 0}</p>
-                        </div>
-                        <div className="bg-green-50 rounded-lg shadow p-4">
-                            <h3 className="text-lg font-medium text-green-800">Resolved</h3>
-                            <p className="mt-2 text-3xl font-semibold">{statusSummary.resolved || 0}</p>
-                        </div>
+                        <StatCard
+                            label="Total Issues"
+                            value={issues.length}
+                            accent="border-l-4 border-l-slate-400"
+                            iconBg="bg-slate-100"
+                            iconColor="text-slate-600"
+                            iconPath="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                        />
+                        <StatCard
+                            label="Escalated"
+                            value={escalationSummary.escalated || 0}
+                            accent="border-l-4 border-l-red-400"
+                            iconBg="bg-red-50"
+                            iconColor="text-red-600"
+                            iconPath="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                        />
+                        <StatCard
+                            label="Overdue"
+                            value={escalationSummary.overdue || 0}
+                            accent="border-l-4 border-l-orange-400"
+                            iconBg="bg-orange-50"
+                            iconColor="text-orange-600"
+                            iconPath="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 0 9 0 0118 0z"
+                        />
+                        <StatCard
+                            label="Resolved"
+                            value={statusSummary.resolved || 0}
+                            accent="border-l-4 border-l-emerald-400"
+                            iconBg="bg-emerald-50"
+                            iconColor="text-emerald-600"
+                            iconPath="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                     </div>
 
                     {/* Advanced Filters */}
-                    <div className="flex flex-wrap gap-4 bg-white p-4 rounded-lg shadow">
+                    <Card className="flex flex-wrap gap-4">
                         <select
-                            className="border rounded-md px-3 py-2"
+                            className="border border-slate-300 rounded-xl px-4 py-2.5 text-slate-700 bg-white hover:border-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[44px]"
                             value={filters.status}
                             onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
                         >
@@ -186,7 +204,7 @@ export default function SecureAdminDashboard() {
                         </select>
 
                         <select
-                            className="border rounded-md px-3 py-2"
+                            className="border border-slate-300 rounded-xl px-4 py-2.5 text-slate-700 bg-white hover:border-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[44px]"
                             value={filters.department}
                             onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
                         >
@@ -200,7 +218,7 @@ export default function SecureAdminDashboard() {
                         </select>
 
                         <select
-                            className="border rounded-md px-3 py-2"
+                            className="border border-slate-300 rounded-xl px-4 py-2.5 text-slate-700 bg-white hover:border-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[44px]"
                             value={filters.priority}
                             onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
                         >
@@ -212,7 +230,7 @@ export default function SecureAdminDashboard() {
                         </select>
 
                         <select
-                            className="border rounded-md px-3 py-2"
+                            className="border border-slate-300 rounded-xl px-4 py-2.5 text-slate-700 bg-white hover:border-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[44px]"
                             value={filters.escalated}
                             onChange={(e) => setFilters(prev => ({ ...prev, escalated: e.target.value }))}
                         >
@@ -220,7 +238,7 @@ export default function SecureAdminDashboard() {
                             <option value="escalated">Escalated Only</option>
                             <option value="normal">Normal Only</option>
                         </select>
-                    </div>
+                    </Card>
 
                     {/* Issues Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

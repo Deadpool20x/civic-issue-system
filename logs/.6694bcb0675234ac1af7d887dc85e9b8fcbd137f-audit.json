@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "C:\\Users\\yashp\\OneDrive\\Desktop\\hackathon\\civic-issue-system\\logs\\.6694bcb0675234ac1af7d887dc85e9b8fcbd137f-audit.json",
+    "files": [
+        {
+            "date": 1767447399337,
+            "name": "C:\\Users\\yashp\\OneDrive\\Desktop\\hackathon\\civic-issue-system\\logs\\mcp-puppeteer-2026-01-03.log",
+            "hash": "09c1483f6687d6d791dc831977922c7c1e0e957a98852f40678b9d4c41add16c"
+        }
+    ],
+    "hashType": "sha256"
+}

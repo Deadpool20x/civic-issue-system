@@ -3,18 +3,65 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #f8fafc; /* slate-50 */
+  --foreground: #0f172a; /* slate-900 */
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Premium Color System Semantic Classes */
+.bg-brand-primary { background-color: #006989; }
+.bg-brand-soft { background-color: #eaeebd; }
+.bg-accent-magic { background-color: #5E429C; }
+.bg-accent-lavender { background-color: #f492f0; }
+.bg-status-warning { background-color: #FE7F2D; }
+.bg-status-error { background-color: #D7263D; }
+.bg-status-pending { background-color: #FE7F2D; }
+.bg-status-progress { background-color: #006989; }
+
+.text-brand-primary { color: #006989; }
+.text-contrast-primary { color: #02182B; }
+.text-contrast-secondary { color: #1f2937; }
+.text-accent-magic { color: #5E429C; }
+.text-accent-lavender { color: #f492f0; }
+.text-status-warning { color: #FE7F2D; }
+.text-status-error { color: #D7263D; }
+
+.border-brand-primary { border-color: #006989; }
+.border-accent-magic { border-color: #5E429C; }
+.border-status-warning { border-color: #FE7F2D; }
+.border-status-error { border-color: #D7263D; }
+
+.hover\:bg-brand-primary:hover { background-color: #006989; }
+.hover\:bg-accent-magic:hover { background-color: #5E429C; }
+.hover\:text-brand-primary:hover { color: #006989; }
+.hover\:text-accent-magic:hover { color: #5E429C; }
+
+.focus\:ring-brand-primary:focus { --tw-ring-color: #006989; }
+.focus\:border-brand-primary:focus { border-color: #006989; }
+.focus\:ring-accent-magic:focus { --tw-ring-color: #5E429C; }
+.focus\:border-accent-magic:focus { border-color: #5E429C; }
+
+/* Enhanced input visibility */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+select,
+textarea {
+    color: #0f172a !important; /* Ensure text is always visible */
+    background-color: #ffffff !important; /* Ensure white background */
+}
+
+input::placeholder {
+    color: #64748b !important; /* slate-500 */
+}
+
+input:focus {
+    color: #0f172a !important;
+    background-color: #ffffff !important;
 }

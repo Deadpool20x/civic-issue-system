@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import IssueCard from '@/components/IssueCard';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import Card from '@/components/ui/Card';
+import StatCard from '@/components/ui/StatCard';
 import { useUser } from '@/lib/contexts/UserContext';
 import toast from 'react-hot-toast';
 
@@ -123,7 +125,7 @@ export default function DepartmentDashboard() {
         return (
             <DashboardLayout>
                 <div className="flex items-center justify-center h-64">
-                    <div className="text-lg text-gray-600">Loading...</div>
+                    <div className="text-lg text-slate-600">Loading...</div>
                 </div>
             </DashboardLayout>
         );
@@ -132,68 +134,88 @@ export default function DepartmentDashboard() {
     return (
         <DashboardLayout>
             <ErrorBoundary>
-                <div className="max-w-7xl mx-auto px-4 space-y-6 pt-0 md:pt-0">
+                <div className="max-w-7xl mx-auto space-y-6 pt-0 md:pt-0">
                     {/* Department Header */}
-                    <div className="bg-white rounded-lg shadow p-6">
-                        <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+                    <Card>
+                        <h1 className="text-2xl font-bold text-slate-900 mb-2">
                             {user.department?.charAt(0).toUpperCase() + user.department?.slice(1)} Department Dashboard
                         </h1>
-                        <p className="text-gray-600">
+                        <p className="text-slate-600">
                             Manage and resolve issues assigned to the {user.department} department
                         </p>
-                    </div>
+                    </Card>
 
                     {/* Summary Cards */}
-                    <div className="grid grid-cols-1 gap-4">
-                        <div className="bg-white rounded-lg shadow p-4">
-                            <h3 className="text-lg font-medium text-gray-900">Total Issues</h3>
-                            <p className="mt-2 text-3xl font-semibold">{issues.length}</p>
-                        </div>
-                        <div className="bg-blue-50 rounded-lg shadow p-4">
-                            <h3 className="text-lg font-medium text-blue-800">My Assigned</h3>
-                            <p className="mt-2 text-3xl font-semibold">{myAssignedIssues.length}</p>
-                        </div>
-                        <div className="bg-yellow-50 rounded-lg shadow p-4">
-                            <h3 className="text-lg font-medium text-yellow-800">Pending</h3>
-                            <p className="mt-2 text-3xl font-semibold">{statusSummary.pending || 0}</p>
-                        </div>
-                        <div className="bg-orange-50 rounded-lg shadow p-4">
-                            <h3 className="text-lg font-medium text-orange-800">In Progress</h3>
-                            <p className="mt-2 text-3xl font-semibold">{statusSummary['in-progress'] || 0}</p>
-                        </div>
-                        <div className="bg-green-50 rounded-lg shadow p-4">
-                            <h3 className="text-lg font-medium text-green-800">Resolved</h3>
-                            <p className="mt-2 text-3xl font-semibold">{statusSummary.resolved || 0}</p>
-                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                        <StatCard
+                            label="Total Issues"
+                            value={issues.length}
+                            accent="border-l-4 border-l-slate-400"
+                            iconBg="bg-slate-100"
+                            iconColor="text-slate-600"
+                            iconPath="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                        />
+                        <StatCard
+                            label="My Assigned"
+                            value={myAssignedIssues.length}
+                            accent="border-l-4 border-l-blue-400"
+                            iconBg="bg-blue-50"
+                            iconColor="text-blue-600"
+                            iconPath="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                        <StatCard
+                            label="Pending"
+                            value={statusSummary.pending || 0}
+                            accent="border-l-4 border-l-amber-400"
+                            iconBg="bg-amber-50"
+                            iconColor="text-amber-600"
+                            iconPath="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 0 9 0 0118 0z"
+                        />
+                        <StatCard
+                            label="In Progress"
+                            value={statusSummary['in-progress'] || 0}
+                            accent="border-l-4 border-l-blue-400"
+                            iconBg="bg-blue-50"
+                            iconColor="text-blue-600"
+                            iconPath="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                        <StatCard
+                            label="Resolved"
+                            value={statusSummary.resolved || 0}
+                            accent="border-l-4 border-l-emerald-400"
+                            iconBg="bg-emerald-50"
+                            iconColor="text-emerald-600"
+                            iconPath="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                     </div>
 
                     {/* Priority Breakdown */}
-                    <div className="bg-white rounded-lg shadow p-6">
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">Priority Breakdown</h3>
+                    <Card>
+                        <h3 className="text-lg font-semibold text-slate-900 mb-4">Priority Breakdown</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="text-center">
-                                <div className="text-2xl font-semibold text-red-600">{prioritySummary.urgent || 0}</div>
-                                <div className="text-sm text-gray-600">Urgent</div>
+                            <div className="text-center p-4 bg-red-50 rounded-xl">
+                                <div className="text-3xl font-bold text-red-600">{prioritySummary.urgent || 0}</div>
+                                <div className="text-sm font-medium text-red-800">Urgent</div>
                             </div>
-                            <div className="text-center">
-                                <div className="text-2xl font-semibold text-orange-600">{prioritySummary.high || 0}</div>
-                                <div className="text-sm text-gray-600">High</div>
+                            <div className="text-center p-4 bg-orange-50 rounded-xl">
+                                <div className="text-3xl font-bold text-orange-600">{prioritySummary.high || 0}</div>
+                                <div className="text-sm font-medium text-orange-800">High</div>
                             </div>
-                            <div className="text-center">
-                                <div className="text-2xl font-semibold text-yellow-600">{prioritySummary.medium || 0}</div>
-                                <div className="text-sm text-gray-600">Medium</div>
+                            <div className="text-center p-4 bg-yellow-50 rounded-xl">
+                                <div className="text-3xl font-bold text-yellow-600">{prioritySummary.medium || 0}</div>
+                                <div className="text-sm font-medium text-yellow-800">Medium</div>
                             </div>
-                            <div className="text-center">
-                                <div className="text-2xl font-semibold text-gray-600">{prioritySummary.low || 0}</div>
-                                <div className="text-sm text-gray-600">Low</div>
+                            <div className="text-center p-4 bg-slate-50 rounded-xl">
+                                <div className="text-3xl font-bold text-slate-600">{prioritySummary.low || 0}</div>
+                                <div className="text-sm font-medium text-slate-800">Low</div>
                             </div>
                         </div>
-                    </div>
+                    </Card>
 
                     {/* Filters */}
-                    <div className="flex flex-col sm:flex-row flex-wrap gap-4 bg-white p-4 rounded-lg shadow">
+                    <Card className="flex flex-col sm:flex-row flex-wrap gap-4">
                         <select
-                            className="border rounded-md px-3 py-3 min-h-[44px]"
+                            className="border border-slate-300 rounded-xl px-4 py-2.5 text-slate-700 bg-white hover:border-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[44px]"
                             value={filters.status}
                             onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
                         >
@@ -205,7 +227,7 @@ export default function DepartmentDashboard() {
                         </select>
 
                         <select
-                            className="border rounded-md px-3 py-3 min-h-[44px]"
+                            className="border border-slate-300 rounded-xl px-4 py-2.5 text-slate-700 bg-white hover:border-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[44px]"
                             value={filters.priority}
                             onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
                         >
@@ -218,11 +240,11 @@ export default function DepartmentDashboard() {
 
                         <button
                             onClick={() => setFilters({ status: 'pending', priority: 'all' })}
-                            className="px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 min-h-[44px]"
+                            className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-medium shadow-sm transition-colors"
                         >
                             Show Unassigned
                         </button>
-                    </div>
+                    </Card>
 
                     {/* Issues Grid */}
                     <div className="grid gap-6">
@@ -234,18 +256,18 @@ export default function DepartmentDashboard() {
                                     userRole="department"
                                 />
                                 {issue.status === 'pending' && !issue.assignedTo && (
-                                    <div className="absolute top-2 right-2">
+                                    <div className="absolute top-4 right-4 z-10">
                                         <button
                                             onClick={() => handleTakeIssue(issue._id)}
-                                            className="px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 min-h-[44px]"
+                                            className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 shadow-sm transition-colors"
                                         >
                                             Take Issue
                                         </button>
                                     </div>
                                 )}
                                 {issue.assignedTo?._id === user.userId && (
-                                    <div className="absolute top-2 left-2">
-                                        <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                    <div className="absolute top-4 left-4 z-10">
+                                        <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full border border-blue-200 shadow-sm">
                                             Assigned to me
                                         </span>
                                     </div>
@@ -256,8 +278,8 @@ export default function DepartmentDashboard() {
 
                     {issues.length === 0 && (
                         <div className="text-center py-12">
-                            <h3 className="text-lg font-medium text-gray-900">No issues found</h3>
-                            <p className="mt-2 text-gray-500">
+                            <h3 className="text-lg font-medium text-slate-900">No issues found</h3>
+                            <p className="mt-2 text-slate-500">
                                 No issues are currently assigned to the {user.department} department.
                             </p>
                         </div>

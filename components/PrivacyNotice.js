@@ -11,25 +11,25 @@ export default function PrivacyNotice({ userRole, showDetails = false }) {
             case 'municipal':
                 return {
                     level: 'Full Access',
-                    color: 'red',
+                    color: 'error',
                     description: 'Can see all personal details, locations, and internal data'
                 };
             case 'department':
                 return {
                     level: 'Department Access',
-                    color: 'orange',
+                    color: 'warning',
                     description: 'Can see department-related issues with limited personal details'
                 };
             case 'citizen':
                 return {
                     level: 'Personal Access',
-                    color: 'blue',
+                    color: 'primary',
                     description: 'Can only see your own issues with full details'
                 };
             default:
                 return {
                     level: 'Public Access',
-                    color: 'green',
+                    color: 'success',
                     description: 'Can only see anonymized public information'
                 };
         }
@@ -41,45 +41,45 @@ export default function PrivacyNotice({ userRole, showDetails = false }) {
 
     const getColorClasses = () => {
         switch (privacyLevel.color) {
-            case 'red':
+            case 'error':
                 return {
-                    container: 'bg-red-50 border-red-200',
-                    icon: 'text-red-500',
-                    title: 'text-red-800',
-                    text: 'text-red-700',
-                    button: 'text-red-600 hover:text-red-800'
+                    container: 'bg-status-error/10 border-status-error/30',
+                    icon: 'text-status-error',
+                    title: 'text-status-error',
+                    text: 'text-slate-700',
+                    button: 'text-status-error hover:text-status-error'
                 };
-            case 'orange':
+            case 'warning':
                 return {
-                    container: 'bg-orange-50 border-orange-200',
-                    icon: 'text-orange-500',
-                    title: 'text-orange-800',
-                    text: 'text-orange-700',
-                    button: 'text-orange-600 hover:text-orange-800'
+                    container: 'bg-status-warning/10 border-status-warning/30',
+                    icon: 'text-status-warning',
+                    title: 'text-status-warning',
+                    text: 'text-slate-700',
+                    button: 'text-status-warning hover:text-status-warning'
                 };
-            case 'blue':
+            case 'primary':
                 return {
-                    container: 'bg-blue-50 border-blue-200',
-                    icon: 'text-blue-500',
-                    title: 'text-blue-800',
-                    text: 'text-blue-700',
-                    button: 'text-blue-600 hover:text-blue-800'
+                    container: 'bg-brand-soft/30 border-brand-primary/30',
+                    icon: 'text-brand-primary',
+                    title: 'text-brand-primary',
+                    text: 'text-slate-700',
+                    button: 'text-brand-primary hover:text-brand-primary'
                 };
-            case 'green':
+            case 'success':
                 return {
-                    container: 'bg-green-50 border-green-200',
-                    icon: 'text-green-500',
-                    title: 'text-green-800',
-                    text: 'text-green-700',
-                    button: 'text-green-600 hover:text-green-800'
+                    container: 'bg-emerald-50 border-emerald-200',
+                    icon: 'text-emerald-500',
+                    title: 'text-emerald-800',
+                    text: 'text-slate-700',
+                    button: 'text-emerald-600 hover:text-emerald-800'
                 };
             default:
                 return {
-                    container: 'bg-gray-50 border-gray-200',
-                    icon: 'text-gray-500',
-                    title: 'text-gray-800',
-                    text: 'text-gray-700',
-                    button: 'text-gray-600 hover:text-gray-800'
+                    container: 'bg-slate-50 border-slate-200',
+                    icon: 'text-slate-500',
+                    title: 'text-slate-800',
+                    text: 'text-slate-700',
+                    button: 'text-slate-600 hover:text-slate-800'
                 };
         }
     };

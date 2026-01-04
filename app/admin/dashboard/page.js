@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import IssueCard from '@/components/IssueCard';
+import Card from '@/components/ui/Card';
+import StatCard from '@/components/ui/StatCard';
 import toast from 'react-hot-toast';
 
 export default function AdminDashboard() {
@@ -64,7 +66,7 @@ export default function AdminDashboard() {
         return (
             <DashboardLayout>
                 <div className="flex items-center justify-center h-64">
-                    <div className="text-lg text-gray-600">Loading...</div>
+                    <div className="text-lg text-slate-600">Loading...</div>
                 </div>
             </DashboardLayout>
         );
@@ -74,71 +76,79 @@ export default function AdminDashboard() {
         <DashboardLayout>
             <div className="max-w-7xl mx-auto px-4 space-y-6">
                 {/* Summary Stats */}
-                <div className="grid grid-cols-1 gap-6">
-                    <div className="bg-white rounded-lg shadow p-6">
-                        <h3 className="text-lg font-medium text-gray-900">Total Issues</h3>
-                        <p className="mt-2 text-3xl font-semibold">{stats.totalIssues}</p>
-                    </div>
-                    <div className="bg-white rounded-lg shadow p-6">
-                        <h3 className="text-lg font-medium text-gray-900">Total Users</h3>
-                        <p className="mt-2 text-3xl font-semibold">{stats.totalUsers}</p>
-                    </div>
-                    <div className="bg-white rounded-lg shadow p-6">
-                        <h3 className="text-lg font-medium text-gray-900">Resolution Rate</h3>
-                        <p className="mt-2 text-3xl font-semibold">
-                            {calculateResolutionRate()}%
-                        </p>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <StatCard
+                        label="Total Issues"
+                        value={stats.totalIssues}
+                        accent="border-l-4 border-l-slate-400"
+                        iconBg="bg-slate-100"
+                        iconColor="text-slate-600"
+                        iconPath="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    />
+                    <StatCard
+                        label="Total Users"
+                        value={stats.totalUsers}
+                        accent="border-l-4 border-l-slate-400"
+                        iconBg="bg-slate-100"
+                        iconColor="text-slate-600"
+                        iconPath="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                    />
+                    <StatCard
+                        label="Resolution Rate"
+                        value={`${calculateResolutionRate()}%`}
+                        accent="border-l-4 border-l-slate-400"
+                        iconBg="bg-slate-100"
+                        iconColor="text-slate-600"
+                        iconPath="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                 </div>
 
                 {/* Department Performance */}
-                <div className="bg-white rounded-lg shadow">
-                    <div className="p-6">
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">
+                <Card className="p-0 overflow-hidden">
+                    <div className="p-6 border-b border-slate-200">
+                        <h3 className="text-lg font-bold text-slate-900">
                             Department Performance
                         </h3>
-                        <div className="space-y-4">
-                            {Object.entries(stats.departmentStats).map(([dept, data]) => (
-                                <div key={dept} className="border-b pb-4">
-                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2">
-                                        <h4 className="text-sm font-medium text-gray-900 capitalize">
-                                            {dept}
-                                        </h4>
-                                        <span className="text-sm text-gray-500">
-                                            {data.resolved} / {data.total} resolved
-                                        </span>
-                                    </div>
-                                    <div className="w-full bg-gray-200 rounded-full h-2.5">
-                                        <div
-                                            className="bg-blue-600 h-2.5 rounded-full"
-                                            style={{
-                                                width: `${Math.round(
-                                                    (data.resolved / data.total) * 100
-                                                )}%`,
-                                            }}
-                                        ></div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
                     </div>
-                </div>
+                    <div className="p-6 space-y-6">
+                        {Object.entries(stats.departmentStats).map(([dept, data]) => (
+                            <div key={dept} className="space-y-2">
+                                <div className="flex justify-between items-center text-sm">
+                                    <h4 className="font-semibold text-slate-900 capitalize">
+                                        {dept}
+                                    </h4>
+                                    <span className="text-slate-500">
+                                        {data.resolved} / {data.total} resolved
+                                    </span>
+                                </div>
+                                <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                                    <div
+                                        className="bg-indigo-600 h-2.5 rounded-full"
+                                        style={{
+                                            width: `${Math.round(
+                                                (data.resolved / data.total) * 100
+                                            )}%`,
+                                        }}
+                                    ></div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </Card>
 
                 {/* Recent Issues */}
-                <div className="bg-white rounded-lg shadow">
-                    <div className="p-6">
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">
-                            Recent Issues
-                        </h3>
-                        <div className="space-y-4">
-                            {stats.recentIssues.map((issue) => (
-                                <IssueCard
-                                    key={issue._id}
-                                    issue={issue}
-                                    userRole="admin"
-                                />
-                            ))}
-                        </div>
+                <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-slate-900">
+                        Recent Issues
+                    </h3>
+                    <div className="space-y-4">
+                        {stats.recentIssues.map((issue) => (
+                            <IssueCard
+                                key={issue._id}
+                                issue={issue}
+                                userRole="admin"
+                            />
+                        ))}
                     </div>
                 </div>
             </div>

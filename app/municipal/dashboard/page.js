@@ -7,6 +7,8 @@ import DashboardLayout from '@/components/DashboardLayout';
 import IssueCard from '@/components/IssueCard';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import PrivacyNotice from '@/components/PrivacyNotice';
+import Card from '@/components/ui/Card';
+import StatCard from '@/components/ui/StatCard';
 import { useUser } from '@/lib/contexts/UserContext';
 import toast from 'react-hot-toast';
 
@@ -91,7 +93,7 @@ export default function MunicipalDashboard() {
         return (
             <DashboardLayout>
                 <div className="flex items-center justify-center h-64">
-                    <div className="text-lg text-gray-600">Loading...</div>
+                    <div className="text-lg text-slate-600">Loading...</div>
                 </div>
             </DashboardLayout>
         );
@@ -100,63 +102,79 @@ export default function MunicipalDashboard() {
     return (
         <DashboardLayout>
             <ErrorBoundary>
-                <div className="max-w-7xl mx-auto px-4 space-y-6 pt-0 md:pt-0">
+                <div className="max-w-7xl mx-auto space-y-6 pt-0 md:pt-0">
                     {/* Summary Cards */}
-                    <div className="grid grid-cols-1 gap-4">
-                        <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-                            <h3 className="text-lg font-medium text-gray-900">Total Issues</h3>
-                            <p className="mt-2 text-3xl font-semibold text-gray-800">{issues.length}</p>
-                        </div>
-                        <div className="bg-yellow-50 rounded-lg shadow p-4 border border-yellow-200">
-                            <h3 className="text-lg font-medium text-yellow-800">Pending</h3>
-                            <p className="mt-2 text-3xl font-semibold text-yellow-900">{statusSummary.pending || 0}</p>
-                        </div>
-                        <div className="bg-blue-50 rounded-lg shadow p-4 border border-blue-200">
-                            <h3 className="text-lg font-medium text-blue-800">In Progress</h3>
-                            <p className="mt-2 text-3xl font-semibold text-blue-900">{statusSummary['in-progress'] || 0}</p>
-                        </div>
-                        <div className="bg-green-50 rounded-lg shadow p-4 border border-green-200">
-                            <h3 className="text-lg font-medium text-green-800">Resolved</h3>
-                            <p className="mt-2 text-3xl font-semibold text-green-900">{statusSummary.resolved || 0}</p>
-                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <StatCard
+                            label="Total Issues"
+                            value={issues.length}
+                            accent="border-l-4 border-l-slate-400"
+                            iconBg="bg-slate-100"
+                            iconColor="text-slate-600"
+                            iconPath="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                        />
+                        <StatCard
+                            label="Pending"
+                            value={statusSummary.pending || 0}
+                            accent="border-l-4 border-l-amber-400"
+                            iconBg="bg-amber-50"
+                            iconColor="text-amber-600"
+                            iconPath="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 0 9 0 0118 0z"
+                        />
+                        <StatCard
+                            label="In Progress"
+                            value={statusSummary['in-progress'] || 0}
+                            accent="border-l-4 border-l-blue-400"
+                            iconBg="bg-blue-50"
+                            iconColor="text-blue-600"
+                            iconPath="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                        <StatCard
+                            label="Resolved"
+                            value={statusSummary.resolved || 0}
+                            accent="border-l-4 border-l-emerald-400"
+                            iconBg="bg-emerald-50"
+                            iconColor="text-emerald-600"
+                            iconPath="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                     </div>
 
                     {/* Privacy Notice */}
                     <PrivacyNotice userRole={user?.role} showDetails={true} />
 
                     {/* Quick Actions */}
-                    <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <Link
                             href="/admin/secure-dashboard"
-                            className="bg-purple-600 text-white hover:bg-purple-700 px-4 py-3 rounded-md text-sm font-medium min-h-[44px] flex items-center justify-center"
+                            className="bg-purple-600 text-white hover:bg-purple-700 px-4 py-3 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center justify-center"
                         >
                             🔒 Secure Admin View
                         </Link>
                         <Link
                             href="/municipal/sla-dashboard"
-                            className="bg-red-600 text-white hover:bg-red-700 px-4 py-3 rounded-md text-sm font-medium min-h-[44px] flex items-center justify-center"
+                            className="bg-red-600 text-white hover:bg-red-700 px-4 py-3 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center justify-center"
                         >
                             📊 SLA Dashboard
                         </Link>
                         <Link
                             href="/municipal/departments"
-                            className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-3 rounded-md text-sm font-medium min-h-[44px] flex items-center justify-center"
+                            className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-3 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center justify-center"
                         >
                             🏢 Manage Departments
                         </Link>
                         <Link
                             href="/public-dashboard"
                             target="_blank"
-                            className="bg-green-600 text-white hover:bg-green-700 px-4 py-3 rounded-md text-sm font-medium min-h-[44px] flex items-center justify-center"
+                            className="bg-emerald-600 text-white hover:bg-emerald-700 px-4 py-3 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center justify-center"
                         >
                             🌐 Public Dashboard
                         </Link>
                     </div>
 
                     {/* Filters */}
-                    <div className="flex flex-col sm:flex-row flex-wrap gap-4 bg-white p-4 rounded-lg shadow border border-gray-200">
+                    <Card className="flex flex-col sm:flex-row flex-wrap gap-4">
                         <select
-                            className="border border-gray-300 rounded-md px-3 py-3 text-gray-800 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
+                            className="border border-slate-300 rounded-xl px-4 py-2.5 text-slate-700 bg-white hover:border-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[44px]"
                             value={filters.status}
                             onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
                         >
@@ -168,7 +186,7 @@ export default function MunicipalDashboard() {
                         </select>
 
                         <select
-                            className="border border-gray-300 rounded-md px-3 py-3 text-gray-800 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
+                            className="border border-slate-300 rounded-xl px-4 py-2.5 text-slate-700 bg-white hover:border-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[44px]"
                             value={filters.department}
                             onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
                         >
@@ -182,7 +200,7 @@ export default function MunicipalDashboard() {
                         </select>
 
                         <select
-                            className="border border-gray-300 rounded-md px-3 py-3 text-gray-800 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
+                            className="border border-slate-300 rounded-xl px-4 py-2.5 text-slate-700 bg-white hover:border-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[44px]"
                             value={filters.priority}
                             onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
                         >
@@ -192,7 +210,7 @@ export default function MunicipalDashboard() {
                             <option value="high">High</option>
                             <option value="urgent">Urgent</option>
                         </select>
-                    </div>
+                    </Card>
 
                     {/* Issues Grid */}
                     <div className="grid gap-6">
@@ -208,8 +226,8 @@ export default function MunicipalDashboard() {
 
                     {issues.length === 0 && (
                         <div className="text-center py-12">
-                            <h3 className="text-lg font-medium text-gray-900">No issues found</h3>
-                            <p className="mt-2 text-gray-500">
+                            <h3 className="text-lg font-medium text-slate-900">No issues found</h3>
+                            <p className="mt-2 text-slate-500">
                                 No issues match your current filters.
                             </p>
                         </div>

@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Card from '@/components/ui/Card';
+import StatCard from '@/components/ui/StatCard';
 
 export default function PublicDashboardPage() {
     const [dashboardData, setDashboardData] = useState(null);
@@ -34,31 +36,31 @@ export default function PublicDashboardPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-lg text-gray-600">Loading public dashboard...</div>
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+                <div className="text-lg text-slate-600">Loading public dashboard...</div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-slate-50">
             {/* Header */}
-            <header className="bg-white shadow">
+            <header className="bg-white border-b border-slate-200 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col sm:flex-row justify-between h-16 gap-4">
                         <div className="flex items-center">
-                            <h1 className="text-xl font-bold text-gray-900">Civic Issue System - Public Dashboard</h1>
+                            <h1 className="text-xl font-bold text-slate-900">Civic Issue System - Public Dashboard</h1>
                         </div>
                         <div className="flex items-center space-x-4">
                             <Link
                                 href="/login"
-                                className="text-gray-700 hover:text-gray-900 px-3 py-3 rounded-md text-sm font-medium min-h-[44px] flex items-center justify-center"
+                                className="text-slate-700 hover:text-slate-900 px-3 py-3 rounded-xl text-sm font-medium min-h-[44px] flex items-center justify-center"
                             >
                                 Login
                             </Link>
                             <Link
                                 href="/register"
-                                className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-3 rounded-md text-sm font-medium min-h-[44px] flex items-center justify-center"
+                                className="bg-indigo-600 text-white hover:bg-indigo-700 px-4 py-3 rounded-xl text-sm font-medium min-h-[44px] flex items-center justify-center shadow-sm"
                             >
                                 Report Issue
                             </Link>
@@ -73,7 +75,7 @@ export default function PublicDashboardPage() {
                     <select
                         value={selectedWard}
                         onChange={(e) => setSelectedWard(e.target.value)}
-                        className="px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                        className="px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[44px] bg-white"
                     >
                         <option value="all">All Wards</option>
                         {dashboardData?.wardStats?.map(ward => (
@@ -83,7 +85,7 @@ export default function PublicDashboardPage() {
                     <select
                         value={selectedDepartment}
                         onChange={(e) => setSelectedDepartment(e.target.value)}
-                        className="px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                        className="px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[44px] bg-white"
                     >
                         <option value="all">All Departments</option>
                         <option value="water">Water</option>
@@ -97,67 +99,44 @@ export default function PublicDashboardPage() {
 
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 gap-6 mb-8">
-                    <div className="bg-white rounded-lg shadow p-6">
-                        <div className="flex items-center">
-                            <div className="p-2 bg-blue-100 rounded-lg">
-                                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                            </div>
-                            <div className="ml-4">
-                                <p className="text-sm font-medium text-gray-600">Total Issues</p>
-                                <p className="text-2xl font-semibold text-gray-900">{dashboardData?.summary?.totalIssues || 0}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow p-6">
-                        <div className="flex items-center">
-                            <div className="p-2 bg-green-100 rounded-lg">
-                                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                            <div className="ml-4">
-                                <p className="text-sm font-medium text-gray-600">Resolved Issues</p>
-                                <p className="text-2xl font-semibold text-green-600">{dashboardData?.summary?.resolvedIssues || 0}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow p-6">
-                        <div className="flex items-center">
-                            <div className="p-2 bg-yellow-100 rounded-lg">
-                                <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                            <div className="ml-4">
-                                <p className="text-sm font-medium text-gray-600">Pending Issues</p>
-                                <p className="text-2xl font-semibold text-yellow-600">{dashboardData?.summary?.pendingIssues || 0}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow p-6">
-                        <div className="flex items-center">
-                            <div className="p-2 bg-purple-100 rounded-lg">
-                                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                </svg>
-                            </div>
-                            <div className="ml-4">
-                                <p className="text-sm font-medium text-gray-600">SLA Compliance</p>
-                                <p className="text-2xl font-semibold text-purple-600">{dashboardData?.summary?.slaComplianceRate?.toFixed(1) || 0}%</p>
-                            </div>
-                        </div>
-                    </div>
+                    <StatCard
+                        label="Total Issues"
+                        value={dashboardData?.summary?.totalIssues || 0}
+                        accent="border-l-4 border-l-slate-400"
+                        iconBg="bg-slate-100"
+                        iconColor="text-slate-600"
+                        iconPath="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                    <StatCard
+                        label="Resolved Issues"
+                        value={dashboardData?.summary?.resolvedIssues || 0}
+                        accent="border-l-4 border-l-emerald-400"
+                        iconBg="bg-emerald-50"
+                        iconColor="text-emerald-600"
+                        iconPath="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                    <StatCard
+                        label="Pending Issues"
+                        value={dashboardData?.summary?.pendingIssues || 0}
+                        accent="border-l-4 border-l-amber-400"
+                        iconBg="bg-amber-50"
+                        iconColor="text-amber-600"
+                        iconPath="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                    <StatCard
+                        label="SLA Compliance"
+                        value={`${dashboardData?.summary?.slaComplianceRate?.toFixed(1) || 0}%`}
+                        accent="border-l-4 border-l-purple-400"
+                        iconBg="bg-purple-50"
+                        iconColor="text-purple-600"
+                        iconPath="M13 10V3L4 14h7v7l9-11h-7z"
+                    />
                 </div>
 
                 {/* Department Performance Leaderboard */}
-                <div className="bg-white rounded-lg shadow mb-8">
+                <Card className="mb-8">
                     <div className="p-6">
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">Department Performance Leaderboard</h3>
+                        <h3 className="text-lg font-semibold text-slate-900 mb-4">Department Performance Leaderboard</h3>
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
@@ -211,7 +190,7 @@ export default function PublicDashboardPage() {
                             </table>
                         </div>
                     </div>
-                </div>
+                </Card>
 
                 {/* Most Upvoted Issues */}
                 <div className="bg-white rounded-lg shadow mb-8">
@@ -303,6 +282,6 @@ export default function PublicDashboardPage() {
                     </p>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

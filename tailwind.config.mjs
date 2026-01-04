@@ -10,26 +10,27 @@ const config = {
             colors: {
                 background: "var(--background)",
                 foreground: "var(--foreground)",
-            },
-            animation: {
-                'star-movement-bottom': 'star-movement-bottom linear infinite alternate',
-                'star-movement-top': 'star-movement-top linear infinite alternate',
-                'spotlight-fade': 'spotlight-fade 0.5s ease-in-out'
-            },
-            keyframes: {
-                'star-movement-bottom': {
-                    '0%': { transform: 'translate(0%, 0%)', opacity: '1' },
-                    '100%': { transform: 'translate(-100%, 0%)', opacity: '0' }
+                // Premium Color System - Updated to match requirements
+                brand: {
+                    primary: "#006989", // Ocean - primary actions, headers
+                    soft: "#eaeebd",    // Dreamy - soft backgrounds
                 },
-                'star-movement-top': {
-                    '0%': { transform: 'translate(0%, 0%)', opacity: '1' },
-                    '100%': { transform: 'translate(100%, 0%)', opacity: '0' }
+                accent: {
+                    lavender: "#f492f0", // Subtle highlights
+                    magic: "#5E429C",    // Navigation active states
                 },
-                'spotlight-fade': {
-                    '0%': { opacity: '0' },
-                    '100%': { opacity: '1' }
+                status: {
+                    warning: "#FE7F2D",  // Sunset - warnings, medium priority
+                    error: "#D7263D",    // Crimson - errors, destructive actions
+                    pending: "#FE7F2D",  // Sunset - pending
+                    progress: "#006989", // Ocean - in progress
+                    resolved: "#10B981", // Emerald - resolved
+                },
+                contrast: {
+                    primary: "#02182B",  // Nights - text headers, dark sections
+                    secondary: "#1f2937", // slate-800
                 }
-            }
+            },
         }
     },
     plugins: []
