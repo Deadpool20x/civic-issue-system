@@ -22,12 +22,12 @@ const CATEGORY_ICONS = {
 function IssueContent({ issue, isExpanded, onToggleExpanded }) {
     return (
         <>
-            <p className="text-slate-600 text-sm leading-relaxed mb-4 px-0">
+            <p className="text-contrast-secondary text-sm leading-relaxed mb-4 px-0">
                 {isExpanded ? issue.description : `${issue.description.slice(0, 120)}...`}
                 {issue.description.length > 120 && (
                     <button
                         onClick={onToggleExpanded}
-                        className="text-indigo-600 hover:text-indigo-800 ml-2 font-medium text-sm min-h-[44px] py-2 px-2 inline-flex items-center"
+                        className="text-brand-primary hover:text-brand-primary ml-2 font-medium text-sm min-h-[44px] py-2 px-2 inline-flex items-center"
                     >
                         {isExpanded ? 'Show less' : 'Read more'}
                     </button>
@@ -47,25 +47,25 @@ function CommentsSection({ comments }) {
     if (!comments || comments.length === 0) return null;
 
     return (
-        <div className="border-t border-slate-100 bg-slate-50/50 p-5 -mx-6 -mb-6 mt-4 rounded-b-2xl">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
-                <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="border-t border-neutral-border bg-neutral-bg/50 p-5 -mx-6 -mb-6 mt-4 rounded-b-2xl">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-contrast-light mb-3 flex items-center gap-2">
+                <svg className="w-4 h-4 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
                 Comments ({comments.length})
             </h4>
             <div className="space-y-3">
                 {comments.slice(0, 2).map((comment, index) => (
-                    <div key={index} className="bg-white rounded-lg p-3 text-sm border border-slate-200 shadow-sm">
+                    <div key={index} className="bg-neutral-surface rounded-lg p-3 text-sm border border-neutral-border shadow-sm">
                         <div className="flex justify-between items-start mb-1">
-                            <span className="font-medium text-slate-900">{comment.user.name}</span>
-                            <span className="text-xs text-slate-400">{new Date(comment.createdAt).toLocaleDateString()}</span>
+                            <span className="font-medium text-contrast-primary">{comment.user.name}</span>
+                            <span className="text-xs text-contrast-light">{new Date(comment.createdAt).toLocaleDateString()}</span>
                         </div>
-                        <p className="text-slate-600">{comment.text}</p>
+                        <p className="text-contrast-secondary">{comment.text}</p>
                     </div>
                 ))}
                 {comments.length > 2 && (
-                    <p className="text-xs text-indigo-600 font-medium text-center py-2">+{comments.length - 2} more comments</p>
+                    <p className="text-xs text-brand-primary font-medium text-center py-2">+{comments.length - 2} more comments</p>
                 )}
             </div>
         </div>
@@ -118,11 +118,11 @@ export default function IssueCard({ issue, onStatusChange, userRole, showSensiti
 
     // Shared Footer Logic (Desktop/Tablet)
     const DesktopFooter = () => (
-        <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
-            <div className="text-xs text-slate-500 flex items-center gap-2">
-                <span className="font-medium text-slate-700">Reported by:</span>
+        <div className="px-6 py-4 bg-neutral-bg/50 border-t border-neutral-border flex items-center justify-between">
+            <div className="text-xs text-contrast-light flex items-center gap-2">
+                <span className="font-medium text-contrast-secondary">Reported by:</span>
                 {user && user.userId === issue.reportedBy._id ? issue.reportedBy.name : 'Anonymous'}
-                <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+                <span className="w-1 h-1 bg-neutral-border rounded-full"></span>
                 <span>{new Date(issue.createdAt).toLocaleDateString()}</span>
             </div>
 
@@ -131,9 +131,9 @@ export default function IssueCard({ issue, onStatusChange, userRole, showSensiti
                     <button
                         onClick={handleUpvote}
                         disabled={isUpvoting}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white text-slate-700 rounded-full border border-slate-200 hover:bg-brand-soft/20 hover:border-brand-primary/30 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-neutral-surface text-contrast-secondary rounded-full border border-neutral-border hover:bg-brand-soft/20 hover:border-brand-primary/30 transition-colors disabled:opacity-50"
                     >
-                        <svg className="w-3.5 h-3.5 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-3.5 h-3.5 text-contrast-light" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.834a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
                         </svg>
                         {issue.upvotes || 0}
@@ -153,7 +153,7 @@ export default function IssueCard({ issue, onStatusChange, userRole, showSensiti
                 {/* Status Change Dropdown (Desktop) */}
                 {(userRole === 'admin' || userRole === 'municipal' || userRole === 'department') && (
                     <select
-                        className="text-xs border-none bg-transparent font-medium text-slate-600 focus:ring-0 cursor-pointer hover:text-brand-primary"
+                        className="text-xs border-none bg-transparent font-medium text-contrast-secondary focus:ring-0 cursor-pointer hover:text-brand-primary"
                         value={issue.status}
                         onChange={(e) => handleStatusChange(e.target.value)}
                     >
@@ -183,23 +183,23 @@ export default function IssueCard({ issue, onStatusChange, userRole, showSensiti
                         sla={issue.sla}
                         escalationLevel={issue.sla?.escalationLevel}
                     />
-                    <span className="text-xs text-slate-400 font-medium">
+                    <span className="text-xs text-contrast-light font-medium">
                         {new Date(issue.createdAt).toLocaleDateString()}
                     </span>
                 </div>
 
                 {/* Title */}
                 <div>
-                    <h3 className="text-xl font-bold text-slate-900 leading-tight mb-1">
+                    <h3 className="text-xl font-bold text-contrast-primary leading-tight mb-1">
                         {issue.title}
                     </h3>
-                    <div className="flex items-center gap-2 text-sm text-slate-500">
-                        <span className="capitalize font-medium text-slate-700 flex items-center gap-1">
+                    <div className="flex items-center gap-2 text-sm text-contrast-light">
+                        <span className="capitalize font-medium text-contrast-secondary flex items-center gap-1">
                             {CATEGORY_ICONS[issue.category]} {issue.category}
                         </span>
                         {issue.ward && (
                             <>
-                                <span className="text-slate-300">•</span>
+                                <span className="text-neutral-border">•</span>
                                 <span>Ward: {issue.ward}</span>
                             </>
                         )}
@@ -227,9 +227,9 @@ export default function IssueCard({ issue, onStatusChange, userRole, showSensiti
                             <button
                                 onClick={handleUpvote}
                                 disabled={isUpvoting}
-                                className="w-full min-h-[48px] flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-brand-soft/20 hover:border-brand-primary/30 disabled:opacity-50 text-sm"
+                                className="w-full min-h-[48px] flex items-center justify-center gap-2 bg-neutral-surface border border-neutral-border text-contrast-secondary font-medium rounded-lg hover:bg-brand-soft/20 hover:border-brand-primary/30 disabled:opacity-50 text-sm"
                             >
-                                <svg className="w-4 h-4 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+                                <svg className="w-4 h-4 text-contrast-light" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.834a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
                                 </svg>
                                 Upvote ({issue.upvotes || 0})
@@ -238,7 +238,7 @@ export default function IssueCard({ issue, onStatusChange, userRole, showSensiti
                         {(userRole === 'admin' || userRole === 'municipal' || userRole === 'department') && (
                             <div className="relative">
                                 <select
-                                    className="w-full min-h-[48px] appearance-none bg-white border border-slate-200 text-slate-700 font-medium rounded-lg px-4 focus:outline-none focus:ring-2 focus:ring-brand-primary text-sm"
+                                    className="w-full min-h-[48px] appearance-none bg-neutral-surface border border-neutral-border text-contrast-secondary font-medium rounded-lg px-4 focus:outline-none focus:ring-2 focus:ring-brand-primary text-sm"
                                     value={issue.status}
                                     onChange={(e) => handleStatusChange(e.target.value)}
                                 >
@@ -258,18 +258,18 @@ export default function IssueCard({ issue, onStatusChange, userRole, showSensiti
                 <div className="p-6">
                     <div className="flex justify-between items-start mb-4">
                         <div className="flex items-start gap-4">
-                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-xl">
+                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-neutral-bg flex items-center justify-center text-xl">
                                 {CATEGORY_ICONS[issue.category] || '📝'}
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-slate-900 leading-tight mb-1 group-hover:text-indigo-600 transition-colors">
+                                <h3 className="text-lg font-bold text-contrast-primary leading-tight mb-1 group-hover:text-brand-primary transition-colors">
                                     {issue.title}
                                 </h3>
-                                <div className="flex items-center gap-3 text-sm text-slate-500">
+                                <div className="flex items-center gap-3 text-sm text-contrast-light">
                                     <span className="capitalize">{issue.category}</span>
                                     {issue.ward && (
                                         <>
-                                            <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+                                            <span className="w-1 h-1 bg-neutral-border rounded-full"></span>
                                             <span>Ward: {issue.ward}</span>
                                         </>
                                     )}

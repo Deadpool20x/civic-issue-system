@@ -17,7 +17,7 @@ const StatCard = ({
 }) => {
     return (
         <div
-            className={`bg-white rounded-2xl border border-slate-200 shadow-sm p-6 relative hover:shadow-md transition-shadow duration-200 ${accent} ${className}`}
+            className={`bg-neutral-surface rounded-2xl border border-neutral-border shadow-sm p-6 relative hover:shadow-md transition-shadow duration-200 ${accent} ${className}`}
         >
             <div className="flex items-center">
                 <div className={`rounded-xl p-3 ${iconBg}`}>

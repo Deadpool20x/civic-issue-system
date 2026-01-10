@@ -13,55 +13,168 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Premium Color System Semantic Classes */
+/* Unified Design System - Premium Color Palette */
+/* Primary: Ocean #006989, Accent: Lavender #B492F0, Success: Soft Green #10B981, Warning: Sunset #FE7F2D, Danger: Crimson #D7263D */
+
+/* Brand Colors */
 .bg-brand-primary { background-color: #006989; }
 .bg-brand-soft { background-color: #eaeebd; }
+.bg-accent-lavender { background-color: #B492F0; }
 .bg-accent-magic { background-color: #5E429C; }
-.bg-accent-lavender { background-color: #f492f0; }
+
+/* Status Colors */
+.bg-status-success { background-color: #10B981; }
 .bg-status-warning { background-color: #FE7F2D; }
 .bg-status-error { background-color: #D7263D; }
 .bg-status-pending { background-color: #FE7F2D; }
 .bg-status-progress { background-color: #006989; }
 
+/* Neutral/Background Colors */
+.bg-neutral-bg { background-color: #f8fafc; }
+.bg-neutral-surface { background-color: #ffffff; }
+
+/* Text Colors */
 .text-brand-primary { color: #006989; }
-.text-contrast-primary { color: #02182B; }
-.text-contrast-secondary { color: #1f2937; }
+.text-accent-lavender { color: #B492F0; }
 .text-accent-magic { color: #5E429C; }
-.text-accent-lavender { color: #f492f0; }
+.text-status-success { color: #10B981; }
 .text-status-warning { color: #FE7F2D; }
 .text-status-error { color: #D7263D; }
+.text-contrast-primary { color: #02182B; }
+.text-contrast-secondary { color: #1f2937; }
+.text-contrast-light { color: #64748b; }
 
+/* Border Colors */
 .border-brand-primary { border-color: #006989; }
+.border-accent-lavender { border-color: #B492F0; }
 .border-accent-magic { border-color: #5E429C; }
+.border-status-success { border-color: #10B981; }
 .border-status-warning { border-color: #FE7F2D; }
 .border-status-error { border-color: #D7263D; }
+.border-neutral-border { border-color: #e5e7eb; }
 
+/* Hover States */
 .hover\:bg-brand-primary:hover { background-color: #006989; }
+.hover\:bg-accent-lavender:hover { background-color: #B492F0; }
 .hover\:bg-accent-magic:hover { background-color: #5E429C; }
-.hover\:text-brand-primary:hover { color: #006989; }
-.hover\:text-accent-magic:hover { color: #5E429C; }
+.hover\:bg-status-success:hover { background-color: #10B981; }
+.hover\:bg-status-warning:hover { background-color: #FE7F2D; }
+.hover\:bg-status-error:hover { background-color: #D7263D; }
 
+.hover\:text-brand-primary:hover { color: #006989; }
+.hover\:text-accent-lavender:hover { color: #B492F0; }
+.hover\:text-accent-magic:hover { color: #5E429C; }
+.hover\:text-status-success:hover { color: #10B981; }
+.hover\:text-status-warning:hover { color: #FE7F2D; }
+.hover\:text-status-error:hover { color: #D7263D; }
+
+/* Focus States */
 .focus\:ring-brand-primary:focus { --tw-ring-color: #006989; }
 .focus\:border-brand-primary:focus { border-color: #006989; }
+.focus\:ring-accent-lavender:focus { --tw-ring-color: #B492F0; }
+.focus\:border-accent-lavender:focus { border-color: #B492F0; }
 .focus\:ring-accent-magic:focus { --tw-ring-color: #5E429C; }
 .focus\:border-accent-magic:focus { border-color: #5E429C; }
 
-/* Enhanced input visibility */
+/* Status-specific hover states */
+.hover\:bg-status-success:hover { background-color: #10B981; }
+.hover\:bg-status-warning:hover { background-color: #FE7F2D; }
+.hover\:bg-status-error:hover { background-color: #D7263D; }
+
+/* Enhanced input visibility and usability */
 input[type="text"],
 input[type="email"],
 input[type="password"],
 input[type="tel"],
+input[type="number"],
+input[type="url"],
+input[type="search"],
+input[type="date"],
+input[type="datetime-local"],
+input[type="month"],
+input[type="time"],
+input[type="week"],
+input[type="file"],
 select,
 textarea {
     color: #0f172a !important; /* Ensure text is always visible */
     background-color: #ffffff !important; /* Ensure white background */
+    -webkit-text-fill-color: #0f172a !important; /* For mobile Safari */
+    -webkit-opacity: 1 !important; /* For mobile Safari */
+    opacity: 1 !important;
+    caret-color: #0f172a !important; /* Visible cursor */
 }
 
-input::placeholder {
+input::placeholder,
+textarea::placeholder {
     color: #64748b !important; /* slate-500 */
+    -webkit-text-fill-color: #64748b !important;
+    opacity: 1 !important;
 }
 
-input:focus {
+input:focus,
+textarea:focus,
+select:focus {
     color: #0f172a !important;
     background-color: #ffffff !important;
+    -webkit-text-fill-color: #0f172a !important;
+    outline: 2px solid #006989 !important;
+    outline-offset: 2px !important;
+}
+
+/* Ensure password fields show text when focused/typing */
+input[type="password"] {
+    -webkit-text-security: disc !important;
+    text-security: disc !important;
+}
+
+input[type="password"]:focus,
+input[type="password"]:active,
+input[type="password"].text-visible {
+    -webkit-text-security: none !important;
+    text-security: none !important;
+}
+
+/* Fix for mobile devices - prevent zoom on input focus */
+input, select, textarea {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+    line-height: 1.5 !important;
+    padding: 0.75rem !important; /* Consistent padding */
+}
+
+/* Ensure contrast for all form elements */
+label {
+    color: #1f2937 !important; /* slate-800 for labels */
+    font-weight: 500 !important;
+    display: block !important;
+    margin-bottom: 0.5rem !important;
+}
+
+/* Fix for dark mode overrides */
+@media (prefers-color-scheme: dark) {
+    input, select, textarea {
+        color: #0f172a !important;
+        background-color: #ffffff !important;
+        -webkit-text-fill-color: #0f172a !important;
+    }
+}
+
+/* Mobile Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+    input, textarea, select {
+        -webkit-text-fill-color: #0f172a !important;
+        background-color: #ffffff !important;
+    }
+}
+
+/* Ensure form elements are always visible on all backgrounds */
+.form-input {
+    color: #0f172a !important;
+    background-color: #ffffff !important;
+    border-color: #e5e7eb !important;
+}
+
+.form-input:focus {
+    border-color: #006989 !important;
+    box-shadow: 0 0 0 3px rgba(0, 105, 137, 0.1) !important;
 }

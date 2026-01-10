@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import Card from '@/components/ui/Card';
 import toast from 'react-hot-toast';
 
 export default function AdminUsersPage() {
@@ -12,8 +14,7 @@ export default function AdminUsersPage() {
 
     const fetchUsers = useCallback(async () => {
         try {
-            // This would be a new API endpoint for admin to get all users
-            const response = await fetch('/api/users');
+            const response = await fetch('/api/users/admin');
             if (!response.ok) {
                 throw new Error('Failed to fetch users');
             }
@@ -75,14 +76,38 @@ export default function AdminUsersPage() {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to update user status');
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to update user status');
             }
 
             toast.success('User status updated successfully');
             fetchUsers();
         } catch (error) {
-            toast.error('Failed to update user status');
+            toast.error(error.message || 'Failed to update user status');
             console.error('Error updating user status:', error);
+        }
+    };
+
+    const handleUpdateUser = async (userId, updates) => {
+        try {
+            const response = await fetch(`/api/users/${userId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updates),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to update user');
+            }
+
+            toast.success('User updated successfully');
+            fetchUsers();
+        } catch (error) {
+            toast.error(error.message || 'Failed to update user');
+            console.error('Error updating user:', error);
         }
     };
 
@@ -101,33 +126,38 @@ export default function AdminUsersPage() {
             <ErrorBoundary>
                 <div className="space-y-6">
                     <div className="flex justify-between items-center">
-                        <h1 className="text-2xl font-semibold text-gray-900">User Management</h1>
+                        <h1 className="text-2xl font-semibold text-contrast-primary">User Management</h1>
+                        <div className="flex gap-3">
+                            <Link href="/admin/users/create" className="px-4 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-primary font-medium transition-colors">
+                                Create Staff User
+                            </Link>
+                        </div>
                     </div>
 
                     {/* User Statistics */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="bg-white rounded-lg shadow p-4">
-                            <h3 className="text-lg font-medium text-gray-900">Total Users</h3>
-                            <p className="mt-2 text-3xl font-semibold">{users.length}</p>
-                        </div>
-                        <div className="bg-blue-50 rounded-lg shadow p-4">
-                            <h3 className="text-lg font-medium text-blue-800">Citizens</h3>
-                            <p className="mt-2 text-3xl font-semibold">{userStats.citizen || 0}</p>
-                        </div>
-                        <div className="bg-green-50 rounded-lg shadow p-4">
-                            <h3 className="text-lg font-medium text-green-800">Municipal Staff</h3>
-                            <p className="mt-2 text-3xl font-semibold">{userStats.municipal || 0}</p>
-                        </div>
-                        <div className="bg-purple-50 rounded-lg shadow p-4">
-                            <h3 className="text-lg font-medium text-purple-800">Department Staff</h3>
-                            <p className="mt-2 text-3xl font-semibold">{userStats.department || 0}</p>
-                        </div>
+                        <Card className="bg-neutral-surface">
+                            <h3 className="text-lg font-medium text-contrast-primary">Total Users</h3>
+                            <p className="mt-2 text-3xl font-semibold text-brand-primary">{users.length}</p>
+                        </Card>
+                        <Card className="bg-brand-soft/10">
+                            <h3 className="text-lg font-medium text-contrast-primary">Citizens</h3>
+                            <p className="mt-2 text-3xl font-semibold text-contrast-light">{userStats.citizen || 0}</p>
+                        </Card>
+                        <Card className="bg-status-success/10">
+                            <h3 className="text-lg font-medium text-contrast-primary">Municipal Staff</h3>
+                            <p className="mt-2 text-3xl font-semibold text-status-success">{userStats.municipal || 0}</p>
+                        </Card>
+                        <Card className="bg-status-warning/10">
+                            <h3 className="text-lg font-medium text-contrast-primary">Department Staff</h3>
+                            <p className="mt-2 text-3xl font-semibold text-status-warning">{userStats.department || 0}</p>
+                        </Card>
                     </div>
 
                     {/* Filters */}
-                    <div className="flex gap-4 bg-white p-4 rounded-lg shadow">
+                    <Card className="flex gap-4 p-4">
                         <select
-                            className="border rounded-md px-3 py-2"
+                            className="border border-neutral-border rounded-lg px-3 py-2 bg-neutral-surface text-contrast-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
                             value={filter}
                             onChange={(e) => setFilter(e.target.value)}
                         >
@@ -137,81 +167,114 @@ export default function AdminUsersPage() {
                             <option value="department">Department Staff</option>
                             <option value="admin">Administrators</option>
                         </select>
-                    </div>
+                    </Card>
 
                     {/* Users Table */}
-                    <div className="bg-white rounded-lg shadow">
+                    <Card className="p-0 overflow-hidden">
                         <div className="p-6">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4">
+                            <h3 className="text-lg font-medium text-contrast-primary mb-4">
                                 Users ({filteredUsers.length})
                             </h3>
-                            
+
                             <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
+                                <table className="min-w-full divide-y divide-neutral-border">
+                                    <thead className="bg-neutral-bg">
                                         <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-contrast-secondary uppercase tracking-wider">
                                                 User
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-contrast-secondary uppercase tracking-wider">
                                                 Role
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-contrast-secondary uppercase tracking-wider">
+                                                Department
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-contrast-secondary uppercase tracking-wider">
                                                 Status
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-contrast-secondary uppercase tracking-wider">
                                                 Created
                                             </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-contrast-secondary uppercase tracking-wider">
                                                 Actions
                                             </th>
                                         </tr>
                                     </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
+                                    <tbody className="bg-neutral-surface divide-y divide-neutral-border">
                                         {filteredUsers.map((user) => (
-                                            <tr key={user._id}>
+                                            <tr key={user._id} className="hover:bg-neutral-bg/50">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div>
-                                                        <div className="text-sm font-medium text-gray-900">
+                                                        <div className="text-sm font-medium text-contrast-primary">
                                                             {user.name}
                                                         </div>
-                                                        <div className="text-sm text-gray-500">
+                                                        <div className="text-sm text-contrast-light">
                                                             {user.email}
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full capitalize
-                                                        ${user.role === 'admin' ? 'bg-red-100 text-red-800' :
-                                                          user.role === 'municipal' ? 'bg-green-100 text-green-800' :
-                                                          user.role === 'department' ? 'bg-purple-100 text-purple-800' :
-                                                          'bg-blue-100 text-blue-800'}`}>
-                                                        {user.role}
-                                                    </span>
+                                                    <select
+                                                        className="text-xs border border-neutral-border rounded px-2 py-1 bg-neutral-surface text-contrast-secondary focus:outline-none focus:ring-1 focus:ring-brand-primary"
+                                                        value={user.role}
+                                                        onChange={(e) => {
+                                                            if (user.role === 'admin') {
+                                                                toast.error('Cannot modify admin role');
+                                                                return;
+                                                            }
+                                                            handleUpdateUser(user._id, { role: e.target.value });
+                                                        }}
+                                                        disabled={user.role === 'admin'}
+                                                    >
+                                                        <option value="citizen">Citizen</option>
+                                                        <option value="municipal">Municipal</option>
+                                                        <option value="department">Department</option>
+                                                        {user.role === 'admin' && <option value="admin">Admin</option>}
+                                                    </select>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                                        user.isActive
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : 'bg-red-100 text-red-800'
-                                                    }`}>
+                                                    {user.role === 'department' ? (
+                                                        <select
+                                                            className="text-xs border border-neutral-border rounded px-2 py-1 bg-neutral-surface text-contrast-secondary focus:outline-none focus:ring-1 focus:ring-brand-primary"
+                                                            value={user.department || ''}
+                                                            onChange={(e) => handleUpdateUser(user._id, { department: e.target.value })}
+                                                        >
+                                                            <option value="">Select</option>
+                                                            <option value="water">Water</option>
+                                                            <option value="electricity">Electricity</option>
+                                                            <option value="roads">Roads</option>
+                                                            <option value="garbage">Garbage</option>
+                                                            <option value="parks">Parks</option>
+                                                            <option value="other">Other</option>
+                                                        </select>
+                                                    ) : (
+                                                        <span className="text-sm text-contrast-light">—</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.isActive
+                                                        ? 'bg-status-success/10 text-status-success border border-status-success/30'
+                                                        : 'bg-status-error/10 text-status-error border border-status-error/30'
+                                                        }`}>
                                                         {user.isActive ? 'Active' : 'Inactive'}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-contrast-light">
                                                     {new Date(user.createdAt).toLocaleDateString()}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                    <button
-                                                        onClick={() => handleToggleStatus(user._id, user.isActive)}
-                                                        className={`px-3 py-1 rounded text-xs font-medium ${
-                                                            user.isActive
-                                                                ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                                                : 'bg-green-100 text-green-700 hover:bg-green-200'
-                                                        }`}
-                                                    >
-                                                        {user.isActive ? 'Deactivate' : 'Activate'}
-                                                    </button>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => handleToggleStatus(user._id, user.isActive)}
+                                                            disabled={user.role === 'admin'}
+                                                            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${user.isActive
+                                                                ? 'bg-status-error/10 text-status-error hover:bg-status-error/20 border border-status-error/30'
+                                                                : 'bg-status-success/10 text-status-success hover:bg-status-success/20 border border-status-success/30'
+                                                                } ${user.role === 'admin' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                        >
+                                                            {user.isActive ? 'Deactivate' : 'Activate'}
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -219,9 +282,11 @@ export default function AdminUsersPage() {
                                 </table>
                             </div>
                         </div>
-                    </div>
+                    </Card>
                 </div>
             </ErrorBoundary>
         </DashboardLayout>
     );
 }
+
+

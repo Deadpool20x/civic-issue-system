@@ -1,9 +1,10 @@
 import { connectDB } from '@/lib/mongodb';
 import { roleMiddleware } from '@/lib/auth';
+import { strictRoleMiddleware } from '@/lib/middleware';
 import Issue from '@/models/Issue';
 
-// Admin/Municipal only - Full details with no filtering
-export const GET = roleMiddleware(['admin', 'municipal'])(async (req) => {
+// SECURE: Admin/Municipal only - Full details with no filtering
+export const GET = strictRoleMiddleware(['admin', 'municipal'])(async (req) => {
     try {
         await connectDB();
 
@@ -68,8 +69,8 @@ export const PATCH = roleMiddleware(['admin', 'municipal'])(async (req) => {
             { ...updates, updatedAt: new Date() },
             { new: true }
         ).populate('reportedBy', 'name email')
-         .populate('assignedTo', 'name email department')
-         .populate('assignedStaff', 'name email department');
+            .populate('assignedTo', 'name email department')
+            .populate('assignedStaff', 'name email department');
 
         if (!issue) {
             return new Response(

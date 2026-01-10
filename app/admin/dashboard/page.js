@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
+import DashboardProtection from '@/components/DashboardProtection';
 import IssueCard from '@/components/IssueCard';
 import Card from '@/components/ui/Card';
 import StatCard from '@/components/ui/StatCard';
 import toast from 'react-hot-toast';
 
-export default function AdminDashboard() {
+function AdminDashboardContent() {
     const [stats, setStats] = useState({
         totalIssues: 0,
         totalUsers: 0,
@@ -66,7 +67,7 @@ export default function AdminDashboard() {
         return (
             <DashboardLayout>
                 <div className="flex items-center justify-center h-64">
-                    <div className="text-lg text-slate-600">Loading...</div>
+                    <div className="text-lg text-contrast-secondary">Loading...</div>
                 </div>
             </DashboardLayout>
         );
@@ -80,33 +81,33 @@ export default function AdminDashboard() {
                     <StatCard
                         label="Total Issues"
                         value={stats.totalIssues}
-                        accent="border-l-4 border-l-slate-400"
-                        iconBg="bg-slate-100"
-                        iconColor="text-slate-600"
+                        accent="border-l-4 border-l-contrast-light"
+                        iconBg="bg-neutral-bg"
+                        iconColor="text-contrast-light"
                         iconPath="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
                     />
                     <StatCard
                         label="Total Users"
                         value={stats.totalUsers}
-                        accent="border-l-4 border-l-slate-400"
-                        iconBg="bg-slate-100"
-                        iconColor="text-slate-600"
+                        accent="border-l-4 border-l-contrast-light"
+                        iconBg="bg-neutral-bg"
+                        iconColor="text-contrast-light"
                         iconPath="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
                     />
                     <StatCard
                         label="Resolution Rate"
                         value={`${calculateResolutionRate()}%`}
-                        accent="border-l-4 border-l-slate-400"
-                        iconBg="bg-slate-100"
-                        iconColor="text-slate-600"
+                        accent="border-l-4 border-l-contrast-light"
+                        iconBg="bg-neutral-bg"
+                        iconColor="text-contrast-light"
                         iconPath="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                 </div>
 
                 {/* Department Performance */}
                 <Card className="p-0 overflow-hidden">
-                    <div className="p-6 border-b border-slate-200">
-                        <h3 className="text-lg font-bold text-slate-900">
+                    <div className="p-6 border-b border-neutral-border">
+                        <h3 className="text-lg font-bold text-contrast-primary">
                             Department Performance
                         </h3>
                     </div>
@@ -114,16 +115,16 @@ export default function AdminDashboard() {
                         {Object.entries(stats.departmentStats).map(([dept, data]) => (
                             <div key={dept} className="space-y-2">
                                 <div className="flex justify-between items-center text-sm">
-                                    <h4 className="font-semibold text-slate-900 capitalize">
+                                    <h4 className="font-semibold text-contrast-primary capitalize">
                                         {dept}
                                     </h4>
-                                    <span className="text-slate-500">
+                                    <span className="text-contrast-light">
                                         {data.resolved} / {data.total} resolved
                                     </span>
                                 </div>
-                                <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                                <div className="w-full bg-neutral-bg rounded-full h-2.5 overflow-hidden">
                                     <div
-                                        className="bg-indigo-600 h-2.5 rounded-full"
+                                        className="bg-brand-primary h-2.5 rounded-full"
                                         style={{
                                             width: `${Math.round(
                                                 (data.resolved / data.total) * 100
@@ -138,7 +139,7 @@ export default function AdminDashboard() {
 
                 {/* Recent Issues */}
                 <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-slate-900">
+                    <h3 className="text-lg font-bold text-contrast-primary">
                         Recent Issues
                     </h3>
                     <div className="space-y-4">
@@ -153,5 +154,13 @@ export default function AdminDashboard() {
                 </div>
             </div>
         </DashboardLayout>
+    );
+}
+
+export default function AdminDashboard() {
+    return (
+        <DashboardProtection requiredRole="admin">
+            <AdminDashboardContent />
+        </DashboardProtection>
     );
 }

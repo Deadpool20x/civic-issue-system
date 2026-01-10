@@ -46,7 +46,7 @@ export default function PrivacyNotice({ userRole, showDetails = false }) {
                     container: 'bg-status-error/10 border-status-error/30',
                     icon: 'text-status-error',
                     title: 'text-status-error',
-                    text: 'text-slate-700',
+                    text: 'text-contrast-secondary',
                     button: 'text-status-error hover:text-status-error'
                 };
             case 'warning':
@@ -54,7 +54,7 @@ export default function PrivacyNotice({ userRole, showDetails = false }) {
                     container: 'bg-status-warning/10 border-status-warning/30',
                     icon: 'text-status-warning',
                     title: 'text-status-warning',
-                    text: 'text-slate-700',
+                    text: 'text-contrast-secondary',
                     button: 'text-status-warning hover:text-status-warning'
                 };
             case 'primary':
@@ -62,24 +62,24 @@ export default function PrivacyNotice({ userRole, showDetails = false }) {
                     container: 'bg-brand-soft/30 border-brand-primary/30',
                     icon: 'text-brand-primary',
                     title: 'text-brand-primary',
-                    text: 'text-slate-700',
+                    text: 'text-contrast-secondary',
                     button: 'text-brand-primary hover:text-brand-primary'
                 };
             case 'success':
                 return {
-                    container: 'bg-emerald-50 border-emerald-200',
-                    icon: 'text-emerald-500',
-                    title: 'text-emerald-800',
-                    text: 'text-slate-700',
-                    button: 'text-emerald-600 hover:text-emerald-800'
+                    container: 'bg-status-success/10 border-status-success/30',
+                    icon: 'text-status-success',
+                    title: 'text-status-success',
+                    text: 'text-contrast-secondary',
+                    button: 'text-status-success hover:text-status-success'
                 };
             default:
                 return {
-                    container: 'bg-slate-50 border-slate-200',
-                    icon: 'text-slate-500',
-                    title: 'text-slate-800',
-                    text: 'text-slate-700',
-                    button: 'text-slate-600 hover:text-slate-800'
+                    container: 'bg-neutral-bg border-neutral-border',
+                    icon: 'text-contrast-light',
+                    title: 'text-contrast-secondary',
+                    text: 'text-contrast-secondary',
+                    button: 'text-contrast-light hover:text-contrast-secondary'
                 };
         }
     };

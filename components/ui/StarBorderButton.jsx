@@ -5,7 +5,7 @@ import React from "react";
 const StarBorderButton = ({
     as: Component = "button",
     className = "",
-    color = "#3B82F6", // Default to civic accent blue
+    color = "#006989", // Default to Ocean brand primary
     speed = "6s",
     thickness = 1,
     children,
@@ -33,7 +33,7 @@ const StarBorderButton = ({
                 animationDuration: speed
             }}
         />
-        <div className="relative z-10 rounded-[20px] border border-civic-border bg-civic-card px-[26px] py-[16px] text-center text-[16px] text-civic-text-primary">
+        <div className="relative z-10 rounded-[20px] border border-neutral-border bg-neutral-surface px-[26px] py-[16px] text-center text-[16px] text-contrast-primary">
             {children}
         </div>
     </Component>

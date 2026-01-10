@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
+import DashboardProtection from '@/components/DashboardProtection';
 import IssueCard from '@/components/IssueCard';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import PrivacyNotice from '@/components/PrivacyNotice';
@@ -12,7 +13,7 @@ import StatCard from '@/components/ui/StatCard';
 import { useUser } from '@/lib/contexts/UserContext';
 import toast from 'react-hot-toast';
 
-export default function MunicipalDashboard() {
+function MunicipalDashboardContent() {
     const [issues, setIssues] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
@@ -93,7 +94,7 @@ export default function MunicipalDashboard() {
         return (
             <DashboardLayout>
                 <div className="flex items-center justify-center h-64">
-                    <div className="text-lg text-slate-600">Loading...</div>
+                    <div className="text-lg text-contrast-secondary">Loading...</div>
                 </div>
             </DashboardLayout>
         );
@@ -108,33 +109,33 @@ export default function MunicipalDashboard() {
                         <StatCard
                             label="Total Issues"
                             value={issues.length}
-                            accent="border-l-4 border-l-slate-400"
-                            iconBg="bg-slate-100"
-                            iconColor="text-slate-600"
+                            accent="border-l-4 border-l-contrast-light"
+                            iconBg="bg-neutral-bg"
+                            iconColor="text-contrast-light"
                             iconPath="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
                         />
                         <StatCard
                             label="Pending"
                             value={statusSummary.pending || 0}
-                            accent="border-l-4 border-l-amber-400"
-                            iconBg="bg-amber-50"
-                            iconColor="text-amber-600"
+                            accent="border-l-4 border-l-status-warning"
+                            iconBg="bg-status-warning/10"
+                            iconColor="text-status-warning"
                             iconPath="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 0 9 0 0118 0z"
                         />
                         <StatCard
                             label="In Progress"
                             value={statusSummary['in-progress'] || 0}
-                            accent="border-l-4 border-l-blue-400"
-                            iconBg="bg-blue-50"
-                            iconColor="text-blue-600"
+                            accent="border-l-4 border-l-brand-primary"
+                            iconBg="bg-brand-soft"
+                            iconColor="text-brand-primary"
                             iconPath="M13 10V3L4 14h7v7l9-11h-7z"
                         />
                         <StatCard
                             label="Resolved"
                             value={statusSummary.resolved || 0}
-                            accent="border-l-4 border-l-emerald-400"
-                            iconBg="bg-emerald-50"
-                            iconColor="text-emerald-600"
+                            accent="border-l-4 border-l-status-success"
+                            iconBg="bg-status-success/10"
+                            iconColor="text-status-success"
                             iconPath="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                         />
                     </div>
@@ -152,20 +153,20 @@ export default function MunicipalDashboard() {
                         </Link>
                         <Link
                             href="/municipal/sla-dashboard"
-                            className="bg-red-600 text-white hover:bg-red-700 px-4 py-3 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+                            className="bg-status-error text-white hover:bg-status-error px-4 py-3 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center justify-center"
                         >
                             📊 SLA Dashboard
                         </Link>
                         <Link
                             href="/municipal/departments"
-                            className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-3 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+                            className="bg-brand-primary text-white hover:bg-brand-primary px-4 py-3 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center justify-center"
                         >
                             🏢 Manage Departments
                         </Link>
                         <Link
                             href="/public-dashboard"
                             target="_blank"
-                            className="bg-emerald-600 text-white hover:bg-emerald-700 px-4 py-3 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+                            className="bg-status-success text-white hover:bg-status-success px-4 py-3 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center justify-center"
                         >
                             🌐 Public Dashboard
                         </Link>
@@ -174,7 +175,7 @@ export default function MunicipalDashboard() {
                     {/* Filters */}
                     <Card className="flex flex-col sm:flex-row flex-wrap gap-4">
                         <select
-                            className="border border-slate-300 rounded-xl px-4 py-2.5 text-slate-700 bg-white hover:border-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[44px]"
+                            className="border border-neutral-border rounded-xl px-4 py-2.5 text-contrast-secondary bg-neutral-surface hover:border-neutral-border focus:ring-2 focus:ring-brand-primary focus:border-brand-primary min-h-[44px]"
                             value={filters.status}
                             onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
                         >
@@ -186,7 +187,7 @@ export default function MunicipalDashboard() {
                         </select>
 
                         <select
-                            className="border border-slate-300 rounded-xl px-4 py-2.5 text-slate-700 bg-white hover:border-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[44px]"
+                            className="border border-neutral-border rounded-xl px-4 py-2.5 text-contrast-secondary bg-neutral-surface hover:border-neutral-border focus:ring-2 focus:ring-brand-primary focus:border-brand-primary min-h-[44px]"
                             value={filters.department}
                             onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
                         >
@@ -226,8 +227,8 @@ export default function MunicipalDashboard() {
 
                     {issues.length === 0 && (
                         <div className="text-center py-12">
-                            <h3 className="text-lg font-medium text-slate-900">No issues found</h3>
-                            <p className="mt-2 text-slate-500">
+                            <h3 className="text-lg font-medium text-contrast-primary">No issues found</h3>
+                            <p className="mt-2 text-contrast-light">
                                 No issues match your current filters.
                             </p>
                         </div>
@@ -235,5 +236,13 @@ export default function MunicipalDashboard() {
                 </div>
             </ErrorBoundary>
         </DashboardLayout>
+    );
+}
+
+export default function MunicipalDashboard() {
+    return (
+        <DashboardProtection requiredRole="municipal">
+            <MunicipalDashboardContent />
+        </DashboardProtection>
     );
 }

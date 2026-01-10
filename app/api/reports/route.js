@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
+import { strictRoleMiddleware } from '@/lib/middleware';
 import Issue from '@/models/Issue';
 import User from '@/models/User';
 import Department from '@/lib/models/Department';
 
-export async function GET(request) {
+// SECURE: Admin-only access to reports
+export const GET = strictRoleMiddleware(['admin'])(async (request) => {
     try {
         await connectDB();
 
@@ -77,16 +79,22 @@ export async function GET(request) {
                 break;
 
             default:
-                return NextResponse.json({ error: 'Invalid report type' }, { status: 400 });
+                return new Response(
+                    JSON.stringify({ error: 'Invalid report type' }),
+                    { status: 400, headers: { 'Content-Type': 'application/json' } }
+                );
         }
 
-        return NextResponse.json(reportData);
+        return new Response(JSON.stringify(reportData), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+        });
 
     } catch (error) {
         console.error('Error generating report:', error);
-        return NextResponse.json(
-            { error: 'Failed to generate report' },
-            { status: 500 }
+        return new Response(
+            JSON.stringify({ error: 'Failed to generate report' }),
+            { status: 500, headers: { 'Content-Type': 'application/json' } }
         );
     }
-}
+});

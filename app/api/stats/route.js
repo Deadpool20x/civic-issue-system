@@ -2,8 +2,10 @@ import { connectDB } from '@/lib/mongodb';
 import Issue from '@/models/Issue';
 import User from '@/models/User';
 import { roleMiddleware } from '@/lib/auth';
+import { strictRoleMiddleware } from '@/lib/middleware';
 
-export const GET = roleMiddleware(['admin'])(async (req) => {
+// SECURE: Admin-only dashboard stats
+export const GET = strictRoleMiddleware(['admin'])(async (req) => {
     try {
         await connectDB();
 

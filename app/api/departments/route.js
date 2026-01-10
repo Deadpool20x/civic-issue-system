@@ -1,9 +1,11 @@
 import { connectDB } from '@/lib/mongodb';
 import { authMiddleware, roleMiddleware } from '@/lib/auth';
+import { strictRoleMiddleware } from '@/lib/middleware';
 import User from '@/models/User';
 import Department from '@/lib/models/Department';
 
 // Get all departments or department staff
+// SECURE: Authenticated users can view departments
 export const GET = authMiddleware(async (req) => {
     try {
         await connectDB();
@@ -56,7 +58,8 @@ export const GET = authMiddleware(async (req) => {
 });
 
 // Create new department (admin only)
-export const POST = roleMiddleware(['admin'])(async (req) => {
+// SECURE: Strict admin-only access
+export const POST = strictRoleMiddleware(['admin'])(async (req) => {
     try {
         const departmentData = await req.json();
 

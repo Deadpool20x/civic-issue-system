@@ -1,5 +1,6 @@
 import { connectDB } from '@/lib/mongodb';
 import { authMiddleware, roleMiddleware } from '@/lib/auth';
+import { strictRoleMiddleware } from '@/lib/middleware';
 import Issue from '@/models/Issue';
 
 // Get specific issue
@@ -118,7 +119,8 @@ export const PATCH = authMiddleware(async (req, { params }) => {
 });
 
 // Delete issue
-export const DELETE = roleMiddleware(['admin'])(async (req, { params }) => {
+// SECURE: Admin-only operation
+export const DELETE = strictRoleMiddleware(['admin'])(async (req, { params }) => {
     try {
         await connectDB();
 

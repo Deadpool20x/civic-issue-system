@@ -1,20 +1,31 @@
 {
-  "inputs": [],
-  "servers": {
-    "serverNameOne": {
-      // Configuration for the first server (e.g., local stdio)
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"]
-    },
-    "serverNameTwo": {
-      // Configuration for the second server (e.g., remote HTTP)
-      "type": "http",
-      "url": "https://mcp.context7.com/mcp"
-    },
-    "playwright": {
-      "command": "npx",
-      "args": ["@playwright/mcp@latest"]
-    }
-  }
+	"inputs": [
+		{
+			"id": "Authorization",
+			"type": "promptString",
+			"description": "Authentication token (PAT or App token)",
+			"password": true
+		}
+	],
+	"servers": {
+		"serverNameOne": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"@modelcontextprotocol/server-memory"
+			]
+		},
+		"serverNameTwo": {
+			"type": "http",
+			"url": "https://mcp.context7.com/mcp"
+		},
+		"io.github.github/github-mcp-server": {
+			"type": "http",
+			"url": "https://api.githubcopilot.com/mcp/",
+			"headers": {
+				"Authorization": "${input:Authorization}"
+			}
+		}
+	}
 }

@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
+import DashboardProtection from '@/components/DashboardProtection';
 import IssueCard from '@/components/IssueCard';
 import PrivacyNotice from '@/components/PrivacyNotice';
 import Card from '@/components/ui/Card';
@@ -10,7 +11,7 @@ import StatCard from '@/components/ui/StatCard';
 import { useUser } from '@/lib/contexts/UserContext';
 import toast from 'react-hot-toast';
 
-export default function CitizenDashboard() {
+function CitizenDashboardContent() {
     const [issues, setIssues] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
@@ -42,9 +43,9 @@ export default function CitizenDashboard() {
         {
             label: 'Resolved',
             value: issues.filter(i => i.status === 'resolved').length,
-            accent: 'border-l-4 border-l-emerald-400',
-            iconBg: 'bg-emerald-50',
-            iconColor: 'text-emerald-600',
+            accent: 'border-l-4 border-l-status-success',
+            iconBg: 'bg-status-success/10',
+            iconColor: 'text-status-success',
             iconPath: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 0 9 0 0118 0z'
         },
         {
@@ -124,7 +125,7 @@ export default function CitizenDashboard() {
         return (
             <DashboardLayout>
                 <div className="flex items-center justify-center h-64">
-                    <div className="text-lg text-slate-600">Loading...</div>
+                    <div className="text-lg text-contrast-secondary">Loading...</div>
                 </div>
             </DashboardLayout>
         );
@@ -140,12 +141,12 @@ export default function CitizenDashboard() {
                 <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between pt-4">
                     <div className="space-y-1">
                         <h1 className="text-3xl font-bold text-contrast-primary tracking-tight">Citizen Dashboard</h1>
-                        <p className="text-slate-600">Track and manage your reported civic issues</p>
+                        <p className="text-contrast-secondary">Track and manage your reported civic issues</p>
                     </div>
                     <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
                         <div className="relative">
                             <select
-                                className="w-full appearance-none rounded-xl border border-slate-300 bg-white px-4 py-2.5 pr-10 text-sm font-medium text-slate-700 shadow-sm outline-none transition hover:border-slate-400 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary sm:w-48"
+                                className="w-full appearance-none rounded-xl border border-neutral-border bg-neutral-surface px-4 py-2.5 pr-10 text-sm font-medium text-contrast-secondary shadow-sm outline-none transition hover:border-neutral-border focus:border-brand-primary focus:ring-1 focus:ring-brand-primary sm:w-48"
                                 value={filter}
                                 onChange={(e) => setFilter(e.target.value)}
                             >
@@ -155,7 +156,7 @@ export default function CitizenDashboard() {
                                 <option value="resolved">Resolved</option>
                                 <option value="rejected">Rejected</option>
                             </select>
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-contrast-light">
                                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                 </svg>
@@ -194,7 +195,7 @@ export default function CitizenDashboard() {
             <div className="mt-8">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
                     <h2 className="text-xl font-semibold text-contrast-primary">Recent Issues</h2>
-                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                    <div className="flex items-center gap-2 text-sm text-contrast-light">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -223,7 +224,7 @@ export default function CitizenDashboard() {
                         </svg>
                     </div>
                     <h3 className="text-xl font-bold text-contrast-primary mb-2">No issues reported yet</h3>
-                    <p className="text-slate-500 max-w-sm mb-8 text-base">
+                    <p className="text-contrast-light max-w-sm mb-8 text-base">
                         Your dashboard is clear! Help improve your community by reporting any civic concerns you see.
                     </p>
                     <Link
@@ -235,5 +236,13 @@ export default function CitizenDashboard() {
                 </Card>
             )}
         </DashboardLayout>
+    );
+}
+
+export default function CitizenDashboard() {
+    return (
+        <DashboardProtection requiredRole="citizen">
+            <CitizenDashboardContent />
+        </DashboardProtection>
     );
 }

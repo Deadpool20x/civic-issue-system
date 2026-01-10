@@ -85,10 +85,14 @@ export default function LoginPage() {
                                 type={showPassword ? 'text' : 'password'}
                                 autoComplete="current-password"
                                 required
-                                className="appearance-none rounded-none relative block w-full px-3 py-3 pr-10 border border-slate-300 placeholder-slate-400 text-slate-900 bg-white rounded-b-md focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary focus:z-10 sm:text-sm"
+                                className="appearance-none rounded-none relative block w-full px-3 py-3 pr-10 border border-slate-300 placeholder-slate-400 text-slate-900 bg-white rounded-b-md focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary focus:z-10 sm:text-sm font-sans"
                                 placeholder="Password"
                                 value={formData.password}
                                 onChange={handleChange}
+                                style={{
+                                    textSecurity: showPassword ? 'none' : 'disc',
+                                    WebkitTextSecurity: showPassword ? 'none' : 'disc'
+                                }}
                             />
                             <button
                                 type="button"

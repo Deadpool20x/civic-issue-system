@@ -10,25 +10,31 @@ const config = {
             colors: {
                 background: "var(--background)",
                 foreground: "var(--foreground)",
-                // Premium Color System - Updated to match requirements
+                // Unified Design System - Premium Color Palette
                 brand: {
-                    primary: "#006989", // Ocean - primary actions, headers
-                    soft: "#eaeebd",    // Dreamy - soft backgrounds
+                    primary: "#006989", // Ocean - primary actions, headers, buttons
+                    soft: "#eaeebd",    // Soft backgrounds, highlights
                 },
                 accent: {
-                    lavender: "#f492f0", // Subtle highlights
+                    lavender: "#B492F0", // Subtle highlights, accents (updated to match spec)
                     magic: "#5E429C",    // Navigation active states
                 },
                 status: {
+                    success: "#10B981",  // Soft Green - success, resolved
                     warning: "#FE7F2D",  // Sunset - warnings, medium priority
                     error: "#D7263D",    // Crimson - errors, destructive actions
                     pending: "#FE7F2D",  // Sunset - pending
                     progress: "#006989", // Ocean - in progress
-                    resolved: "#10B981", // Emerald - resolved
                 },
                 contrast: {
                     primary: "#02182B",  // Nights - text headers, dark sections
-                    secondary: "#1f2937", // slate-800
+                    secondary: "#1f2937", // slate-800 - secondary text
+                    light: "#64748b",    // slate-500 - tertiary text
+                },
+                neutral: {
+                    bg: "#f8fafc",       // Light neutral background
+                    border: "#e5e7eb",   // Border color
+                    surface: "#ffffff",  // Card/surface color
                 }
             },
         }

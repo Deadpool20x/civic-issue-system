@@ -20,23 +20,21 @@ export async function POST(req) {
 
         const result = userRegisterSchema.safeParse(body);
         if (!result.success) {
-             return new Response(
+            return new Response(
                 JSON.stringify({ error: result.error.errors[0].message }),
                 { status: 400, headers: { 'Content-Type': 'application/json' } }
             );
         }
 
-        const { name, email, password, phone, role, department, address } = result.data;
+        const { name, email, password, phone, address } = result.data;
+
+        // PUBLIC REGISTRATION IS CITIZEN-ONLY
+        // Staff accounts are created by admins through the admin dashboard
+        // Role and department are NEVER read from client input
+        const role = 'citizen';
+        const department = undefined; // Citizens never have department assignments
 
         console.log('Registration attempt for email:', email, 'role:', role); // Debug log
-
-        // Validate department for department role
-        if (role === 'department' && !department) {
-            return new Response(
-                JSON.stringify({ error: 'Department is required for department role' }),
-                { status: 400, headers: { 'Content-Type': 'application/json' } }
-            );
-        }
 
         // Connect to database
         await connectDB();
@@ -50,14 +48,18 @@ export async function POST(req) {
             );
         }
 
+        // Clean up phone number - remove spaces and dashes for storage
+        const cleanPhone = phone ? phone.replace(/[\s-]/g, '') : undefined;
+
         // Create user (password will be hashed by the User model pre-save middleware)
+        // PUBLIC REGISTRATION IS CITIZEN-ONLY - Staff accounts are created by admins
         const user = await User.create({
             name,
             email,
             password, // Don't hash here, let the model handle it
-            phone,
-            role,
-            department: role === 'department' ? department : undefined,
+            phone: cleanPhone,
+            role, // Always 'citizen' for public registration
+            department, // Always undefined for citizens
             address
         });
 
@@ -66,11 +68,11 @@ export async function POST(req) {
         // Send confirmation email asynchronously
         (async () => {
             try {
-              const confirmationText = `Welcome ${user.name}!\n\nYour account has been created successfully on the Civic Issue System.\n\nYou can now report and track civic issues.\n\nBest regards,\nCivic Issue System Team`;
-              await sendEmail(user.email, 'Registration Confirmation - Civic Issue System', confirmationText);
-              console.log('Confirmation email sent to:', user.email);
+                const confirmationText = `Welcome ${user.name}!\n\nYour account has been created successfully on the Civic Issue System.\n\nYou can now report and track civic issues.\n\nBest regards,\nCivic Issue System Team`;
+                await sendEmail(user.email, 'Registration Confirmation - Civic Issue System', confirmationText);
+                console.log('Confirmation email sent to:', user.email);
             } catch (emailError) {
-              console.error('Failed to send confirmation email:', emailError);
+                console.error('Failed to send confirmation email:', emailError);
             }
         })();
 

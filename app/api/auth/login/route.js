@@ -105,8 +105,30 @@ export async function POST(req) {
             department: user.department
         };
 
+        // Determine redirect URL based on role
+        let redirectUrl;
+        switch (user.role) {
+            case 'admin':
+                redirectUrl = '/admin/dashboard';
+                break;
+            case 'municipal':
+                redirectUrl = '/municipal/dashboard';
+                break;
+            case 'department':
+                redirectUrl = '/department/dashboard';
+                break;
+            case 'citizen':
+            default:
+                redirectUrl = '/citizen/dashboard';
+                break;
+        }
+
         return new Response(
-            JSON.stringify({ message: 'Login successful', user: userResponse }),
+            JSON.stringify({ 
+                message: 'Login successful', 
+                user: userResponse,
+                redirectUrl 
+            }),
             { status: 200, headers: { 'Content-Type': 'application/json' } }
         );
     } catch (error) {

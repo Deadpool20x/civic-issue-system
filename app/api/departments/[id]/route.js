@@ -1,10 +1,11 @@
 import { connectDB } from '@/lib/mongodb';
 import { authMiddleware, roleMiddleware } from '@/lib/auth';
+import { strictRoleMiddleware } from '@/lib/middleware';
 import Department from '@/lib/models/Department';
 import User from '@/models/User';
 
-// Delete department (admin only)
-export const DELETE = roleMiddleware(['admin'])(async (req, { params }) => {
+// SECURE: Delete department (admin only)
+export const DELETE = strictRoleMiddleware(['admin'])(async (req, { params }) => {
     try {
         await connectDB();
 
