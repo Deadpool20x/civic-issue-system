@@ -1,8 +1,8 @@
-const http = require('http');
+import { createServer } from 'http';
 
 const PORT = process.env.PORT || 5000;
 
-const server = http.createServer((req, res) => {
+const server = createServer((req, res) => {
   if (req.url === '/api/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ status: 'ok' }));
