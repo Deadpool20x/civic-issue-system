@@ -23,7 +23,7 @@ The Civic Issue System is a modern web application that enables citizens to repo
 - **Real-Time Tracking**: Live status updates for reported issues
 - **Multi-Role Dashboard**: Separate interfaces for Citizens, Municipal Staff, Department Staff, and Admins
 - **Secure Authentication**: JWT-based authentication with role-based access control
-- **Mobile App**: React Native companion app for on-the-go reporting
+- **Responsive Design**: Mobile-friendly web interface for on-the-go reporting
 
 ## ✨ Features
 
@@ -81,12 +81,6 @@ The Civic Issue System is a modern web application that enables citizens to repo
 - **File Upload**: Cloudinary
 - **AI Integration**: OpenAI API
 - **Scheduling**: Node Cron
-
-### Mobile App
-- **Framework**: React Native
-- **Navigation**: React Navigation
-- **API Client**: Axios
-- **Storage**: AsyncStorage
 
 ### Security
 - **Password Hashing**: bcryptjs
@@ -205,13 +199,6 @@ civic-issue-system/
 │   ├── create-test-admin.js      # Create admin user
 │   ├── seed-departments.js       # Seed departments
 │   └── ...
-│
-├── CivicIssueCitizenApp/         # React Native mobile app
-│   ├── src/
-│   │   ├── screens/              # Mobile screens
-│   │   └── services/             # API services
-│   └── package.json
-│
 ├── public/                       # Static assets
 ├── docs/                         # Documentation
 └── Configuration files
@@ -322,27 +309,6 @@ npm run build
 
 # Start production server
 npm start
-```
-
-## 📱 Mobile App
-
-The React Native mobile app is located in `CivicIssueCitizenApp/`.
-
-### Setup
-```bash
-cd CivicIssueCitizenApp
-npm install
-```
-
-### Run on iOS
-```bash
-npx pod-install
-npx react-native run-ios
-```
-
-### Run on Android
-```bash
-npx react-native run-android
 ```
 
 ## 🧪 Testing
