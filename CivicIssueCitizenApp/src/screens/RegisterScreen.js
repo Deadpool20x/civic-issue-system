@@ -39,6 +39,9 @@ const RegisterScreen = ({ navigation }) => {
         setLoading(true);
 
         try {
+            // Log API request payload
+            console.log('Register API Request Payload:', { name, email, password });
+
             // Call backend registration
             // Do NOT send role - backend will enforce citizen role
             const response = await apiClient.post('/auth/register', {
@@ -46,6 +49,12 @@ const RegisterScreen = ({ navigation }) => {
                 email,
                 password,
             });
+
+            // Log API response
+            console.log('Register API Response:', response.data);
+
+            // Temporary console log to confirm API call is firing
+            console.log('Register API call fired successfully');
 
             // Registration successful
             Alert.alert(
@@ -66,7 +75,12 @@ const RegisterScreen = ({ navigation }) => {
             // Handle registration failure
             const errorMessage = error.response?.data?.message ||
                 error.response?.data?.error ||
+                error.message ||
                 'Registration failed. Please try again.';
+
+            // Log the error for debugging
+            console.error('Registration Error:', error.response?.data || error.message);
+
             Alert.alert('Registration Failed', errorMessage);
         } finally {
             setLoading(false);
@@ -198,6 +212,7 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         fontSize: 16,
         backgroundColor: 'white',
+        color: '#333', // Dark text color on light background
     },
     registerButton: {
         backgroundColor: '#007AFF',

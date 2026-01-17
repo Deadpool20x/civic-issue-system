@@ -1,9 +1,11 @@
 /**
  * Login Screen
- * 
+ *
  * Citizen authentication screen for the Civic Issue Reporting System.
  * Handles email/password login and JWT token storage.
  */
+import { APP_MODE } from '../config/appMode';
+import auth from '@react-native-firebase/auth';
 
 import React, { useState } from 'react';
 import {
@@ -23,7 +25,53 @@ const LoginScreen = ({ navigation }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
+    /**
+     * DEMO MODE login handler.
+     * Simulates a successful login without backend calls.
+     */
     const handleLogin = async () => {
+        console.log('Login button pressed - FIREBASE MODE');
+
+        if (!email || !password) {
+            Alert.alert('Error', 'Please enter email and password');
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            const userCredential = await auth().signInWithEmailAndPassword(
+                email.trim(),
+                password
+            );
+
+            console.log('Firebase login success:', userCredential.user.email);
+
+            navigation.replace('Home');
+        } catch (error) {
+            console.error('Firebase login error:', error);
+
+            Alert.alert(
+                'Login Failed',
+                error.message || 'Something went wrong'
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
+
+    // Original handleLogin function (temporarily disabled to prevent crashes)
+    /*
+    const handleLogin = async () => {
+        try {
+            const res = await apiClient.get('/health');
+            console.log('HEALTH CHECK RESPONSE:', res.data);
+        } catch (err) {
+            console.log('HEALTH CHECK ERROR:', err.message);
+        }
+
         // Validate inputs
         if (!email || !password) {
             Alert.alert('Error', 'Please enter both email and password');
@@ -33,11 +81,20 @@ const LoginScreen = ({ navigation }) => {
         setLoading(true);
 
         try {
+            // Log API request payload
+            console.log('Login API Request Payload:', { email, password });
+
             // Call backend authentication
             const response = await apiClient.post('/auth/login', {
                 email,
                 password,
             });
+
+            // Log API response
+            console.log('Login API Response:', response.data);
+
+            // Temporary console log to confirm API call is firing
+            console.log('Login API call fired successfully');
 
             // Extract JWT token from response
             const token = response.data?.token || response.data?.data?.token;
@@ -59,12 +116,18 @@ const LoginScreen = ({ navigation }) => {
             // Handle authentication failure
             const errorMessage = error.response?.data?.message ||
                 error.response?.data?.error ||
+                error.message ||
                 'Login failed. Please check your credentials.';
+
+            // Log the error for debugging
+            console.error('Login Error:', error.response?.data || error.message);
+
             Alert.alert('Login Failed', errorMessage);
         } finally {
             setLoading(false);
         }
     };
+    */
 
     const handleCreateAccount = () => {
         navigation.navigate('Register');
@@ -178,6 +241,7 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         fontSize: 16,
         backgroundColor: 'white',
+        color: '#333', // Dark text color on light background
     },
     passwordContainer: {
         flexDirection: 'row',
@@ -226,3 +290,49 @@ const styles = StyleSheet.create({
 });
 
 export default LoginScreen;
+
+// import React, { useState } from 'react';
+// import { View, Text, TextInput, Button, Alert } from 'react-native';
+// import auth from '@react-native-firebase/auth';
+
+// const LoginScreen = () => {
+//     const [email, setEmail] = useState('');
+//     const [password, setPassword] = useState('');
+
+//     const login = async () => {
+//         try {
+//             const result = await auth().signInWithEmailAndPassword(email, password);
+//             console.log('LOGIN SUCCESS:', result.user.email);
+//             Alert.alert('Success', 'Logged in successfully');
+//         } catch (error) {
+//             console.log('LOGIN ERROR:', error.message);
+//             Alert.alert('Login failed', error.message);
+//         }
+//     };
+
+//     return (
+//         <View style={{ padding: 20 }}>
+//             <Text style={{ fontSize: 22, marginBottom: 20 }}>Login</Text>
+
+//             <TextInput
+//                 placeholder="Email"
+//                 value={email}
+//                 onChangeText={setEmail}
+//                 autoCapitalize="none"
+//                 style={{ borderWidth: 1, marginBottom: 10, padding: 10 }}
+//             />
+
+//             <TextInput
+//                 placeholder="Password"
+//                 value={password}
+//                 onChangeText={setPassword}
+//                 secureTextEntry
+//                 style={{ borderWidth: 1, marginBottom: 20, padding: 10 }}
+//             />
+
+//             <Button title="Login" onPress={login} />
+//         </View>
+//     );
+// };
+
+// export default LoginScreen;

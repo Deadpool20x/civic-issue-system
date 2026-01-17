@@ -9,11 +9,12 @@ import axios from 'axios';
 import { getToken } from './authStorage';
 
 // Placeholder baseURL - replace with actual backend URL
-const BASE_URL = 'https://api.civic-issue-system.com/api/v1';
+
+
 
 // Create Axios instance with default configuration
 const apiClient = axios.create({
-    baseURL: BASE_URL,
+    baseURL: 'https://civic-issue-system.onrender.com/api',
     headers: {
         'Content-Type': 'application/json',
     },

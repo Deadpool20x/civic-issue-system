@@ -18,6 +18,7 @@ import {
     Modal,
 } from 'react-native';
 import apiClient from '../services/api';
+import { APP_MODE } from '../config/appMode';
 
 const IssueDetailScreen = ({ route, navigation }) => {
     const { issueId } = route.params;
@@ -33,36 +34,77 @@ const IssueDetailScreen = ({ route, navigation }) => {
     }, [issueId]);
 
     const fetchIssueDetail = async () => {
+        console.log('Fetching issue details. APP_MODE =', APP_MODE);
+
+        if (APP_MODE === 'DEMO') {
+            console.log('Running in DEMO MODE. Using mock issue detail.');
+
+            setIssue({
+                id: route.params?.id ?? '1',
+                title: 'Broken Street Light',
+                status: 'Open',
+                description: 'Street light not working for 3 days',
+                location: 'Main Road, Sector 12',
+                createdAt: '2026-01-10',
+            });
+
+            return;
+        }
+
+        // REAL backend code stays below
         try {
-            setLoading(true);
-            setError(null);
-
-            // Call GET /api/issues/{issueId}
-            const response = await apiClient.get(`/api/issues/${issueId}`);
-
-            // Extract issue data
-            const issueData = response.data?.issue || response.data;
-
-            if (!issueData) {
-                throw new Error('Issue not found');
-            }
-
-            setIssue(issueData);
-        } catch (err) {
-            const errorMessage = err.response?.data?.message ||
-                err.response?.data?.error ||
-                'Failed to load issue details';
-            setError(errorMessage);
-            Alert.alert('Error', errorMessage, [
-                {
-                    text: 'Go Back',
-                    onPress: () => navigation.goBack(),
-                },
-            ]);
-        } finally {
-            setLoading(false);
+            const response = await apiClient.get(`/issues/${route.params.id}`);
+            setIssue(response.data);
+        } catch (error) {
+            console.error('Fetch Issue Detail Error:', error.message);
         }
     };
+
+    // const fetchIssueDetail = async () => {
+    //     try {
+    //         setLoading(true);
+    //         setError(null);
+
+    //         // Log API request
+    //         console.log('Fetching issue details from API');
+
+    //         // Call GET /api/issues/{issueId}
+    //         const response = await apiClient.get(`/api/issues/${issueId}`);
+
+    //         // Log API response
+    //         console.log('Fetch Issue Detail API Response:', response.data);
+
+    //         // Temporary console log to confirm API call is firing
+    //         console.log('Fetch Issue Detail API call fired successfully');
+
+    //         // Extract issue data
+    //         const issueData = response.data?.issue || response.data;
+
+    //         if (!issueData) {
+    //             throw new Error('Issue not found');
+    //         }
+
+    //         setIssue(issueData);
+    //     } catch (err) {
+    //         const errorMessage = err.response?.data?.message ||
+    //             err.response?.data?.error ||
+    //             err.message ||
+    //             'Failed to load issue details';
+
+    //         // Log the error for debugging
+    //         console.error('Fetch Issue Detail Error:', err.response?.data || err.message);
+
+    //         setError(errorMessage);
+    //         Alert.alert('Error', errorMessage, [
+    //             {
+    //                 text: 'Go Back',
+    //                 onPress: () => navigation.goBack(),
+    //             },
+    //         ]);
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
 
     // Handle image tap
     const handleImagePress = (imageUrl) => {

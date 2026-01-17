@@ -16,38 +16,127 @@ import {
     Alert,
 } from 'react-native';
 import apiClient from '../services/api';
-
+import { APP_MODE } from '../config/appMode';
+import { Color } from 'ogl';
+import firestore from '@react-native-firebase/firestore';
 const HomeScreen = ({ navigation }) => {
     const [issues, setIssues] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const DEMO_ISSUES = [
+        {
+            id: '1',
+            title: 'Street light not working',
+            description: 'The street light near my house is broken.',
+            status: 'Open',
+        },
+        {
+            id: '2',
+            title: 'Garbage not collected',
+            description: 'Garbage has not been collected for 3 days.',
+            status: 'In Progress',
+        },
+    ];
+
     // Fetch issues on mount
+    // useEffect(() => {
+    //     console.log('HOME SCREEN: forcing demo issues');
+
+    //     setIssues([
+    //         {
+    //             id: 'demo-1',
+    //             title: 'Pothole near main road',
+    //             description: 'Large pothole causing traffic issues',
+    //             status: 'Open',
+    //         },
+    //     ]);
+
+    //     setLoading(false);
+    // }, []);
+
+    //modified code
+    // at top of file, add this import
+
+
+    // ... inside your component (replace the existing fetchIssues/mock logic)
     useEffect(() => {
-        fetchIssues();
+        const testFirestore = async () => {
+            try {
+                console.log('FIRESTORE TEST: starting');
+
+                const snapshot = await firestore()
+                    .collection('issues')
+                    .limit(1)
+                    .get();
+
+                console.log('FIRESTORE TEST: docs count =', snapshot.size);
+
+                if (!snapshot.empty) {
+                    const firstDoc = snapshot.docs[0].data();
+                    console.log('FIRESTORE TEST: first doc =', firstDoc);
+                } else {
+                    console.log('FIRESTORE TEST: collection empty');
+                }
+
+            } catch (error) {
+                console.log('FIRESTORE TEST ERROR:', error.message);
+            }
+        };
+
+        testFirestore();
     }, []);
 
-    const fetchIssues = async () => {
-        try {
-            setLoading(true);
-            setError(null);
 
-            // Call GET /api/issues/my
-            const response = await apiClient.get('/api/issues/my');
+    // ensure this is called in your useEffect instead of the mock fetch:
+    useEffect(() => {
+        // if (APP_MODE === 'DEMO') {
+        //     console.log('HOME SCREEN: DEMO MODE active');
+        //     setIssues(DEMO_ISSUES);
+        //     setLoading(false);
+        //     return;
+        // }
 
-            // Extract issues array from response
-            const issuesData = response.data?.issues || response.data || [];
-            setIssues(issuesData);
-        } catch (err) {
-            const errorMessage = err.response?.data?.message ||
-                err.response?.data?.error ||
-                'Failed to load issues';
-            setError(errorMessage);
-            Alert.alert('Error', errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    };
+        // existing real fetch logic stays below
+    }, []);
+
+
+    //original code
+    // const fetchIssues = async () => {
+    //     try {
+    //         setLoading(true);
+    //         setError(null);
+
+    //         // Log API request
+    //         console.log('Fetching issues from API');
+
+    //         // Call GET /api/issues/my
+    //         const response = await apiClient.get('/api/issues/my');
+
+    //         // Log API response
+    //         console.log('Fetch Issues API Response:', response.data);
+
+    //         // Temporary console log to confirm API call is firing
+    //         console.log('Fetch Issues API call fired successfully');
+
+    //         // Extract issues array from response
+    //         const issuesData = response.data?.issues || response.data || [];
+    //         setIssues(issuesData);
+    //     } catch (err) {
+    //         const errorMessage = err.response?.data?.message ||
+    //             err.response?.data?.error ||
+    //             err.message ||
+    //             'Failed to load issues';
+
+    //         // Log the error for debugging
+    //         console.error('Fetch Issues Error:', err.response?.data || err.message);
+
+    //         setError(errorMessage);
+    //         Alert.alert('Error', errorMessage);
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
 
     const handleCreateIssue = () => {
         // Navigate to CreateIssue screen
@@ -148,7 +237,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#f5f5f5',
-        padding: 16,
+        padding: 16, s
     },
     centerContainer: {
         flex: 1,
@@ -187,17 +276,19 @@ const styles = StyleSheet.create({
     },
     issuesSection: {
         flex: 1,
+
     },
     sectionTitle: {
         fontSize: 18,
         fontWeight: 'bold',
         marginBottom: 12,
+
     },
     listContent: {
         paddingBottom: 20,
     },
     issueCard: {
-        backgroundColor: 'white',
+        backgroundColor: '#f492f0',
         padding: 16,
         borderRadius: 8,
         marginBottom: 12,

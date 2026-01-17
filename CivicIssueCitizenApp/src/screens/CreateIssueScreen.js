@@ -79,6 +79,9 @@ const CreateIssueScreen = ({ navigation }) => {
         setLoading(true);
 
         try {
+            // Log API request payload
+            console.log('Create Issue API Request Payload:', { title, description, imageCount: images.length });
+
             // Prepare multipart/form-data
             const formData = new FormData();
             formData.append('title', title.trim());
@@ -97,6 +100,12 @@ const CreateIssueScreen = ({ navigation }) => {
                     'Content-Type': 'multipart/form-data',
                 },
             });
+
+            // Log API response
+            console.log('Create Issue API Response:', response.data);
+
+            // Temporary console log to confirm API call is firing
+            console.log('Create Issue API call fired successfully');
 
             // Success handling
             Alert.alert(
@@ -117,7 +126,12 @@ const CreateIssueScreen = ({ navigation }) => {
             // Error handling
             const errorMessage = error.response?.data?.message ||
                 error.response?.data?.error ||
+                error.message ||
                 'Failed to submit issue. Please try again.';
+
+            // Log the error for debugging
+            console.error('Create Issue Error:', error.response?.data || error.message);
+
             Alert.alert('Submission Failed', errorMessage);
         } finally {
             setLoading(false);
@@ -231,6 +245,7 @@ const styles = StyleSheet.create({
         padding: 12,
         marginBottom: 16,
         fontSize: 16,
+        color: '#333', // Dark text color on light background
     },
     textArea: {
         height: 120,

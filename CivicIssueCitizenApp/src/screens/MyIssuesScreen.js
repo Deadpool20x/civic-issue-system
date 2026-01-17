@@ -39,8 +39,17 @@ const MyIssuesScreen = ({ navigation }) => {
         try {
             setLoading(true);
 
+            // Log API request
+            console.log('Fetching issues from API');
+
             // Call GET /api/issues/my
             const response = await apiClient.get('/api/issues/my');
+
+            // Log API response
+            console.log('Fetch Issues API Response:', response.data);
+
+            // Temporary console log to confirm API call is firing
+            console.log('Fetch Issues API call fired successfully');
 
             // Extract issues array from response
             const issuesData = response.data?.issues || response.data || [];
@@ -48,7 +57,12 @@ const MyIssuesScreen = ({ navigation }) => {
         } catch (err) {
             const errorMessage = err.response?.data?.message ||
                 err.response?.data?.error ||
+                err.message ||
                 'Failed to load issues';
+
+            // Log the error for debugging
+            console.error('Fetch Issues Error:', err.response?.data || err.message);
+
             Alert.alert('Error', errorMessage);
         } finally {
             setLoading(false);
