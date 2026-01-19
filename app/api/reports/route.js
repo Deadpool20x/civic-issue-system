@@ -26,7 +26,7 @@ export const GET = strictRoleMiddleware(['admin'])(async (request) => {
                 })
                     .populate('reportedBy', 'name email')
                     .populate('assignedTo', 'name')
-                    .populate('department', 'name')
+                    .populate('assignedDepartment', 'name')
                     .sort({ createdAt: -1 })
                     .lean();
                 break;

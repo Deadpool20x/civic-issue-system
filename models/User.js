@@ -30,9 +30,11 @@ const userSchema = new mongoose.Schema({
     default: 'citizen'
   },
   department: {
-    type: String,
-    enum: ['water', 'electricity', 'roads', 'garbage', 'parks', 'other'],
-    required: function () { return this.role === 'department'; }
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Department',
+    required: function() {
+      return this.role === 'department';
+    }
   },
   address: {
     street: String,
@@ -66,6 +68,34 @@ userSchema.pre('save', async function (next) {
 // Compare password method
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// Index for department field for faster queries
+userSchema.index({ department: 1 });
+userSchema.index({ role: 1 });
+
+// Pre-save hook to validate department assignment
+userSchema.pre('save', function (next) {
+  // If role is department, ensure department is provided
+  if (this.role === 'department' && !this.department) {
+    return next(new Error('Department is required when role is "department"'));
+  }
+
+  // If role is not department, ensure department is cleared
+  if (this.role !== 'department' && this.department) {
+    this.department = undefined;
+  }
+
+  next();
+});
+
+// Method to populate department details
+userSchema.methods.populateDepartment = async function () {
+  if (this.department) {
+    const Department = mongoose.model('Department');
+    return await Department.findById(this.department);
+  }
+  return null;
 };
 
 const User = mongoose.models.User || mongoose.model('User', userSchema);

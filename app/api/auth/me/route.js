@@ -14,7 +14,9 @@ export async function GET(req) {
         }
 
         await connectDB();
-        const user = await User.findById(userData.userId).select('-password');
+        const user = await User.findById(userData.userId)
+            .populate('department', 'name description contactEmail')
+            .select('-password');
 
         if (!user) {
             return new Response(
@@ -29,6 +31,14 @@ export async function GET(req) {
         });
     } catch (error) {
         console.error('Error fetching user:', error);
+        
+        if (error.name === 'MongooseServerSelectionError' || error.name === 'MongoNetworkError') {
+             return new Response(
+                JSON.stringify({ error: 'Database service unavailable' }),
+                { status: 503, headers: { 'Content-Type': 'application/json' } }
+            );
+        }
+
         return new Response(
             JSON.stringify({ error: 'Internal server error' }),
             { status: 500, headers: { 'Content-Type': 'application/json' } }

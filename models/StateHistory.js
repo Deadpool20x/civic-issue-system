@@ -4,31 +4,35 @@ const stateHistorySchema = new mongoose.Schema({
     issueId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Issue',
+        required: true
+    },
+    status: {
+        type: String,
         required: true,
-        index: true
-    },
-    fromState: {
-        type: String,
-        required: true
-    },
-    toState: {
-        type: String,
-        required: true
-    },
-    timestamp: {
-        type: Date,
-        default: Date.now,
-        required: true
+        enum: ['submitted', 'acknowledged', 'assigned', 'in-progress', 'resolved', 'rejected', 'reopened', 'escalated']
     },
     changedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
-    notes: {
+    assignedTo: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    comment: {
         type: String,
         trim: true
+    },
+    rejectionReason: {
+        type: String,
+        trim: true
+    },
+    timestamp: {
+        type: Date,
+        default: Date.now,
+        required: true
     }
-});
+}, { timestamps: true });
 
 // Index for efficient lookups by issueId
 stateHistorySchema.index({ issueId: 1 });

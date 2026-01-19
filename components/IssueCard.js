@@ -6,6 +6,7 @@ import { useUser } from '@/lib/contexts/UserContext';
 import { StatusBadge, ImageGallery } from '@/lib/components';
 import Card from './ui/Card';
 import PrimaryButton from './ui/PrimaryButton';
+import PriorityBadge from './PriorityBadge';
 
 const CATEGORY_ICONS = {
     water: '💧',
@@ -120,6 +121,9 @@ export default function IssueCard({ issue, onStatusChange, userRole, showSensiti
     const DesktopFooter = () => (
         <div className="px-6 py-4 bg-neutral-bg/50 border-t border-neutral-border flex items-center justify-between">
             <div className="text-xs text-contrast-light flex items-center gap-2">
+                <span className="font-medium text-contrast-secondary">Report ID:</span>
+                <span className="font-mono text-brand-primary font-medium">{issue.reportId}</span>
+                <span className="w-1 h-1 bg-neutral-border rounded-full"></span>
                 <span className="font-medium text-contrast-secondary">Reported by:</span>
                 {user && user.userId === issue.reportedBy._id ? issue.reportedBy.name : 'Anonymous'}
                 <span className="w-1 h-1 bg-neutral-border rounded-full"></span>
@@ -127,6 +131,16 @@ export default function IssueCard({ issue, onStatusChange, userRole, showSensiti
             </div>
 
             <div className="flex items-center gap-3">
+                {/* ⭐ PROMINENT UPVOTE DISPLAY ⭐ */}
+                {issue.upvotes > 0 && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-brand-soft/30 border border-brand-primary/30 rounded-full">
+                        <span className="text-lg">👍</span>
+                        <span className="text-sm font-bold text-brand-primary">
+                            {issue.upvotes} {issue.upvotes === 1 ? 'person' : 'people'}
+                        </span>
+                    </div>
+                )}
+
                 {user && (
                     <button
                         onClick={handleUpvote}
@@ -136,7 +150,7 @@ export default function IssueCard({ issue, onStatusChange, userRole, showSensiti
                         <svg className="w-3.5 h-3.5 text-contrast-light" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.834a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
                         </svg>
-                        {issue.upvotes || 0}
+                        Upvote
                     </button>
                 )}
 
@@ -177,12 +191,15 @@ export default function IssueCard({ issue, onStatusChange, userRole, showSensiti
             <div className="sm:hidden p-5 flex flex-col gap-4">
                 {/* Header: Status & Priority */}
                 <div className="flex justify-between items-start">
-                    <StatusBadge
-                        status={issue.status}
-                        priority={issue.priority}
-                        sla={issue.sla}
-                        escalationLevel={issue.sla?.escalationLevel}
-                    />
+                    <div className="flex items-center gap-2">
+                        <StatusBadge
+                            status={issue.status}
+                            priority={issue.priority}
+                            sla={issue.sla}
+                            escalationLevel={issue.sla?.escalationLevel}
+                        />
+                        <PriorityBadge priority={issue.priority} size="sm" />
+                    </div>
                     <span className="text-xs text-contrast-light font-medium">
                         {new Date(issue.createdAt).toLocaleDateString()}
                     </span>
@@ -223,6 +240,16 @@ export default function IssueCard({ issue, onStatusChange, userRole, showSensiti
                     </Link>
 
                     <div className="grid grid-cols-2 gap-3">
+                        {/* ⭐ PROMINENT UPVOTE DISPLAY ⭐ */}
+                        {issue.upvotes > 0 && (
+                            <div className="w-full min-h-[48px] flex items-center justify-center gap-2 bg-brand-soft/30 border-2 border-brand-primary/30 rounded-lg">
+                                <span className="text-xl">👍</span>
+                                <span className="text-sm font-bold text-brand-primary">
+                                    {issue.upvotes} {issue.upvotes === 1 ? 'person' : 'people'}
+                                </span>
+                            </div>
+                        )}
+
                         {user && (
                             <button
                                 onClick={handleUpvote}
@@ -232,7 +259,7 @@ export default function IssueCard({ issue, onStatusChange, userRole, showSensiti
                                 <svg className="w-4 h-4 text-contrast-light" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.834a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
                                 </svg>
-                                Upvote ({issue.upvotes || 0})
+                                Upvote
                             </button>
                         )}
                         {(userRole === 'admin' || userRole === 'municipal' || userRole === 'department') && (
@@ -276,12 +303,15 @@ export default function IssueCard({ issue, onStatusChange, userRole, showSensiti
                                 </div>
                             </div>
                         </div>
-                        <StatusBadge
-                            status={issue.status}
-                            priority={issue.priority}
-                            sla={issue.sla}
-                            escalationLevel={issue.sla?.escalationLevel}
-                        />
+                        <div className="flex items-center gap-2">
+                            <StatusBadge
+                                status={issue.status}
+                                priority={issue.priority}
+                                sla={issue.sla}
+                                escalationLevel={issue.sla?.escalationLevel}
+                            />
+                            <PriorityBadge priority={issue.priority} size="sm" />
+                        </div>
                     </div>
 
                     <div className="pl-14">

@@ -213,7 +213,8 @@ export default function EditIssuePage() {
         <DashboardLayout>
             <div className="max-w-2xl mx-auto">
                 <div className="bg-white rounded-lg shadow-md p-6">
-                    <h1 className="text-2xl font-semibold text-gray-900 mb-6">Edit Issue</h1>
+                    <h1 className="text-2xl font-semibold text-gray-900 mb-2">Edit Issue</h1>
+                    <p className="text-sm text-gray-500 mb-6">Report ID: <span className="font-mono text-brand-primary font-medium">{issueId}</span></p>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div>

@@ -1,64 +1,68 @@
-import { connectDB } from '@/lib/mongodb';
+import { NextResponse } from 'next/server';
+import connectDB from '@/lib/mongodb';
 import Issue from '@/models/Issue';
 
-// Public API - Heavily anonymized data for public dashboard
-export const GET = async (req) => {
+export async function GET(request) {
     try {
+        // Connect to database
         await connectDB();
 
-        const { searchParams } = new URL(req.url);
+        // Parse query parameters
+        const { searchParams } = new URL(request.url);
         const category = searchParams.get('category');
         const status = searchParams.get('status');
-        const ward = searchParams.get('ward');
-        const limit = parseInt(searchParams.get('limit')) || 50;
+        const priority = searchParams.get('priority');
 
-        // Build query
-        const query = {};
-        if (category) query.category = category;
-        if (status) query.status = status;
-        if (ward) query.ward = ward;
+        // Build query filter
+        const query = {
+            'location.coordinates.coordinates': { $exists: true, $ne: null }
+        };
 
-        // Get issues with minimal data
+        // Add filters if provided
+        if (category) {
+            query.category = category;
+        }
+
+        if (status) {
+            query.status = status;
+        }
+
+        if (priority) {
+            query.priority = priority;
+        }
+
+        // Fetch issues with only public data
         const issues = await Issue.find(query)
-            .select('title category status priority assignedDepartment ward upvotes createdAt sla.deadline sla.hoursRemaining sla.isOverdue')
-            .populate('reportedBy', 'name') // Only name, no email
-            .sort({ createdAt: -1 })
-            .limit(limit);
+            .select('reportId title category status priority location upvotes createdAt')
+            .limit(500)
+            .lean();
 
-        // Anonymize all data for public consumption
+        // Transform data for public API
         const publicIssues = issues.map(issue => ({
-            _id: issue._id,
+            reportId: issue.reportId,
             title: issue.title,
             category: issue.category,
             status: issue.status,
             priority: issue.priority,
-            assignedDepartment: issue.assignedDepartment,
-            ward: issue.ward,
-            upvotes: issue.upvotes,
-            createdAt: issue.createdAt,
-            sla: {
-                deadline: issue.sla.deadline,
-                hoursRemaining: issue.sla.hoursRemaining,
-                isOverdue: issue.sla.isOverdue
+            location: {
+                address: issue.location?.address || '',
+                coordinates: issue.location?.coordinates?.coordinates || []
             },
-            // Completely anonymized reporter
-            reportedBy: {
-                name: 'Citizen'
-            }
+            upvotes: issue.upvotes,
+            createdAt: issue.createdAt
         }));
 
-        return new Response(JSON.stringify(publicIssues), {
-            status: 200,
-            headers: { 
-                'Content-Type': 'application/json',
-                'Cache-Control': 'public, max-age=300' // Cache for 5 minutes
-            }
+        return NextResponse.json({
+            success: true,
+            count: publicIssues.length,
+            issues: publicIssues
         });
+
     } catch (error) {
         console.error('Error fetching public issues:', error);
-        return new Response(
-            JSON.stringify({ error: 'Internal server error' }),
-            { status: 500, headers: { 'Content-Type': 'application/json' } }
+        return NextResponse.json(
+            { success: false, error: 'Failed to fetch issues' },
+            { status: 500 }
         );
     }
-};
+}

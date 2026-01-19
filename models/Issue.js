@@ -1,6 +1,11 @@
 import mongoose from 'mongoose';
 
 const issueSchema = new mongoose.Schema({
+    reportId: {
+        type: String,
+        unique: true,
+        index: true,
+    },
     title: {
         type: String,
         required: [true, 'Please provide a title for the issue'],
@@ -12,26 +17,56 @@ const issueSchema = new mongoose.Schema({
         trim: true
     },
     location: {
-        address: String,
+        address: { type: String, required: true },
         coordinates: {
-            type: [Number],
-            default: [0, 0]
-        }
+            type: { type: String, enum: ['Point'], default: 'Point' },
+            coordinates: { type: [Number], default: undefined } // [lng, lat] - MongoDB format
+        },
+        city: String,
+        state: String,
+        pincode: String
     },
     category: {
         type: String,
         required: [true, 'Please specify the issue category'],
-        enum: ['water', 'electricity', 'roads', 'garbage', 'parks', 'other']
+        enum: [
+            'roads-infrastructure',
+            'street-lighting',
+            'waste-management',
+            'water-drainage',
+            'parks-public-spaces',
+            'traffic-signage',
+            'public-health-safety',
+            'other'
+        ]
+    },
+    subcategory: {
+        type: String,
+        required: [true, 'Please specify the subcategory'],
+        trim: true
     },
     priority: {
         type: String,
         enum: ['low', 'medium', 'high', 'urgent'],
-        default: 'medium'
+        default: 'medium',
+        index: true
     },
+    
+    priorityOverriddenBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    
+    priorityOverriddenAt: Date,
+    
     status: {
         type: String,
         enum: ['pending', 'assigned', 'in-progress', 'resolved', 'rejected', 'reopened', 'escalated'],
         default: 'pending'
+    },
+    rejectionReason: {
+        type: String,
+        trim: true
     },
     images: [{
         url: String,
@@ -47,9 +82,9 @@ const issueSchema = new mongoose.Schema({
         ref: 'User'
     },
     assignedDepartment: {
-        type: String,
-        enum: ['water', 'electricity', 'roads', 'garbage', 'parks', 'other'],
-        required: true
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Department',
+        default: null
     },
     // SLA and Escalation System
     sla: {
@@ -90,7 +125,8 @@ const issueSchema = new mongoose.Schema({
     // Citizen Engagement
     upvotes: {
         type: Number,
-        default: 0
+        default: 0,
+        index: true
     },
     upvotedBy: [{
         type: mongoose.Schema.Types.ObjectId,
@@ -111,8 +147,8 @@ const issueSchema = new mongoose.Schema({
             min: 1,
             max: 5
         },
+        resolved: Boolean, // true = yes, false = no
         comment: String,
-        isResolved: Boolean,
         submittedAt: Date,
         submittedBy: {
             type: mongoose.Schema.Types.ObjectId,
@@ -181,88 +217,131 @@ const issueSchema = new mongoose.Schema({
     }
 });
 
-// Index for geospatial queries (simplified)
-issueSchema.index({ 'location.coordinates': '2d' });
+// Pre-save hook to generate reportId
+issueSchema.pre('save', async function (next) {
+    // Only generate reportId for new documents
+    if (this.isNew && !this.reportId) {
+        try {
+            // Find the highest existing reportId
+            const lastIssue = await this.constructor
+                .findOne({ reportId: { $exists: true } })
+                .sort({ reportId: -1 })
+                .select('reportId')
+                .lean();
+
+            let nextNumber = 1;
+
+            if (lastIssue && lastIssue.reportId) {
+                // Extract number from R##### format
+                const lastNumber = parseInt(lastIssue.reportId.substring(1));
+                nextNumber = lastNumber + 1;
+            }
+
+            // Format as R##### (5 digits, zero-padded)
+            this.reportId = `R${String(nextNumber).padStart(5, '0')}`;
+
+        } catch (error) {
+            console.error('Error generating reportId:', error);
+            // Fallback to timestamp-based ID
+            this.reportId = `R${Date.now().toString().slice(-5)}`;
+        }
+    }
+
+    next();
+});
+
+// Add virtual for backward compatibility
+issueSchema.virtual('id').get(function () {
+    return this._id.toHexString();
+});
+
+// Ensure virtuals are included when converting to JSON
+issueSchema.set('toJSON', { virtuals: true });
+issueSchema.set('toObject', { virtuals: true });
+
+// Add geospatial index for $near queries
+// Only index if coordinates exist (sparse index)
+issueSchema.index({ 'location.coordinates': '2dsphere' }, { sparse: true });
 
 // SLA deadline calculation - ensure deadline is set if missing
 issueSchema.pre('validate', function (next) {
-  if (!this.sla.deadline) {
-      const now = new Date();
-      let hoursToAdd = 72; // Default for low priority
-      const effectivePriority = this.priority || 'medium';
-      
-      switch (effectivePriority) {
-          case 'urgent':
-              hoursToAdd = 24;
-              break;
-          case 'high':
-              hoursToAdd = 48;
-              break;
-          case 'medium':
-              hoursToAdd = 72;
-              break;
-          case 'low':
-              hoursToAdd = 120;
-              break;
-      }
-      
-      this.sla.deadline = new Date(now.getTime() + (hoursToAdd * 60 * 60 * 1000));
-  }
-  next();
+    if (!this.sla.deadline) {
+        const now = new Date();
+        let hoursToAdd = 72; // Default for low priority
+        const effectivePriority = this.priority || 'medium';
+
+        switch (effectivePriority) {
+            case 'urgent':
+                hoursToAdd = 24;
+                break;
+            case 'high':
+                hoursToAdd = 48;
+                break;
+            case 'medium':
+                hoursToAdd = 72;
+                break;
+            case 'low':
+                hoursToAdd = 120;
+                break;
+        }
+
+        this.sla.deadline = new Date(now.getTime() + (hoursToAdd * 60 * 60 * 1000));
+    }
+    next();
 });
 
 // Set dueTime if not set (7 days from createdAt)
 issueSchema.pre('save', function (next) {
-  if (!this.dueTime) {
-      this.dueTime = new Date(this.createdAt.getTime() + 7 * 24 * 60 * 60 * 1000);
-  }
-  next();
+    if (!this.dueTime) {
+        this.dueTime = new Date(this.createdAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+    }
+    next();
 });
 
 // SLA calculations and updates
 issueSchema.pre('save', function (next) {
-   this.updatedAt = new Date();
-   
-   // Calculate hours remaining and overdue status
-   if (this.sla.deadline) {
-       const now = new Date();
-       const timeDiff = this.sla.deadline.getTime() - now.getTime();
-       this.sla.hoursRemaining = Math.max(0, Math.ceil(timeDiff / (1000 * 60 * 60)));
-       this.sla.isOverdue = timeDiff < 0;
-   }
-   
-   // Calculate resolution time if resolved
-   if (this.status === 'resolved' && this.resolutionTime === 0) {
-       const timeDiff = new Date() - this.createdAt;
-       this.resolutionTime = Math.ceil(timeDiff / (1000 * 60 * 60));
-   }
-   
-   next();
+    this.updatedAt = new Date();
+
+    // Calculate hours remaining and overdue status
+    if (this.sla.deadline) {
+        const now = new Date();
+        const timeDiff = this.sla.deadline.getTime() - now.getTime();
+        this.sla.hoursRemaining = Math.max(0, Math.ceil(timeDiff / (1000 * 60 * 60)));
+        this.sla.isOverdue = timeDiff < 0;
+    }
+
+    // Calculate resolution time if resolved
+    if (this.status === 'resolved' && this.resolutionTime === 0) {
+        const timeDiff = new Date() - this.createdAt;
+        this.resolutionTime = Math.ceil(timeDiff / (1000 * 60 * 60));
+    }
+
+    next();
 });
 
 // Method to escalate issue
-issueSchema.methods.escalate = function(reason) {
+issueSchema.methods.escalate = function (reason) {
     if (this.sla.escalationLevel < 3) {
         this.sla.escalationLevel += 1;
         this.status = 'escalated';
-        
+
         this.sla.escalationHistory.push({
             level: this.sla.escalationLevel,
             escalatedAt: new Date(),
             escalatedTo: this.getEscalationTarget(),
             reason: reason || 'SLA deadline exceeded'
         });
-        
+
         // Add penalty points for escalation
         this.penaltyPoints += (this.sla.escalationLevel * 10);
-        
+
         return this.save();
     }
     return Promise.resolve(this);
 };
 
 // Method to get escalation target
-issueSchema.methods.getEscalationTarget = function() {
+issueSchema.methods.getEscalationTarget = function () {
     switch (this.sla.escalationLevel) {
         case 1:
             return 'Department Staff';
@@ -275,8 +354,19 @@ issueSchema.methods.getEscalationTarget = function() {
     }
 };
 
+// Instance method to add upvote
+issueSchema.methods.addUpvote = async function (userId) {
+    if (!this.upvotedBy.includes(userId)) {
+        this.upvotes += 1;
+        this.upvotedBy.push(userId);
+        await this.save();
+        return { success: true, upvotes: this.upvotes };
+    }
+    return { success: false, message: 'Already upvoted' };
+};
+
 // Static method to add upvote atomically
-issueSchema.statics.addUpvote = function(issueId, userId) {
+issueSchema.statics.addUpvote = function (issueId, userId) {
     return this.findOneAndUpdate(
         { _id: issueId, upvotedBy: { $ne: userId } }, // find the issue only if the user has NOT upvoted it
         {
@@ -288,7 +378,7 @@ issueSchema.statics.addUpvote = function(issueId, userId) {
 };
 
 // Static method to remove upvote atomically
-issueSchema.statics.removeUpvote = function(issueId, userId) {
+issueSchema.statics.removeUpvote = function (issueId, userId) {
     return this.findOneAndUpdate(
         { _id: issueId, upvotedBy: userId }, // find the issue only if the user has upvoted it
         {
@@ -300,7 +390,7 @@ issueSchema.statics.removeUpvote = function(issueId, userId) {
 };
 
 // Method to submit feedback
-issueSchema.methods.submitFeedback = function(rating, comment, isResolved, userId) {
+issueSchema.methods.submitFeedback = function (rating, comment, isResolved, userId) {
     this.feedback = {
         rating,
         comment,
@@ -308,12 +398,12 @@ issueSchema.methods.submitFeedback = function(rating, comment, isResolved, userI
         submittedAt: new Date(),
         submittedBy: userId
     };
-    
+
     // If marked as not resolved, reopen the issue
     if (!isResolved) {
         this.status = 'reopened';
     }
-    
+
     return this.save();
 };
 

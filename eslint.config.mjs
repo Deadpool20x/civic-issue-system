@@ -1,16 +1,33 @@
 import { dirname } from "path";
 import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import js from "@eslint/js";
+import nextPlugin from "@next/eslint-plugin-next";
+import reactPlugin from "eslint-plugin-react";
+import hooksPlugin from "eslint-plugin-react-hooks";
 
 const __filename = fileURLToPath(import.meta.url);
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
+const __dirname = dirname(__filename);
 
-const baseConfigs = compat.extends("next/core-web-vitals", "next/typescript").map((config) => ({
-  ...config,
-  files: config.files ?? ["**/*.{js,jsx,ts,tsx,mjs,cjs}"] ,
-}));
+const baseConfigs = [
+  {
+    files: ["**/*.{js,jsx,ts,tsx,mjs,cjs}"],
+    ...js.configs.recommended,
+  },
+  {
+    files: ["**/*.{js,jsx,ts,tsx,mjs,cjs}"],
+    plugins: {
+      "@next/next": nextPlugin,
+      "react": reactPlugin,
+      "react-hooks": hooksPlugin,
+    },
+    rules: {
+      ...(nextPlugin.configs?.recommended?.rules || {}),
+      ...(nextPlugin.configs?.["core-web-vitals"]?.rules || {}),
+      ...(reactPlugin.configs?.recommended?.rules || {}),
+      ...(hooksPlugin.configs?.recommended?.rules || {}),
+    },
+  },
+];
 
 const eslintConfig = [
   {
@@ -71,3 +88,5 @@ const eslintConfig = [
     }
   }
 ];
+
+export default eslintConfig;

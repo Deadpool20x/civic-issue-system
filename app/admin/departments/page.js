@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
+import toast from 'react-hot-toast';
 
 export default function AdminDepartments() {
     const [departments, setDepartments] = useState([]);
@@ -14,6 +15,7 @@ export default function AdminDepartments() {
         contactEmail: '',
         contactPhone: ''
     });
+    const [formError, setFormError] = useState('');
 
     const fetchDepartments = useCallback(async () => {
         try {
@@ -37,8 +39,44 @@ export default function AdminDepartments() {
         fetchDepartments();
     }, [fetchDepartments]);
 
+    const validateDepartmentName = (name) => {
+        // Check minimum length
+        if (name.length < 5) {
+            return 'Department name too short. Use descriptive name like "Roads Department"';
+        }
+
+        // Check if it looks like a person's name (2 words, both capitalized)
+        const wordCount = name.trim().split(/\s+/).length;
+        const looksLikePersonName = wordCount === 2 &&
+            name === name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+
+        if (looksLikePersonName) {
+            return 'Invalid department name. Must be a department/office name, not a person\'s name';
+        }
+
+        // Check for department-related keywords
+        const departmentKeywords = ['department', 'dept', 'office', 'administration', 'division', 'bureau'];
+        const hasKeyword = departmentKeywords.some(keyword =>
+            name.toLowerCase().includes(keyword)
+        );
+
+        if (!hasKeyword) {
+            return 'Department name must be descriptive (e.g., "Roads & Infrastructure Department")';
+        }
+
+        return '';
+    };
+
     const handleCreateDepartment = async (e) => {
         e.preventDefault();
+
+        // Client-side validation
+        const validationError = validateDepartmentName(newDepartment.name);
+        if (validationError) {
+            setFormError(validationError);
+            return;
+        }
+
         try {
             const response = await fetch('/api/departments', {
                 method: 'POST',
@@ -58,8 +96,12 @@ export default function AdminDepartments() {
                     contactPhone: ''
                 });
                 setShowCreateForm(false);
+                setFormError('');
+                toast.success('Department created successfully');
             } else {
-                setError('Failed to create department');
+                const errorData = await response.json();
+                setError(errorData.error || 'Failed to create department');
+                setFormError(errorData.error || '');
             }
         } catch (err) {
             setError('Error creating department');
@@ -116,6 +158,7 @@ export default function AdminDepartments() {
                                     <input
                                         type="text"
                                         required
+                                        placeholder="e.g., Roads & Infrastructure Department"
                                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                         value={newDepartment.name}
                                         onChange={(e) => setNewDepartment({ ...newDepartment, name: e.target.value })}

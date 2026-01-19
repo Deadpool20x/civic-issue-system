@@ -15,13 +15,22 @@ function CitizenDashboardContent() {
     const [issues, setIssues] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
+    const [sortBy, setSortBy] = useState('recent');
     const searchParams = useSearchParams();
     const { user } = useUser();
 
-    const filteredIssues = useMemo(
-        () => issues.filter(issue => filter === 'all' || issue.status === filter),
-        [issues, filter]
-    );
+    const filteredIssues = useMemo(() => {
+        let filtered = issues.filter(issue => filter === 'all' || issue.status === filter);
+        
+        // Sort by upvotes or recent
+        if (sortBy === 'upvotes') {
+            filtered.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
+        } else {
+            filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        }
+        
+        return filtered;
+    }, [issues, filter, sortBy]);
 
     const stats = useMemo(() => ([
         {
@@ -144,6 +153,7 @@ function CitizenDashboardContent() {
                         <p className="text-contrast-secondary">Track and manage your reported civic issues</p>
                     </div>
                     <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+                        {/* Status Filter */}
                         <div className="relative">
                             <select
                                 className="w-full appearance-none rounded-xl border border-neutral-border bg-neutral-surface px-4 py-2.5 pr-10 text-sm font-medium text-contrast-secondary shadow-sm outline-none transition hover:border-neutral-border focus:border-brand-primary focus:ring-1 focus:ring-brand-primary sm:w-48"
@@ -155,6 +165,23 @@ function CitizenDashboardContent() {
                                 <option value="in-progress">In Progress</option>
                                 <option value="resolved">Resolved</option>
                                 <option value="rejected">Rejected</option>
+                            </select>
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-contrast-light">
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        {/* Sort by Upvotes */}
+                        <div className="relative">
+                            <select
+                                className="w-full appearance-none rounded-xl border border-neutral-border bg-neutral-surface px-4 py-2.5 pr-10 text-sm font-medium text-contrast-secondary shadow-sm outline-none transition hover:border-neutral-border focus:border-brand-primary focus:ring-1 focus:ring-brand-primary sm:w-48"
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value)}
+                            >
+                                <option value="recent">Most Recent</option>
+                                <option value="upvotes">Most Upvoted</option>
                             </select>
                             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-contrast-light">
                                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

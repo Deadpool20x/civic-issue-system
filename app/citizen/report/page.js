@@ -3,36 +3,56 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import DashboardLayout from '@/components/DashboardLayout';
 import Card from '@/components/ui/Card';
 import PrimaryButton from '@/components/ui/PrimaryButton';
 import toast from 'react-hot-toast';
+import { CATEGORIES } from '@/lib/schemas';
+import ImageUploader from '@/components/ImageUploader';
+import DuplicateModal from '@/components/DuplicateModal';
+
+// Dynamic import to avoid SSR issues with Leaflet
+const LocationPicker = dynamic(() => import('@/components/LocationPicker'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-96 bg-neutral-bg rounded-xl flex items-center justify-center">
+      <p className="text-contrast-secondary">Loading map...</p>
+    </div>
+  ),
+});
 
 export default function ReportIssuePage() {
     const [formData, setFormData] = useState({
         title: '',
         description: '',
         category: '',
+        subcategory: '',
         priority: 'medium',
-        location: {
-            address: '',
-            coordinates: [0, 0]
-        }
     });
-    const [images, setImages] = useState([]);
-    const [uploading, setUploading] = useState(false);
+    const [locationData, setLocationData] = useState({
+        address: '',
+        coordinates: null,
+        city: '',
+        state: '',
+        pincode: '',
+    });
+    const [manualAddress, setManualAddress] = useState('');
+    const [imageUrls, setImageUrls] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+    const [duplicates, setDuplicates] = useState([]);
+    const [pendingSubmission, setPendingSubmission] = useState(null);
     const router = useRouter();
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        if (name === 'address') {
+        if (name === 'category') {
+            // When category changes, reset subcategory
             setFormData(prev => ({
                 ...prev,
-                location: {
-                    ...prev.location,
-                    address: value
-                }
+                category: value,
+                subcategory: ''
             }));
         } else {
             setFormData(prev => ({
@@ -42,181 +62,48 @@ export default function ReportIssuePage() {
         }
     };
 
-    const handleImageUpload = async (e) => {
-        const files = Array.from(e.target.files);
-        if (files.length === 0) return;
+    // LocationPicker handles geolocation and reverse geocoding
 
-        setUploading(true);
-        const uploadedImages = [];
-
+    // Check for duplicates before submitting
+    const checkForDuplicates = async (formData) => {
         try {
-            for (const file of files) {
-                const formData = new FormData();
-                formData.append('file', file);
-
-                const response = await fetch('/api/upload', {
-                    method: 'POST',
-                    credentials: 'include',
-                    body: formData,
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to upload image');
-                }
-
-                const result = await response.json();
-                uploadedImages.push(result);
-            }
-
-            setImages(prev => [...prev, ...uploadedImages]);
-            toast.success(`${uploadedImages.length} image(s) uploaded successfully`);
-        } catch (error) {
-            toast.error('Failed to upload images');
-            console.error('Upload error:', error);
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    const removeImage = async (index) => {
-        const imageToRemove = images[index];
-
-        try {
-            await fetch('/api/upload', {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-                body: JSON.stringify({ publicId: imageToRemove.publicId }),
+            const response = await fetch('/api/issues/check-duplicate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    category: formData.category,
+                    coordinates: formData.location.coordinates
+                })
             });
 
-            setImages(prev => prev.filter((_, i) => i !== index));
-            toast.success('Image removed successfully');
+            const data = await response.json();
+            
+            if (data.duplicates && data.duplicates.length > 0) {
+                setDuplicates(data.duplicates);
+                setPendingSubmission(formData);
+                setShowDuplicateModal(true);
+                return true; // Duplicates found
+            }
+            
+            return false; // No duplicates
         } catch (error) {
-            toast.error('Failed to remove image');
-            console.error('Remove error:', error);
+            console.error('Duplicate check error:', error);
+            return false; // Continue with submission if check fails
         }
     };
 
-    const getCurrentLocation = () => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    const latitude = position.coords.latitude;
-                    const longitude = position.coords.longitude;
-
-                    // Update coordinates first
-                    setFormData(prev => ({
-                        ...prev,
-                        location: {
-                            ...prev.location,
-                            coordinates: [longitude, latitude]
-                        }
-                    }));
-
-                    // Try to get address from coordinates using free reverse geocoding
-                    try {
-                        const response = await fetch(
-                            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`,
-                            {
-                                headers: {
-                                    'User-Agent': 'CivicIssueApp/1.0'
-                                }
-                            }
-                        );
-
-                        if (response.ok) {
-                            const data = await response.json();
-                            if (data.display_name) {
-                                setFormData(prev => ({
-                                    ...prev,
-                                    location: {
-                                        ...prev.location,
-                                        address: data.display_name,
-                                        coordinates: [longitude, latitude]
-                                    }
-                                }));
-                                toast.success('Location and address updated successfully');
-                                return;
-                            }
-                        }
-                    } catch (error) {
-                        console.log('Reverse geocoding failed:', error);
-                    }
-
-                    // Fallback: display coordinates as address
-                    setFormData(prev => ({
-                        ...prev,
-                        location: {
-                            ...prev.location,
-                            address: `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`,
-                            coordinates: [longitude, latitude]
-                        }
-                    }));
-                    toast.success('Location coordinates updated successfully');
-                },
-                (error) => {
-                    let errorMessage = 'Failed to get location';
-
-                    switch (error.code) {
-                        case error.PERMISSION_DENIED:
-                            errorMessage = 'Location access denied by user';
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            errorMessage = 'Location information unavailable';
-                            break;
-                        case error.TIMEOUT:
-                            errorMessage = 'Location request timed out';
-                            break;
-                        default:
-                            errorMessage = `Location error: ${error.message || 'Unknown error'}`;
-                            break;
-                    }
-
-                    toast.error(errorMessage);
-                    console.error('Geolocation error:', {
-                        code: error.code,
-                        message: error.message,
-                        errorMessage
-                    });
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 600000 // 10 minutes
-                }
-            );
-        } else {
-            toast.error('Geolocation is not supported by this browser');
-        }
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        if (!formData.title || !formData.description || !formData.category) {
-            toast.error('Please fill in all required fields');
-            return;
-        }
-
-        setLoading(true);
-
+    // Submit issue to API
+    const submitIssue = async (formData) => {
         try {
-            const issueData = {
-                ...formData,
-                images
-            };
-
-            console.log('Submitting issue data:', issueData);
-
+            setLoading(true);
+            
             const response = await fetch('/api/issues', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 credentials: 'include',
-                body: JSON.stringify(issueData),
+                body: JSON.stringify(formData),
             });
 
             if (!response.ok) {
@@ -226,7 +113,7 @@ export default function ReportIssuePage() {
 
             const result = await response.json();
             console.log('Issue created:', result);
-            toast.success('Issue reported successfully!');
+            toast.success(`Report ${result.reportId} submitted successfully!`);
             router.push('/citizen/dashboard');
         } catch (error) {
             console.error('Submit error:', error);
@@ -234,6 +121,69 @@ export default function ReportIssuePage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    // Handle form submission
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        if (!formData.title || !formData.description || !formData.category || !formData.subcategory) {
+            toast.error('Please fill in all required fields');
+            return;
+        }
+
+        if (!locationData.address && !manualAddress) {
+            toast.error('Please provide a location');
+            return;
+        }
+
+        const issueData = {
+            ...formData,
+            location: {
+                address: locationData.address || manualAddress,
+                coordinates: locationData.coordinates,
+                city: locationData.city,
+                state: locationData.state,
+                pincode: locationData.pincode,
+            },
+            images: imageUrls
+        };
+
+        // Check for duplicates first
+        const hasDuplicates = await checkForDuplicates(issueData);
+        
+        if (hasDuplicates) {
+            return; // Show modal, wait for user decision
+        }
+        
+        // No duplicates, submit directly
+        await submitIssue(issueData);
+    };
+
+    // Handle upvote from modal
+    const handleUpvote = async (duplicate) => {
+        try {
+            const response = await fetch(`/api/issues/${duplicate._id}/upvote`, {
+                method: 'POST'
+            });
+            
+            if (response.ok) {
+                toast.success(`You upvoted report ${duplicate.reportId}`);
+                setShowDuplicateModal(false);
+                // Redirect to dashboard
+                router.push('/citizen/dashboard');
+            } else {
+                toast.error('Failed to upvote');
+            }
+        } catch (error) {
+            toast.error('Error upvoting report');
+        }
+    };
+
+    // Handle submit anyway
+    const handleSubmitAnyway = async () => {
+        setShowDuplicateModal(false);
+        await submitIssue(pendingSubmission);
     };
 
     return (
@@ -283,6 +233,7 @@ export default function ReportIssuePage() {
                                         id="title"
                                         name="title"
                                         required
+                                        maxLength={200}
                                         value={formData.title}
                                         onChange={handleChange}
                                         className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white text-slate-900 placeholder-slate-400"
@@ -298,7 +249,8 @@ export default function ReportIssuePage() {
                                         id="description"
                                         name="description"
                                         required
-                                        rows={4}
+                                        rows={6}
+                                        maxLength={2000}
                                         value={formData.description}
                                         onChange={handleChange}
                                         className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white text-slate-900 placeholder-slate-400 resize-none"
@@ -331,32 +283,51 @@ export default function ReportIssuePage() {
                                         className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white text-slate-900"
                                     >
                                         <option value="" className="text-slate-400">Select Category</option>
-                                        <option value="water">💧 Water & Drainage</option>
-                                        <option value="electricity">⚡ Electricity & Power</option>
-                                        <option value="roads">🛣️ Roads & Infrastructure</option>
-                                        <option value="garbage">🗑️ Waste Management</option>
-                                        <option value="parks">🌳 Parks & Recreation</option>
-                                        <option value="other">📝 Other</option>
+                                        {Object.entries(CATEGORIES).map(([key, value]) => (
+                                            <option key={key} value={key}>{value.label}</option>
+                                        ))}
                                     </select>
                                 </div>
 
                                 <div>
-                                    <label htmlFor="priority" className="block text-sm font-semibold text-slate-700 mb-2">
-                                        Priority Level
+                                    <label htmlFor="subcategory" className="block text-sm font-semibold text-slate-700 mb-2">
+                                        Subcategory *
                                     </label>
                                     <select
-                                        id="priority"
-                                        name="priority"
-                                        value={formData.priority}
+                                        id="subcategory"
+                                        name="subcategory"
+                                        required
+                                        value={formData.subcategory}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white text-slate-900"
+                                        disabled={!formData.category}
+                                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white text-slate-900 disabled:bg-slate-100 disabled:cursor-not-allowed"
                                     >
-                                        <option value="low">🟢 Low</option>
-                                        <option value="medium">🟡 Medium</option>
-                                        <option value="high">🟠 High</option>
-                                        <option value="urgent">🔴 Urgent</option>
+                                        <option value="" className="text-slate-400">
+                                            {formData.category ? 'Select Subcategory' : 'Select Category First'}
+                                        </option>
+                                        {formData.category && CATEGORIES[formData.category]?.subcategories.map((sub) => (
+                                            <option key={sub} value={sub}>{sub}</option>
+                                        ))}
                                     </select>
                                 </div>
+                            </div>
+
+                            <div className="mt-6">
+                                <label htmlFor="priority" className="block text-sm font-semibold text-slate-700 mb-2">
+                                    Priority Level
+                                </label>
+                                <select
+                                    id="priority"
+                                    name="priority"
+                                    value={formData.priority}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white text-slate-900"
+                                >
+                                    <option value="low">🟢 Low</option>
+                                    <option value="medium">🟡 Medium</option>
+                                    <option value="high">🟠 High</option>
+                                    <option value="urgent">🔴 Urgent</option>
+                                </select>
                             </div>
                         </div>
 
@@ -370,31 +341,27 @@ export default function ReportIssuePage() {
                                 Location
                             </h3>
 
-                            <div>
-                                <label htmlFor="address" className="block text-sm font-semibold text-slate-700 mb-2">
-                                    Address
+                            <LocationPicker
+                                onLocationSelect={setLocationData}
+                                initialLocation={locationData.coordinates}
+                            />
+
+                            {/* Manual address input (fallback) */}
+                            <div className="mt-4">
+                                <label htmlFor="manualAddress" className="block text-sm font-semibold text-slate-700 mb-2">
+                                    Or enter address manually:
                                 </label>
-                                <div className="flex gap-3">
-                                    <input
-                                        type="text"
-                                        id="address"
-                                        name="address"
-                                        value={formData.location.address}
-                                        onChange={handleChange}
-                                        className="flex-1 px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white text-slate-900 placeholder-slate-400"
-                                        placeholder="Enter the location address"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={getCurrentLocation}
-                                        className="px-6 py-3 bg-brand-primary text-white rounded-xl hover:bg-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary transition-colors font-medium flex items-center gap-2"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                        </svg>
-                                        Current Location
-                                    </button>
-                                </div>
+                                <input
+                                    type="text"
+                                    id="manualAddress"
+                                    value={manualAddress || locationData.address}
+                                    onChange={(e) => {
+                                        setManualAddress(e.target.value);
+                                        setLocationData(prev => ({ ...prev, address: e.target.value }));
+                                    }}
+                                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary transition-colors bg-white text-slate-900"
+                                    placeholder="Enter street address"
+                                />
                             </div>
                         </div>
 
@@ -404,61 +371,14 @@ export default function ReportIssuePage() {
                                 <svg className="w-5 h-5 text-accent-lavender mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
-                                Evidence Photos
+                                Evidence Photos (Optional)
                             </h3>
-
-                            <div>
-                                <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-brand-primary transition-colors bg-white">
-                                    <div className="mx-auto w-12 h-12 bg-accent-lavender/20 rounded-full flex items-center justify-center mb-4">
-                                        <svg className="w-6 h-6 text-accent-lavender" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                        </svg>
-                                    </div>
-                                    <input
-                                        type="file"
-                                        multiple
-                                        accept="image/*"
-                                        onChange={handleImageUpload}
-                                        disabled={uploading}
-                                        className="hidden"
-                                        id="image-upload"
-                                    />
-                                    <label htmlFor="image-upload" className="cursor-pointer">
-                                        <span className="text-brand-primary font-medium hover:text-brand-primary">Click to upload images</span>
-                                        <span className="text-slate-600"> or drag and drop</span>
-                                        <p className="text-sm text-slate-500 mt-2">
-                                            {uploading ? 'Uploading images...' : 'PNG, JPG, GIF up to 10MB each'}
-                                        </p>
-                                    </label>
-                                </div>
-                                {images.length > 0 && (
-                                    <div className="mt-6">
-                                        <h4 className="text-sm font-medium text-slate-700 mb-3">Uploaded Images ({images.length})</h4>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                            {images.map((image, index) => (
-                                                <div key={index} className="relative group">
-                                                    <Image
-                                                        src={image.url}
-                                                        alt={`Upload ${index + 1}`}
-                                                        width={300}
-                                                        height={180}
-                                                        className="w-full h-24 object-cover rounded-lg border border-slate-200"
-                                                        sizes="(max-width: 768px) 50vw, 25vw"
-                                                        unoptimized
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeImage(index)}
-                                                        className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-700 transition-colors shadow-lg"
-                                                    >
-                                                        &times;
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                            
+                            <p className="text-sm text-contrast-secondary mb-4">
+                                Add up to 3 photos to help us understand the issue better. Images are optional but recommended.
+                            </p>
+                            
+                            <ImageUploader onImagesChange={setImageUrls} maxImages={3} />
                         </div>
 
                         {/* Action Buttons */}
@@ -472,7 +392,7 @@ export default function ReportIssuePage() {
                             </button>
                             <button
                                 type="submit"
-                                disabled={loading || uploading}
+                                disabled={loading}
                                 className="px-8 py-3 bg-brand-primary text-white rounded-xl hover:bg-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium flex items-center gap-2 shadow-md"
                             >
                                 {loading ? (
@@ -496,6 +416,16 @@ export default function ReportIssuePage() {
                     </form>
                 </Card>
             </div>
+            
+            {/* Duplicate Modal */}
+            {showDuplicateModal && (
+                <DuplicateModal
+                    duplicates={duplicates}
+                    onSubmitAnyway={handleSubmitAnyway}
+                    onUpvote={handleUpvote}
+                    onClose={() => setShowDuplicateModal(false)}
+                />
+            )}
         </DashboardLayout>
     );
 }

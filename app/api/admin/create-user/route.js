@@ -1,7 +1,9 @@
 import { connectDB } from '@/lib/mongodb';
 import { strictRoleMiddleware } from '@/lib/middleware';
 import User from '@/models/User';
+import Department from '@/lib/models/Department';
 import { userAdminCreateSchema } from '@/lib/schemas';
+import mongoose from 'mongoose';
 
 /**
  * POST /api/admin/create-user
@@ -71,6 +73,25 @@ export const POST = strictRoleMiddleware(['admin'])(async (req) => {
             );
         }
 
+        // SECURITY: Validate department exists if provided
+        if (department) {
+            const existingDepartment = await Department.findById(department);
+            if (!existingDepartment) {
+                return new Response(
+                    JSON.stringify({ error: 'Selected department does not exist' }),
+                    { status: 400, headers: { 'Content-Type': 'application/json' } }
+                );
+            }
+
+            // SECURITY: Validate department is active
+            if (!existingDepartment.isActive) {
+                return new Response(
+                    JSON.stringify({ error: 'Selected department is not active' }),
+                    { status: 400, headers: { 'Content-Type': 'application/json' } }
+                );
+            }
+        }
+
         // Connect to database
         await connectDB();
 
@@ -86,6 +107,9 @@ export const POST = strictRoleMiddleware(['admin'])(async (req) => {
         // Clean up phone number
         const cleanPhone = phone ? phone.replace(/[\s-]/g, '') : undefined;
 
+        // Convert department to ObjectId if provided
+        const departmentObjectId = department ? new mongoose.Types.ObjectId(department) : undefined;
+
         // Create user - password will be hashed by User model pre-save middleware
         const user = await User.create({
             name,
@@ -93,7 +117,7 @@ export const POST = strictRoleMiddleware(['admin'])(async (req) => {
             password,
             phone: cleanPhone,
             role,
-            department: role === 'department' ? department : undefined,
+            department: role === 'department' ? departmentObjectId : undefined,
             address: address || {}
         });
 

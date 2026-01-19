@@ -6,11 +6,16 @@ import DashboardLayout from '@/components/DashboardLayout';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import Card from '@/components/ui/Card';
 import toast from 'react-hot-toast';
+import { getDepartmentDisplayName } from '@/lib/department-mapper';
 
 export default function AdminUsersPage() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
+    const [departments, setDepartments] = useState([]);
+    const [loadingDepartments, setLoadingDepartments] = useState(true);
+    const [selectedRoles, setSelectedRoles] = useState({});
+    const [selectedDepartments, setSelectedDepartments] = useState({});
 
     const fetchUsers = useCallback(async () => {
         try {
@@ -47,9 +52,28 @@ export default function AdminUsersPage() {
         }
     }, []);
 
+    // Fetch departments
+    const fetchDepartments = useCallback(async () => {
+        try {
+            setLoadingDepartments(true);
+            const response = await fetch('/api/departments');
+            if (!response.ok) {
+                throw new Error('Failed to fetch departments');
+            }
+            const data = await response.json();
+            setDepartments(data);
+        } catch (error) {
+            toast.error('Failed to load departments');
+            console.error('Error fetching departments:', error);
+        } finally {
+            setLoadingDepartments(false);
+        }
+    }, []);
+
     useEffect(() => {
         fetchUsers();
-    }, [fetchUsers]);
+        fetchDepartments();
+    }, [fetchUsers, fetchDepartments]);
 
     const filteredUsers = users.filter(user => {
         if (filter === 'all') return true;
@@ -108,6 +132,43 @@ export default function AdminUsersPage() {
         } catch (error) {
             toast.error(error.message || 'Failed to update user');
             console.error('Error updating user:', error);
+        }
+    };
+
+    const handleRoleChange = (userId, newRole) => {
+        const user = users.find(u => u._id === userId);
+        if (user.role === 'admin') {
+            toast.error('Cannot modify admin role');
+            return;
+        }
+
+        setSelectedRoles(prev => ({ ...prev, [userId]: newRole }));
+
+        if (newRole !== 'department') {
+            setSelectedDepartments(prev => ({ ...prev, [userId]: null }));
+            handleUpdateUser(userId, { role: newRole, department: null });
+        } else {
+            // If changing to department role, require department selection
+            const currentDepartment = selectedDepartments[userId] || user.department?._id || user.department;
+            if (!currentDepartment) {
+                toast.error('Please select a department first');
+                return;
+            }
+            handleUpdateUser(userId, { role: newRole, department: currentDepartment });
+        }
+    };
+
+    const handleDepartmentChange = (userId, departmentId) => {
+        const user = users.find(u => u._id === userId);
+        const currentRole = selectedRoles[userId] || user.role;
+        
+        setSelectedDepartments(prev => ({ ...prev, [userId]: departmentId }));
+        
+        // If user is (or will be) a department role, update both role and department
+        if (currentRole === 'department') {
+            handleUpdateUser(userId, { role: 'department', department: departmentId });
+        } else {
+            handleUpdateUser(userId, { department: departmentId });
         }
     };
 
@@ -216,14 +277,8 @@ export default function AdminUsersPage() {
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <select
                                                         className="text-xs border border-neutral-border rounded px-2 py-1 bg-neutral-surface text-contrast-secondary focus:outline-none focus:ring-1 focus:ring-brand-primary"
-                                                        value={user.role}
-                                                        onChange={(e) => {
-                                                            if (user.role === 'admin') {
-                                                                toast.error('Cannot modify admin role');
-                                                                return;
-                                                            }
-                                                            handleUpdateUser(user._id, { role: e.target.value });
-                                                        }}
+                                                        value={selectedRoles[user._id] || user.role}
+                                                        onChange={(e) => handleRoleChange(user._id, e.target.value)}
                                                         disabled={user.role === 'admin'}
                                                     >
                                                         <option value="citizen">Citizen</option>
@@ -233,19 +288,20 @@ export default function AdminUsersPage() {
                                                     </select>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    {user.role === 'department' ? (
+                                                    {(selectedRoles[user._id] === 'department' || user.role === 'department') ? (
                                                         <select
                                                             className="text-xs border border-neutral-border rounded px-2 py-1 bg-neutral-surface text-contrast-secondary focus:outline-none focus:ring-1 focus:ring-brand-primary"
-                                                            value={user.department || ''}
-                                                            onChange={(e) => handleUpdateUser(user._id, { department: e.target.value })}
+                                                            value={selectedDepartments[user._id] || user.department?._id || user.department || ''}
+                                                            onChange={(e) => handleDepartmentChange(user._id, e.target.value)}
+                                                            disabled={loadingDepartments}
+                                                            required={selectedRoles[user._id] === 'department' || user.role === 'department'}
                                                         >
                                                             <option value="">Select</option>
-                                                            <option value="water">Water</option>
-                                                            <option value="electricity">Electricity</option>
-                                                            <option value="roads">Roads</option>
-                                                            <option value="garbage">Garbage</option>
-                                                            <option value="parks">Parks</option>
-                                                            <option value="other">Other</option>
+                                                            {departments.map((dept) => (
+                                                                <option key={dept._id} value={dept._id}>
+                                                                    {getDepartmentDisplayName(dept.name)}
+                                                                </option>
+                                                            ))}
                                                         </select>
                                                     ) : (
                                                         <span className="text-sm text-contrast-light">—</span>
@@ -288,5 +344,3 @@ export default function AdminUsersPage() {
         </DashboardLayout>
     );
 }
-
-

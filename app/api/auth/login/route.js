@@ -133,6 +133,14 @@ export async function POST(req) {
         );
     } catch (error) {
         console.error('Login error:', error);
+        
+        if (error.name === 'MongooseServerSelectionError' || error.name === 'MongoNetworkError') {
+             return new Response(
+                JSON.stringify({ error: 'Database service unavailable. Please try again later.' }),
+                { status: 503, headers: { 'Content-Type': 'application/json' } }
+            );
+        }
+
         return new Response(
             JSON.stringify({ error: 'Internal server error' }),
             { status: 500, headers: { 'Content-Type': 'application/json' } }

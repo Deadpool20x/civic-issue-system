@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import DashboardProtection from '@/components/DashboardProtection';
 import toast from 'react-hot-toast';
+import { getDepartmentDisplayName } from '@/lib/department-mapper';
 
 export default function AdminCreateUserPage() {
     const router = useRouter();
@@ -27,6 +28,9 @@ export default function AdminCreateUserPage() {
         }
     });
 
+    const [departments, setDepartments] = useState([]);
+    const [loadingDepartments, setLoadingDepartments] = useState(true);
+
     // Reset success message after 3 seconds
     useEffect(() => {
         if (success) {
@@ -34,6 +38,28 @@ export default function AdminCreateUserPage() {
             return () => clearTimeout(timer);
         }
     }, [success]);
+
+    // Fetch departments when component mounts
+    useEffect(() => {
+        const fetchDepartments = async () => {
+            try {
+                setLoadingDepartments(true);
+                const response = await fetch('/api/departments');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch departments');
+                }
+                const data = await response.json();
+                setDepartments(data);
+            } catch (error) {
+                console.error('Error fetching departments:', error);
+                toast.error('Failed to load departments');
+            } finally {
+                setLoadingDepartments(false);
+            }
+        };
+
+        fetchDepartments();
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -233,16 +259,18 @@ export default function AdminCreateUserPage() {
                             value={formData.department}
                             onChange={handleChange}
                             className="w-full px-3 py-2 border border-neutral-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary bg-white text-contrast-primary"
-                            disabled={loading}
+                            disabled={loading || loadingDepartments}
                         >
                             <option value="">Select Department</option>
-                            <option value="water">Water</option>
-                            <option value="electricity">Electricity</option>
-                            <option value="roads">Roads</option>
-                            <option value="garbage">Garbage</option>
-                            <option value="parks">Parks</option>
-                            <option value="other">Other</option>
+                            {departments.map((dept) => (
+                                <option key={dept._id} value={dept._id}>
+                                    {getDepartmentDisplayName(dept.name)}
+                                </option>
+                            ))}
                         </select>
+                        {loadingDepartments && (
+                            <p className="text-xs text-contrast-light mt-1">Loading departments...</p>
+                        )}
                     </div>
                 )}
 

@@ -77,6 +77,16 @@ export default function HomePage() {
               Sign In
             </Link>
           </div>
+
+          {/* View Map Button */}
+          <div className="mt-6">
+            <Link
+              href="/map"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-brand-primary border-2 border-brand-primary rounded-xl hover:bg-brand-soft transition-colors font-medium"
+            >
+              🗺️ View Issue Map
+            </Link>
+          </div>
         </div>
       </div>
 

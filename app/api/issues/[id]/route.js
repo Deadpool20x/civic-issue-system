@@ -2,15 +2,24 @@ import { connectDB } from '@/lib/mongodb';
 import { authMiddleware, roleMiddleware } from '@/lib/auth';
 import { strictRoleMiddleware } from '@/lib/middleware';
 import Issue from '@/models/Issue';
+import StateHistory from '@/models/StateHistory';
 
 // Get specific issue
 export const GET = authMiddleware(async (req, { params }) => {
     try {
         await connectDB();
 
-        const issue = await Issue.findById(params.id)
-            .populate('reportedBy', 'name email')
-            .populate('assignedTo', 'name department');
+        // Try to find by reportId first, then by _id
+        let issue;
+        if (params.id.startsWith('R')) {
+            issue = await Issue.findOne({ reportId: params.id })
+                .populate('reportedBy', 'name email')
+                .populate('assignedTo', 'name department');
+        } else {
+            issue = await Issue.findById(params.id)
+                .populate('reportedBy', 'name email')
+                .populate('assignedTo', 'name department');
+        }
 
         if (!issue) {
             return new Response(
@@ -27,7 +36,17 @@ export const GET = authMiddleware(async (req, { params }) => {
             );
         }
 
-        return new Response(JSON.stringify(issue), {
+        // Fetch state history
+        const stateHistory = await StateHistory.find({ issueId: issue._id })
+            .populate('changedBy', 'name role')
+            .populate('assignedTo', 'name department')
+            .sort({ timestamp: 1 })
+            .lean();
+
+        return new Response(JSON.stringify({
+            issue,
+            stateHistory
+        }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
         });
@@ -46,7 +65,13 @@ export const PATCH = authMiddleware(async (req, { params }) => {
         const updates = await req.json();
         await connectDB();
 
-        const issue = await Issue.findById(params.id);
+        // Try to find by reportId first, then by _id
+        let issue;
+        if (params.id.startsWith('R')) {
+            issue = await Issue.findOne({ reportId: params.id });
+        } else {
+            issue = await Issue.findById(params.id);
+        }
 
         if (!issue) {
             return new Response(
@@ -73,6 +98,10 @@ export const PATCH = authMiddleware(async (req, { params }) => {
                 { status: 403, headers: { 'Content-Type': 'application/json' } }
             );
         }
+
+        // Track if status is being changed
+        const oldStatus = issue.status;
+        const statusChanged = updates.status && updates.status !== oldStatus;
 
         // Citizens can only edit certain fields of their own issues
         if (req.user.role === 'citizen') {
@@ -101,6 +130,19 @@ export const PATCH = authMiddleware(async (req, { params }) => {
 
         await issue.save();
 
+        // ⭐ CREATE STATE HISTORY ENTRY WHEN STATUS CHANGES ⭐
+        if (statusChanged) {
+            await StateHistory.create({
+                issueId: issue._id,
+                status: updates.status,
+                changedBy: req.user.userId,
+                comment: updates.comment || `Status changed from ${oldStatus} to ${updates.status}`,
+                timestamp: new Date()
+            });
+            
+            console.log(`✅ State history created for status change: ${oldStatus} → ${updates.status}`);
+        }
+
         const updatedIssue = await Issue.findById(params.id)
             .populate('reportedBy', 'name email')
             .populate('assignedTo', 'name department');
@@ -124,7 +166,13 @@ export const DELETE = strictRoleMiddleware(['admin'])(async (req, { params }) =>
     try {
         await connectDB();
 
-        const issue = await Issue.findByIdAndDelete(params.id);
+        // Try to find by reportId first, then by _id
+        let issue;
+        if (params.id.startsWith('R')) {
+            issue = await Issue.findOneAndDelete({ reportId: params.id });
+        } else {
+            issue = await Issue.findByIdAndDelete(params.id);
+        }
 
         if (!issue) {
             return new Response(

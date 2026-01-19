@@ -63,6 +63,7 @@ export default function IssueDetailPage() {
                         <div>
                             <h1 className="text-2xl font-bold text-civic-text-primary mb-2">{issue.title}</h1>
                             <div className="flex items-center gap-4 text-sm text-civic-text-secondary">
+                                <span className="font-mono text-brand-primary font-medium">Report ID: {issue.reportId}</span>
                                 <span>Category: {issue.category}</span>
                                 <span>Priority: {issue.priority}</span>
                                 <span>Status: {issue.status}</span>
