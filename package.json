@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev -p 3001",
+    "dev": "next dev",
     "build": "next build",
-    "start": "next start -p 3001",
-    "lint": "eslint",
+    "start": "next start",
+    "lint": "eslint .",
     "check": "node lib/startup-check.js",
     "clean": "rm -rf .next node_modules",
     "reset": "npm run clean && npm install",
