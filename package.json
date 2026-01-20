@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run build:next",
+    "build:next": "next build || (npm install @next/swc-linux-x64-gnu @next/swc-linux-x64-musl && next build)",
     "start": "next start",
     "lint": "eslint .",
     "check": "node lib/startup-check.js",
@@ -25,7 +26,7 @@
     "jsonwebtoken": "^9.0.2",
     "leaflet": "^1.9.4",
     "mongoose": "^8.1.0",
-    "next": "^14.2.15",
+    "next": "14.2.15",
     "next-cloudinary": "^6.3.0",
     "node-cron": "^3.0.3",
     "react": "^18.3.1",
@@ -47,5 +48,9 @@
   },
   "overrides": {
     "eslint": "^8.57.1"
+  },
+  "optionalDependencies": {
+    "@next/swc-linux-x64-gnu": "*",
+    "@next/swc-linux-x64-musl": "*"
   }
 }
