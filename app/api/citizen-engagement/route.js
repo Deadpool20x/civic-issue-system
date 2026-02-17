@@ -3,6 +3,9 @@ import { authMiddleware } from '@/lib/auth';
 import Issue from '@/models/Issue';
 import User from '@/models/User';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // Upvote an issue
 export const POST = authMiddleware(async (req) => {
     try {

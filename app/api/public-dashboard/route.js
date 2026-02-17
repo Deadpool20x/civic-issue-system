@@ -2,6 +2,9 @@ import { connectDB } from '@/lib/mongodb';
 import Issue from '@/models/Issue';
 import DepartmentPerformance from '@/models/DepartmentPerformance';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // Public dashboard data (no authentication required)
 export const GET = async (req) => {
     try {

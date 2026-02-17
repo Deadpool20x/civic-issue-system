@@ -147,7 +147,7 @@ const issueSchema = new mongoose.Schema({
             min: 1,
             max: 5
         },
-        resolved: Boolean, // true = yes, false = no
+        isResolved: Boolean, // true = yes, false = no (renamed from resolved for clarity)
         comment: String,
         submittedAt: Date,
         submittedBy: {

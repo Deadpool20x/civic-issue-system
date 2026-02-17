@@ -2,6 +2,9 @@ import { connectDB } from '@/lib/mongodb';
 import { strictRoleMiddleware } from '@/lib/middleware';
 import Issue from '@/models/Issue';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 /**
  * GET /api/admin/analytics/workflow
  * Admin-only: Returns workflow integrity metrics

@@ -4,6 +4,9 @@ import Issue from '@/models/Issue';
 import StateHistory from '@/models/StateHistory';
 import { sendEmail } from '@/lib/email';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // POST endpoint for department staff to update issue status
 export async function POST(request, { params }) {
     try {

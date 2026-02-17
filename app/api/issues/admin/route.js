@@ -2,6 +2,9 @@ import connectDB from '@/lib/mongodb';
 import Issue from '@/models/Issue';
 import { getTokenData } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function GET(req) {
   try {
     await connectDB();

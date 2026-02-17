@@ -5,6 +5,9 @@ import Department from '@/lib/models/Department';
 import { userAdminCreateSchema } from '@/lib/schemas';
 import mongoose from 'mongoose';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 /**
  * POST /api/admin/create-user
  * 

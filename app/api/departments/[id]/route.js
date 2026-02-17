@@ -4,6 +4,9 @@ import { strictRoleMiddleware } from '@/lib/middleware';
 import Department from '@/lib/models/Department';
 import User from '@/models/User';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // SECURE: Delete department (admin only)
 export const DELETE = strictRoleMiddleware(['admin'])(async (req, { params }) => {
     try {

@@ -2,6 +2,9 @@ import { getTokenData } from '@/lib/auth';
 import { connectDB } from '@/lib/mongodb';
 import User from '@/models/User';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function GET(req) {
     try {
         const userData = await getTokenData();

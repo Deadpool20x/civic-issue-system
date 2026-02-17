@@ -4,6 +4,9 @@ import { strictRoleMiddleware } from '@/lib/middleware';
 import User from '@/models/User';
 import { userAdminCreateSchema } from '@/lib/schemas';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // SECURE: Admin-only endpoint to create department/municipal staff
 export const POST = strictRoleMiddleware(['admin'])(async (req) => {
     try {

@@ -6,6 +6,9 @@ import Department from '@/lib/models/Department';
 import { z } from 'zod';
 import mongoose from 'mongoose';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // Schema for updating user (admin-only fields)
 const updateUserSchema = z.object({
     role: z.enum(['citizen', 'municipal', 'department']).optional(),

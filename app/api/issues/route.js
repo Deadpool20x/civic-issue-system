@@ -11,6 +11,9 @@ import { calculatePriority } from '@/lib/priority-calculator';
 import { getDepartmentForCategory, getDepartmentDisplayName } from '@/lib/department-mapper';
 import { createDepartmentAssignmentEmail } from '@/lib/email-templates/department-assignment';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export const GET = withAuth(async (req) => {
     try {
         await connectDB();
@@ -198,10 +201,24 @@ export const POST = withAuth(async (req) => {
         const dueTime = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
         // ⭐ AUTO-ASSIGN DEPARTMENT ⭐
-        const assignedDepartment = getDepartmentForCategory(category, subcategory);
-        const departmentDisplayName = getDepartmentDisplayName(assignedDepartment);
+        const departmentName = getDepartmentForCategory(category, subcategory);
+        const departmentDisplayName = getDepartmentDisplayName(departmentName);
 
-        console.log('📍 Auto-assigned department:', assignedDepartment, 'for category:', category);
+        console.log('📍 Auto-assigned department:', departmentName, 'for category:', category);
+
+        // Look up department by name to get the ObjectId
+        let assignedDepartmentId = null;
+        try {
+            const department = await Department.findOne({ name: departmentName });
+            if (department) {
+                assignedDepartmentId = department._id;
+                console.log('📍 Found department ObjectId:', assignedDepartmentId);
+            } else {
+                console.warn('⚠️ Department not found in database:', departmentName);
+            }
+        } catch (deptError) {
+            console.error('Error looking up department:', deptError);
+        }
 
         const issueData = {
             title,
@@ -212,7 +229,7 @@ export const POST = withAuth(async (req) => {
             priority: calculatedPriority, // ⭐ AUTO-ASSIGNED PRIORITY ⭐
             images: (images || []).map(img => typeof img === 'string' ? { url: img, publicId: '' } : img),
             reportedBy: req.user.userId,
-            assignedDepartment: assignedDepartment,
+            assignedDepartment: assignedDepartmentId,
             ward,
             zone: ward,
             sla: {
@@ -271,7 +288,7 @@ export const POST = withAuth(async (req) => {
                 try {
                     // Find department contact email
                     const department = await Department.findOne({
-                        name: assignedDepartment,
+                        name: departmentName,
                         isActive: true
                     });
 
@@ -286,7 +303,7 @@ export const POST = withAuth(async (req) => {
                         await sendEmail(department.contactEmail, emailTemplate.subject, emailTemplate.html, emailTemplate.text);
                         console.log(`Department assignment email sent to ${departmentDisplayName}: ${department.contactEmail}`);
                     } else {
-                        console.warn(`No contact email found for department: ${assignedDepartment}`);
+                        console.warn(`No contact email found for department: ${departmentName}`);
                     }
                 } catch (deptEmailError) {
                     console.error('Failed to send department assignment email:', deptEmailError);
@@ -302,7 +319,7 @@ export const POST = withAuth(async (req) => {
             reportId: issue.reportId,
             issue: issue,
             department: {
-                name: assignedDepartment,
+                name: departmentName,
                 displayName: departmentDisplayName
             }
         }), {

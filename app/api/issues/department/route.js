@@ -4,6 +4,9 @@ import { getTokenData } from '@/lib/auth';
 import Issue from '@/models/Issue';
 import mongoose from 'mongoose';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function GET(req) {
     try {
         // 1. Connect to database

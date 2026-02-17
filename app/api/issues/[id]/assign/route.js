@@ -8,6 +8,9 @@ import { sendEmail } from '@/lib/email';
 import { getDepartmentDisplayName } from '@/lib/department-mapper';
 import { createDepartmentAssignmentEmail, createReassignmentEmail } from '@/lib/email-templates/department-assignment';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 /**
  * POST - Manually assign/reassign issue to department
  */

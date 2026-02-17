@@ -6,6 +6,9 @@ import { sendEmail } from '@/lib/email';
 import { cookies } from 'next/headers';
 import { loginSchema } from '@/lib/schemas';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function POST(req) {
     try {
         let body;

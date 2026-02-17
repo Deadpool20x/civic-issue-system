@@ -6,6 +6,9 @@ import { sendEmail } from '@/lib/email';
 import { cookies } from 'next/headers';
 import { userRegisterSchema } from '@/lib/schemas';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function POST(req) {
     try {
         let body;
@@ -83,8 +86,9 @@ export async function POST(req) {
         cookieStore.set('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 // 7 days
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60, // 7 days
+            path: '/'
         });
 
         // Prepare user response without sensitive data

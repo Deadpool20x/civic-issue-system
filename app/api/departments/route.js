@@ -4,6 +4,9 @@ import Department from '@/lib/models/Department';
 import Issue from '@/models/Issue';
 import { withAuth, createErrorResponse } from '@/lib/utils';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 /**
  * GET - List all departments with workload counts
  */

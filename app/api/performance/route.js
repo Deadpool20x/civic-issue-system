@@ -4,6 +4,9 @@ import StaffPerformance from '@/models/StaffPerformance';
 import DepartmentPerformance from '@/models/DepartmentPerformance';
 import Issue from '@/models/Issue';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // Get performance leaderboards
 export const GET = authMiddleware(async (req) => {
     try {

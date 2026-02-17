@@ -1,5 +1,8 @@
 import { cookies } from 'next/headers';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function GET() {
     try {
         const cookieStore = cookies();

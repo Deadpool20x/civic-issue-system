@@ -5,6 +5,9 @@ import Issue from '@/models/Issue';
 import User from '@/models/User';
 import Department from '@/lib/models/Department';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // SECURE: Admin-only access to reports
 export const GET = strictRoleMiddleware(['admin'])(async (request) => {
     try {

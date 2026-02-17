@@ -1,6 +1,9 @@
 import { authMiddleware } from '@/lib/auth';
 import AIAnalyzer from '@/lib/ai';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export const POST = authMiddleware(async (req) => {
     try {
         const { action, issueData } = await req.json();

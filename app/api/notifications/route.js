@@ -2,6 +2,9 @@ import { connectDB } from '@/lib/mongodb';
 import { authMiddleware } from '@/lib/auth';
 import Notification from '@/models/Notification';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // Get user notifications
 export const GET = authMiddleware(async (req) => {
     try {

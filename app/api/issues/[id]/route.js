@@ -4,6 +4,9 @@ import { strictRoleMiddleware } from '@/lib/middleware';
 import Issue from '@/models/Issue';
 import StateHistory from '@/models/StateHistory';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // Get specific issue
 export const GET = authMiddleware(async (req, { params }) => {
     try {

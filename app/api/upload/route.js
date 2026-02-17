@@ -1,6 +1,9 @@
 import { authMiddleware } from '@/lib/auth';
 import { uploadImage, deleteImage } from '@/lib/upload';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export const POST = authMiddleware(async (req) => {
     try {
         const formData = await req.formData();

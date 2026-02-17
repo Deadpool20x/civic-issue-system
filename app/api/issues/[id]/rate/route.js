@@ -2,6 +2,9 @@ import { connectDB } from '@/lib/mongodb';
 import Issue from '@/models/Issue';
 import { withAuth } from '@/lib/utils';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export const POST = withAuth(async (req, { params }) => {
     try {
         await connectDB();

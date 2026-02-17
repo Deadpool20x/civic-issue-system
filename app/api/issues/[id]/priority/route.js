@@ -3,6 +3,9 @@ import Issue from '@/models/Issue';
 import StateHistory from '@/models/StateHistory';
 import { withAuth, createErrorResponse } from '@/lib/utils';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export const PATCH = withAuth(async (req, { params }) => {
     try {
         await connectDB();

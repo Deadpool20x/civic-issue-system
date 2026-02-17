@@ -4,6 +4,9 @@ import Issue from '@/models/Issue';
 import StaffPerformance from '@/models/StaffPerformance';
 import DepartmentPerformance from '@/models/DepartmentPerformance';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // Get SLA dashboard data
 export const GET = authMiddleware(async (req) => {
     try {

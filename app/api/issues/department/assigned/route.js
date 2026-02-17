@@ -4,6 +4,9 @@ import User from '@/models/User';
 import Department from '@/lib/models/Department';
 import { getTokenData } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function GET(req) {
   try {
     await connectDB();

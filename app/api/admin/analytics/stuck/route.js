@@ -3,6 +3,9 @@ import { strictRoleMiddleware } from '@/lib/middleware';
 import Issue from '@/models/Issue';
 import StateHistory from '@/models/StateHistory';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 /**
  * GET /api/admin/analytics/stuck?days=7
  * Admin-only: Returns issues stuck in current state
