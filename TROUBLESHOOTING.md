@@ -401,7 +401,7 @@ db.issues.countDocuments()
 Before starting development:
 - [ ] `.env.local` file exists with all required variables
 - [ ] MongoDB is running
-- [ ] Node.js version is 18+
+- [ ] Node.js version is 18.17.0+
 - [ ] All dependencies installed: `npm install`
 - [ ] Startup check passes: `node lib/startup-check.js`
 - [ ] Port 3001 is available

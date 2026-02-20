@@ -35,7 +35,7 @@ A modern web application for citizens to report civic issues and track their res
 
 ## 📋 Prerequisites
 
-- Node.js 18+ 
+- Node.js 18.17.0+ 
 - MongoDB (local or Atlas)
 - npm or yarn
 

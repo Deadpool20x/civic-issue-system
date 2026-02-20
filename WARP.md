@@ -288,7 +288,7 @@ When changing issue status, consider:
 ## Deployment Notes
 - Build command: `npm run build`
 - Start command: `npm start`
-- Requires Node.js 18+
+- Requires Node.js 18.17.0+
 - Set all environment variables in hosting platform
 - MongoDB Atlas recommended for production database
 - Ensure JWT_SECRET is cryptographically secure in production
