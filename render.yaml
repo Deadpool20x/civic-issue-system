@@ -1,0 +1,71 @@
+# Render Configuration for Civic Issue System
+# https://render.com/docs/blueprint-spec
+
+services:
+  # Web Service - Next.js Application
+  - type: web
+    name: civic-issue-system
+    runtime: node
+    region: oregon # or oregon, frankfurt, singapore, etc.
+    plan: starter # free, starter, standard, pro
+    branch: main
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    
+    # Health Check
+    healthCheckPath: /api/health
+    
+    # Auto-deploy on git push
+    autoDeploy: true
+    
+    # Environment Variables
+    envVars:
+      - key: NODE_ENV
+        value: production
+      
+      - key: MONGODB_URI
+        sync: false # Set manually in Render dashboard
+      
+      - key: JWT_SECRET
+        generateValue: true # Auto-generate a secure secret
+      
+      - key: NEXT_PUBLIC_APP_URL
+        value: https://civic-issue-system.onrender.com # Update with your actual URL
+      
+      # Optional: Email configuration
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      
+      - key: EMAIL_PORT
+        value: "587"
+      
+      - key: EMAIL_USER
+        sync: false # Set manually in Render dashboard
+      
+      - key: EMAIL_PASS
+        sync: false # Set manually in Render dashboard
+      
+      # Cloudinary for image uploads
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false # Set manually in Render dashboard
+      
+      - key: CLOUDINARY_API_KEY
+        sync: false # Set manually in Render dashboard
+      
+      - key: CLOUDINARY_API_SECRET
+        sync: false # Set manually in Render dashboard
+
+    # Scaling (for paid plans)
+    # numInstances: 1
+    
+    # Disk storage (if needed)
+    # disk:
+    #   name: data
+    #   mountPath: /opt/render/project/data
+    #   sizeGB: 1
+
+# Optional: Add a database
+# databases:
+#   - name: civic-issues-db
+#     databaseName: civic_issues
+#     user: civic_user
