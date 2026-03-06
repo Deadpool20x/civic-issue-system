@@ -7,7 +7,7 @@ export default function VoiceInput({ onTranscript, locale }) {
     const [isListening, setIsListening] = useState(false)
     const { t } = useTranslation()
 
-    const startListening = (e) => {
+    const startListening = async (e) => {
         if (e) e.preventDefault();
 
         if (!('webkitSpeechRecognition' in window) && !('speechRecognition' in window)) {
@@ -16,6 +16,20 @@ export default function VoiceInput({ onTranscript, locale }) {
         }
 
         try {
+            // First, explicitly request microphone permissions to "wake up" the hardware.
+            // This prevents many ambiguous 'audio-capture' errors across different OSs/browsers.
+            if (navigator && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    // Immediately stop this specific probe stream, since SpeechRecognition handles its own
+                    stream.getTracks().forEach(track => track.stop());
+                } catch (micErr) {
+                    console.error('Microphone access error:', micErr);
+                    toast.error('Microphone missing or access denied. Please check your system settings.', { duration: 5000 });
+                    return;
+                }
+            }
+
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
             const recognition = new SpeechRecognition()
 
@@ -40,6 +54,10 @@ export default function VoiceInput({ onTranscript, locale }) {
                 setIsListening(false)
                 if (error.error === 'not-allowed') {
                     toast.error('Microphone access denied. Please allow microphone permissions.');
+                } else if (error.error === 'audio-capture') {
+                    toast.error('Audio capture failed. Please check if your microphone is connected and working.', { duration: 5000 });
+                } else if (error.error === 'no-speech') {
+                    toast.error('No speech detected. Please speak closer to the microphone and try again.', { duration: 4000 });
                 } else {
                     toast.error(`Voice input failed (${error.error}). Please try again.`);
                 }
