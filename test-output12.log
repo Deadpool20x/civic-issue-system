@@ -1,0 +1,130 @@
+
+> civic-issue-system@0.1.0 test
+> jest __tests__/api-department.test.js
+
+  console.log
+    MongoDB connected successfully
+
+      at log (lib/mongodb.js:30:15)
+
+  console.error
+    ❌ Department API error: Error: `cookies` was called outside a request scope. Read more: https://nextjs.org/docs/messages/next-dynamic-api-wrong-context
+        at getExpectedRequestStore (D:\Projects\node_modules\next\src\client\components\request-async-storage.external.ts:31:9)
+        at cookies (D:\Projects\node_modules\next\src\client\components\headers.ts:53:47)
+        at getTokenData (D:\Projects\lib\auth.js:11:38)
+        at GET (D:\Projects\app\api\issues\department\route.js:23:44)
+        at processTicksAndRejections (node:internal/process/task_queues:95:5)
+        at Object.<anonymous> (D:\Projects\__tests__\api-department.test.js:94:26)
+
+    [0m [90m 82 |[39m
+     [90m 83 |[39m     } [36mcatch[39m (error) {
+    [31m[1m>[22m[39m[90m 84 |[39m         console[33m.[39merror([32m'❌ Department API error:'[39m[33m,[39m error)[33m;[39m
+     [90m    |[39m                 [31m[1m^[22m[39m
+     [90m 85 |[39m         [36mreturn[39m [33mNextResponse[39m[33m.[39mjson(
+     [90m 86 |[39m             { error[33m:[39m error[33m.[39mmessage [33m||[39m [32m'Failed to fetch department issues'[39m }[33m,[39m
+     [90m 87 |[39m             { status[33m:[39m [35m500[39m }[0m
+
+      at error (app/api/issues/department/route.js:84:17)
+      at Object.<anonymous> (__tests__/api-department.test.js:94:26)
+
+  console.error
+    ❌ Department API error: Error: `cookies` was called outside a request scope. Read more: https://nextjs.org/docs/messages/next-dynamic-api-wrong-context
+        at getExpectedRequestStore (D:\Projects\node_modules\next\src\client\components\request-async-storage.external.ts:31:9)
+        at cookies (D:\Projects\node_modules\next\src\client\components\headers.ts:53:47)
+        at getTokenData (D:\Projects\lib\auth.js:11:38)
+        at GET (D:\Projects\app\api\issues\department\route.js:23:44)
+        at processTicksAndRejections (node:internal/process/task_queues:95:5)
+        at Object.<anonymous> (D:\Projects\__tests__\api-department.test.js:104:26)
+
+    [0m [90m 82 |[39m
+     [90m 83 |[39m     } [36mcatch[39m (error) {
+    [31m[1m>[22m[39m[90m 84 |[39m         console[33m.[39merror([32m'❌ Department API error:'[39m[33m,[39m error)[33m;[39m
+     [90m    |[39m                 [31m[1m^[22m[39m
+     [90m 85 |[39m         [36mreturn[39m [33mNextResponse[39m[33m.[39mjson(
+     [90m 86 |[39m             { error[33m:[39m error[33m.[39mmessage [33m||[39m [32m'Failed to fetch department issues'[39m }[33m,[39m
+     [90m 87 |[39m             { status[33m:[39m [35m500[39m }[0m
+
+      at error (app/api/issues/department/route.js:84:17)
+      at Object.<anonymous> (__tests__/api-department.test.js:104:26)
+
+  console.error
+    ❌ Department API error: Error: `cookies` was called outside a request scope. Read more: https://nextjs.org/docs/messages/next-dynamic-api-wrong-context
+        at getExpectedRequestStore (D:\Projects\node_modules\next\src\client\components\request-async-storage.external.ts:31:9)
+        at cookies (D:\Projects\node_modules\next\src\client\components\headers.ts:53:47)
+        at getTokenData (D:\Projects\lib\auth.js:11:38)
+        at GET (D:\Projects\app\api\issues\department\route.js:23:44)
+        at processTicksAndRejections (node:internal/process/task_queues:95:5)
+        at Object.<anonymous> (D:\Projects\__tests__\api-department.test.js:114:26)
+
+    [0m [90m 82 |[39m
+     [90m 83 |[39m     } [36mcatch[39m (error) {
+    [31m[1m>[22m[39m[90m 84 |[39m         console[33m.[39merror([32m'❌ Department API error:'[39m[33m,[39m error)[33m;[39m
+     [90m    |[39m                 [31m[1m^[22m[39m
+     [90m 85 |[39m         [36mreturn[39m [33mNextResponse[39m[33m.[39mjson(
+     [90m 86 |[39m             { error[33m:[39m error[33m.[39mmessage [33m||[39m [32m'Failed to fetch department issues'[39m }[33m,[39m
+     [90m 87 |[39m             { status[33m:[39m [35m500[39m }[0m
+
+      at error (app/api/issues/department/route.js:84:17)
+      at Object.<anonymous> (__tests__/api-department.test.js:114:26)
+
+  console.error
+    ❌ Department API error: Error: `cookies` was called outside a request scope. Read more: https://nextjs.org/docs/messages/next-dynamic-api-wrong-context
+        at getExpectedRequestStore (D:\Projects\node_modules\next\src\client\components\request-async-storage.external.ts:31:9)
+        at cookies (D:\Projects\node_modules\next\src\client\components\headers.ts:53:47)
+        at getTokenData (D:\Projects\lib\auth.js:11:38)
+        at GET (D:\Projects\app\api\issues\department\route.js:23:44)
+        at processTicksAndRejections (node:internal/process/task_queues:95:5)
+        at Object.<anonymous> (D:\Projects\__tests__\api-department.test.js:124:26)
+
+    [0m [90m 82 |[39m
+     [90m 83 |[39m     } [36mcatch[39m (error) {
+    [31m[1m>[22m[39m[90m 84 |[39m         console[33m.[39merror([32m'❌ Department API error:'[39m[33m,[39m error)[33m;[39m
+     [90m    |[39m                 [31m[1m^[22m[39m
+     [90m 85 |[39m         [36mreturn[39m [33mNextResponse[39m[33m.[39mjson(
+     [90m 86 |[39m             { error[33m:[39m error[33m.[39mmessage [33m||[39m [32m'Failed to fetch department issues'[39m }[33m,[39m
+     [90m 87 |[39m             { status[33m:[39m [35m500[39m }[0m
+
+      at error (app/api/issues/department/route.js:84:17)
+      at Object.<anonymous> (__tests__/api-department.test.js:124:26)
+
+  console.error
+    ❌ Department API error: Error: `cookies` was called outside a request scope. Read more: https://nextjs.org/docs/messages/next-dynamic-api-wrong-context
+        at getExpectedRequestStore (D:\Projects\node_modules\next\src\client\components\request-async-storage.external.ts:31:9)
+        at cookies (D:\Projects\node_modules\next\src\client\components\headers.ts:53:47)
+        at getTokenData (D:\Projects\lib\auth.js:11:38)
+        at GET (D:\Projects\app\api\issues\department\route.js:23:44)
+        at processTicksAndRejections (node:internal/process/task_queues:95:5)
+        at Object.<anonymous> (D:\Projects\__tests__\api-department.test.js:145:9)
+
+    [0m [90m 82 |[39m
+     [90m 83 |[39m     } [36mcatch[39m (error) {
+    [31m[1m>[22m[39m[90m 84 |[39m         console[33m.[39merror([32m'❌ Department API error:'[39m[33m,[39m error)[33m;[39m
+     [90m    |[39m                 [31m[1m^[22m[39m
+     [90m 85 |[39m         [36mreturn[39m [33mNextResponse[39m[33m.[39mjson(
+     [90m 86 |[39m             { error[33m:[39m error[33m.[39mmessage [33m||[39m [32m'Failed to fetch department issues'[39m }[33m,[39m
+     [90m 87 |[39m             { status[33m:[39m [35m500[39m }[0m
+
+      at error (app/api/issues/department/route.js:84:17)
+      at Object.<anonymous> (__tests__/api-department.test.js:145:9)
+
+  console.error
+    ❌ Department API error: Error: `cookies` was called outside a request scope. Read more: https://nextjs.org/docs/messages/next-dynamic-api-wrong-context
+        at getExpectedRequestStore (D:\Projects\node_modules\next\src\client\components\request-async-storage.external.ts:31:9)
+        at cookies (D:\Projects\node_modules\next\src\client\components\headers.ts:53:47)
+        at getTokenData (D:\Projects\lib\auth.js:11:38)
+        at GET (D:\Projects\app\api\issues\department\route.js:23:44)
+        at processTicksAndRejections (node:internal/process/task_queues:95:5)
+        at Object.<anonymous> (D:\Projects\__tests__\api-department.test.js:157:9)
+
+    [0m [90m 82 |[39m
+     [90m 83 |[39m     } [36mcatch[39m (error) {
+    [31m[1m>[22m[39m[90m 84 |[39m         console[33m.[39merror([32m'❌ Department API error:'[39m[33m,[39m error)[33m;[39m
+     [90m    |[39m                 [31m[1m^[22m[39m
+     [90m 85 |[39m         [36mreturn[39m [33mNextResponse[39m[33m.[39mjson(
+     [90m 86 |[39m             { error[33m:[39m error[33m.[39mmessage [33m||[39m [32m'Failed to fetch department issues'[39m }[33m,[39m
+     [90m 87 |[39m             { status[33m:[39m [35m500[39m }[0m
+
+      at error (app/api/issues/department/route.js:84:17)
+      at Object.<anonymous> (__tests__/api-department.test.js:157:9)
+
+FAIL __tests__/api-department.test.js

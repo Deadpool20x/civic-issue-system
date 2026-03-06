@@ -1,248 +1,170 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import DashboardLayout from '@/components/DashboardLayout';
-import DashboardProtection from '@/components/DashboardProtection';
-import IssueCard from '@/components/IssueCard';
-import ErrorBoundary from '@/components/ErrorBoundary';
-import PrivacyNotice from '@/components/PrivacyNotice';
-import Card from '@/components/ui/Card';
-import StatCard from '@/components/ui/StatCard';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import PageHeader from '@/components/PageHeader';
+import StatCard from '@/components/StatCard';
 import { useUser } from '@/lib/contexts/UserContext';
 import toast from 'react-hot-toast';
 
-function MunicipalDashboardContent() {
-    const [issues, setIssues] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [filters, setFilters] = useState({
-        status: 'all',
-        department: 'all',
-        priority: 'all'
-    });
-    const searchParams = useSearchParams();
+import DashboardLayout from '@/components/DashboardLayout';
+
+export default function MunicipalDashboard() {
     const { user } = useUser();
+    const [issues, setIssues] = useState([]);
+    const [wards, setWards] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const filterParam = searchParams.get('filter');
-        if (filterParam) {
-            setFilters(prev => ({ ...prev, status: filterParam }));
-        }
-    }, [searchParams]);
-
-    const fetchIssues = useCallback(async () => {
+    const fetchDashboardData = useCallback(async () => {
         try {
-            let url = '/api/issues?';
-            if (filters.status !== 'all') url += `status=${filters.status}&`;
-            if (filters.department !== 'all') url += `department=${filters.department}&`;
-            if (filters.priority !== 'all') url += `priority=${filters.priority}`;
+            setLoading(true);
+            // Fetch all issues (scoped by roleFilter on server)
+            const issuesRes = await fetch('/api/issues');
+            const issuesData = await issuesRes.json();
+            setIssues(issuesData.issues || []);
 
-            const response = await fetch(url, {
-                credentials: 'include'
-            });
-            if (!response.ok) {
-                throw new Error('Failed to fetch issues');
-            }
-            const data = await response.json();
-            setIssues(data);
-        } catch (error) {
-            toast.error('Failed to load issues');
-            console.error('Error fetching issues:', error);
+            // Fetch ward info
+            const wardsRes = await fetch('/api/wards');
+            const wardsData = await wardsRes.json();
+            setWards(wardsData.all || []);
+        } catch (err) {
+            toast.error('Failed to load dashboard data');
         } finally {
             setLoading(false);
         }
-    }, [filters]);
+    }, []);
 
     useEffect(() => {
-        fetchIssues();
-    }, [fetchIssues]);
+        fetchDashboardData();
+    }, [fetchDashboardData]);
 
-    const handleStatusChange = async (issueId, newStatus) => {
-        try {
-            const response = await fetch(`/api/issues/${issueId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-                body: JSON.stringify({ status: newStatus }),
-            });
+    const stats = useMemo(() => {
+        const total = issues.length;
+        const pending = issues.filter(i => ['pending', 'assigned', 'in-progress'].includes(i.status)).length;
+        const resolved = issues.filter(i => i.status === 'resolved').length;
+        const overdue = issues.filter(i => i.sla?.isOverdue).length;
 
-            if (!response.ok) {
-                throw new Error('Failed to update issue status');
-            }
+        return { total, pending, resolved, overdue };
+    }, [issues]);
 
-            toast.success('Issue status updated successfully');
-            fetchIssues();
-        } catch (error) {
-            toast.error('Failed to update issue status');
-            console.error('Error updating issue status:', error);
-        }
-    };
+    // Group issues by ward for the 16-ward grid
+    const wardPerformance = useMemo(() => {
+        return wards.map(ward => {
+            const wardIssues = issues.filter(i => i.ward === ward.wardId);
+            const resolved = wardIssues.filter(i => i.status === 'resolved').length;
+            const total = wardIssues.length;
+            const rate = total > 0 ? Math.round((resolved / total) * 100) : 0;
 
-    const getStatusSummary = () => {
-        return issues.reduce((acc, issue) => {
-            acc[issue.status] = (acc[issue.status] || 0) + 1;
-            return acc;
-        }, {});
-    };
+            return {
+                ...ward,
+                total,
+                resolved,
+                rate
+            };
+        });
+    }, [wards, issues]);
 
-    const statusSummary = getStatusSummary();
-
-    if (loading) {
-        return (
-            <DashboardLayout>
-                <div className="flex items-center justify-center h-64">
-                    <div className="text-lg text-contrast-secondary">Loading...</div>
-                </div>
-            </DashboardLayout>
-        );
-    }
+    if (loading) return (
+        <DashboardLayout>
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="w-10 h-10 border-4 border-gold/20 border-t-gold rounded-full animate-spin"></div>
+            </div>
+        </DashboardLayout>
+    );
 
     return (
         <DashboardLayout>
-            <ErrorBoundary>
-                <div className="max-w-7xl mx-auto space-y-6 pt-0 md:pt-0">
-                    {/* Summary Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <StatCard
-                            label="Total Issues"
-                            value={issues.length}
-                            accent="border-l-4 border-l-contrast-light"
-                            iconBg="bg-neutral-bg"
-                            iconColor="text-contrast-light"
-                            iconPath="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                        />
-                        <StatCard
-                            label="Pending"
-                            value={statusSummary.pending || 0}
-                            accent="border-l-4 border-l-status-warning"
-                            iconBg="bg-status-warning/10"
-                            iconColor="text-status-warning"
-                            iconPath="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 0 9 0 0118 0z"
-                        />
-                        <StatCard
-                            label="In Progress"
-                            value={statusSummary['in-progress'] || 0}
-                            accent="border-l-4 border-l-brand-primary"
-                            iconBg="bg-brand-soft"
-                            iconColor="text-brand-primary"
-                            iconPath="M13 10V3L4 14h7v7l9-11h-7z"
-                        />
-                        <StatCard
-                            label="Resolved"
-                            value={statusSummary.resolved || 0}
-                            accent="border-l-4 border-l-status-success"
-                            iconBg="bg-status-success/10"
-                            iconColor="text-status-success"
-                            iconPath="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
+            <div className="space-y-8 animate-fade-in">
+                <PageHeader
+                    title="Departmental Hub"
+                    subtitle={`Managing ${user?.departmentId?.toUpperCase() || 'Municipal'} operations across all 16 city wards.`}
+                >
+                    <div className="flex gap-2">
+                        <button className="btn-outline">SLA Alerts</button>
+                        <button className="btn-gold">Reports</button>
                     </div>
+                </PageHeader>
 
-                    {/* Privacy Notice */}
-                    <PrivacyNotice userRole={user?.role} showDetails={true} />
+                {/* ── STATS ── */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <StatCard label="Total Active" value={stats.pending} icon="📋" />
+                    <StatCard label="Resolved" value={stats.resolved} icon="✅" />
+                    <StatCard label="Overdue" value={stats.overdue} icon="⚠️" />
+                    <StatCard label="Avg. Health" value={`${issues.length > 0 ? Math.round((stats.resolved / issues.length) * 100) : 0}%`} icon="📈" />
+                </div>
 
-                    {/* Quick Actions */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <Link
-                            href="/admin/secure-dashboard"
-                            className="bg-purple-600 text-white hover:bg-purple-700 px-4 py-3 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center justify-center"
-                        >
-                            🔒 Secure Admin View
-                        </Link>
-                        <Link
-                            href="/municipal/sla-dashboard"
-                            className="bg-status-error text-white hover:bg-status-error px-4 py-3 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center justify-center"
-                        >
-                            📊 SLA Dashboard
-                        </Link>
-                        <Link
-                            href="/municipal/departments"
-                            className="bg-brand-primary text-white hover:bg-brand-primary px-4 py-3 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center justify-center"
-                        >
-                            🏢 Manage Departments
-                        </Link>
-                        <Link
-                            href="/public-dashboard"
-                            target="_blank"
-                            className="bg-status-success text-white hover:bg-status-success px-4 py-3 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center justify-center"
-                        >
-                            🌐 Public Dashboard
-                        </Link>
-                    </div>
-
-                    {/* Filters */}
-                    <Card className="flex flex-col sm:flex-row flex-wrap gap-4">
-                        <select
-                            className="border border-neutral-border rounded-xl px-4 py-2.5 text-contrast-secondary bg-neutral-surface hover:border-neutral-border focus:ring-2 focus:ring-brand-primary focus:border-brand-primary min-h-[44px]"
-                            value={filters.status}
-                            onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                        >
-                            <option value="all">All Status</option>
-                            <option value="pending">Pending</option>
-                            <option value="in-progress">In Progress</option>
-                            <option value="resolved">Resolved</option>
-                            <option value="rejected">Rejected</option>
-                        </select>
-
-                        <select
-                            className="border border-neutral-border rounded-xl px-4 py-2.5 text-contrast-secondary bg-neutral-surface hover:border-neutral-border focus:ring-2 focus:ring-brand-primary focus:border-brand-primary min-h-[44px]"
-                            value={filters.department}
-                            onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
-                        >
-                            <option value="all">All Departments</option>
-                            <option value="water">Water</option>
-                            <option value="electricity">Electricity</option>
-                            <option value="roads">Roads</option>
-                            <option value="garbage">Garbage</option>
-                            <option value="parks">Parks</option>
-                            <option value="other">Other</option>
-                        </select>
-
-                        <select
-                            className="border border-slate-300 rounded-xl px-4 py-2.5 text-slate-700 bg-white hover:border-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[44px]"
-                            value={filters.priority}
-                            onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
-                        >
-                            <option value="all">All Priorities</option>
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
-                            <option value="urgent">Urgent</option>
-                        </select>
-                    </Card>
-
-                    {/* Issues Grid */}
-                    <div className="grid gap-6">
-                        {issues.map((issue) => (
-                            <IssueCard
-                                key={issue._id}
-                                issue={issue}
-                                onStatusChange={handleStatusChange}
-                                userRole="municipal"
-                            />
+                {/* ── WARD PERFORMANCE GRID (16 CARDS) ── */}
+                <div>
+                    <h2 className="section-header mb-6">Ward Distribution & Performance</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {wardPerformance.map(ward => (
+                            <div key={ward.wardId} className="card p-4 hover:border-gold/30 transition-all group cursor-pointer">
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${ward.zone === 'North Zone' ? 'bg-blue-500/10 text-blue-400' : 'bg-purple-500/10 text-purple-400'}`}>
+                                        {ward.zone === 'North' ? 'NZ' : 'SZ'}
+                                    </span>
+                                    <span className="text-xl group-hover:scale-110 transition-transform">🏢</span>
+                                </div>
+                                <h4 className="text-sm font-bold text-white mb-1 truncate">{ward.wardName}</h4>
+                                <div className="flex items-end justify-between mt-4">
+                                    <div className="text-xs text-text-muted">
+                                        <span className="text-white font-bold">{ward.total}</span> total
+                                    </div>
+                                    <div className={`text-xs font-bold ${ward.rate > 80 ? 'text-green-400' : ward.rate > 50 ? 'text-amber-400' : 'text-red-400'}`}>
+                                        {ward.rate}%
+                                    </div>
+                                </div>
+                                {/* Mini progress bar */}
+                                <div className="w-full h-1 bg-border rounded-full mt-2 overflow-hidden">
+                                    <div
+                                        className={`h-full transition-all duration-1000 ${ward.rate > 80 ? 'bg-green-500' : ward.rate > 50 ? 'bg-gold' : 'bg-red-500'}`}
+                                        style={{ width: `${ward.rate}%` }}
+                                    />
+                                </div>
+                            </div>
                         ))}
                     </div>
-
-                    {issues.length === 0 && (
-                        <div className="text-center py-12">
-                            <h3 className="text-lg font-medium text-contrast-primary">No issues found</h3>
-                            <p className="mt-2 text-contrast-light">
-                                No issues match your current filters.
-                            </p>
-                        </div>
-                    )}
                 </div>
-            </ErrorBoundary>
-        </DashboardLayout>
-    );
-}
 
-export default function MunicipalDashboard() {
-    return (
-        <DashboardProtection requiredRole="municipal">
-            <MunicipalDashboardContent />
-        </DashboardProtection>
+                {/* ── RECENT ESCALATIONS ── */}
+                <div className="card">
+                    <h3 className="section-header mb-6">Critical Feedback Loop</h3>
+                    <div className="overflow-x-auto">
+                        <table className="table-dark">
+                            <thead>
+                                <tr>
+                                    <th>Issue</th>
+                                    <th>Ward</th>
+                                    <th>Staff</th>
+                                    <th>SLA Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {issues.filter(i => i.priority === 'urgent' || i.status === 'escalated').slice(0, 5).map(issue => (
+                                    <tr key={issue._id}>
+                                        <td>
+                                            <div className="flex flex-col">
+                                                <span className="report-id text-[10px]">{issue.reportId}</span>
+                                                <span className="font-medium">{issue.title}</span>
+                                            </div>
+                                        </td>
+                                        <td>{issue.ward}</td>
+                                        <td>{issue.assignedStaff ? 'Assigned' : 'Unassigned'}</td>
+                                        <td>
+                                            <span className={`badge ${issue.sla?.isOverdue ? 'badge-urgent' : 'badge-progress'}`}>
+                                                {issue.sla?.isOverdue ? 'OVERDUE' : 'ON TRACK'}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button className="text-gold text-xs font-bold hover:underline">Reassign</button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </DashboardLayout>
     );
 }

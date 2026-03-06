@@ -85,7 +85,7 @@ export const PATCH = authMiddleware(async (req, { params }) => {
 
         // Permission checks
         const isOwner = issue.reportedBy.toString() === req.user.userId;
-        const isAuthorizedStaff = ['admin', 'municipal', 'department'].includes(req.user.role);
+        const isAuthorizedStaff = ['admin', 'municipal', 'department', 'commissioner'].includes(req.user.role);
 
         if (!isOwner && !isAuthorizedStaff) {
             return new Response(
@@ -95,9 +95,9 @@ export const PATCH = authMiddleware(async (req, { params }) => {
         }
 
         // Department staff can only update issues assigned to their department
-        if (req.user.role === 'department' && issue.assignedDepartment !== req.user.department) {
+        if (req.user.role === 'department' && issue.assignedDepartment && issue.assignedDepartment.toString() !== req.user.department) {
             return new Response(
-                JSON.stringify({ error: 'Unauthorized' }),
+                JSON.stringify({ error: 'Unauthorized - issue belongs to another department' }),
                 { status: 403, headers: { 'Content-Type': 'application/json' } }
             );
         }
@@ -131,6 +131,16 @@ export const PATCH = authMiddleware(async (req, { params }) => {
             Object.assign(issue, updates);
         }
 
+        // ⭐ AUTO-CALCULATE RESOLUTION TIME WHEN RESOLVED ⭐
+        if (updates.status === 'resolved' && oldStatus !== 'resolved') {
+            const now = new Date();
+            issue.updatedAt = now;
+            const createdMs = new Date(issue.createdAt).getTime();
+            issue.resolutionTime = Math.round((now.getTime() - createdMs) / 3600000); // hours
+        } else {
+            issue.updatedAt = new Date();
+        }
+
         await issue.save();
 
         // ⭐ CREATE STATE HISTORY ENTRY WHEN STATUS CHANGES ⭐
@@ -142,11 +152,11 @@ export const PATCH = authMiddleware(async (req, { params }) => {
                 comment: updates.comment || `Status changed from ${oldStatus} to ${updates.status}`,
                 timestamp: new Date()
             });
-            
+
             console.log(`✅ State history created for status change: ${oldStatus} → ${updates.status}`);
         }
 
-        const updatedIssue = await Issue.findById(params.id)
+        const updatedIssue = await Issue.findById(issue._id)
             .populate('reportedBy', 'name email')
             .populate('assignedTo', 'name department');
 

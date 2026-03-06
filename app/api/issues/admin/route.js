@@ -1,6 +1,7 @@
 import connectDB from '@/lib/mongodb';
 import Issue from '@/models/Issue';
 import { getTokenData } from '@/lib/auth';
+import { getRoleFilter } from '@/lib/roleFilter';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,18 +16,23 @@ export async function GET(req) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Only admin and municipal can access all issues
-    if (!['admin', 'municipal'].includes(userData.role)) {
-      return Response.json({ error: 'Insufficient permissions' }, { status: 403 });
+    const roleFilter = getRoleFilter(userData);
+
+    // Block SYSTEM_ADMIN
+    if (roleFilter === null) {
+      return Response.json(
+        { success: false, error: 'ACCESS_DENIED' },
+        { status: 403 }
+      );
     }
 
-    // Fetch all issues
-    const issues = await Issue.find()
-      .select('reportId title description category subcategory status priority location upvotes upvotedBy createdAt updatedAt images reportedBy assignedDepartment')
+    // Fetch all issues based on role filter
+    const issues = await Issue.find(roleFilter)
+      .select('reportId title description category subcategory status priority location upvotes upvotedBy createdAt updatedAt images reportedBy assignedDepartment assignedDepartmentCode ward')
       .populate('reportedBy', 'name email')
       .populate('assignedDepartment', 'name')
       .populate('upvotedBy', 'name')
-      .sort({ createdAt: -1 })
+      .sort({ 'sla.deadline': 1 })
       .lean();
 
     // Return in consistent format

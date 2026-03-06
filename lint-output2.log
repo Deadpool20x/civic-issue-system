@@ -1,0 +1,479 @@
+
+> civic-issue-system@0.1.0 lint
+> eslint .
+
+
+D:\Projects\__tests__\utils.test.js
+   17:7   error  'MockResponse' is defined but never used            no-unused-vars
+  147:21  error  'ErrorBoundary' is assigned a value but never used  no-unused-vars
+  156:21  error  'StatusBadge' is assigned a value but never used    no-unused-vars
+
+D:\Projects\app\(auth)\login\page.js
+  47:20  warning  Expected { after 'if' condition  curly
+
+D:\Projects\app\(auth)\register\page.js
+  49:20  warning  Expected { after 'if' condition  curly
+  50:31  warning  Expected { after 'if' condition  curly
+
+D:\Projects\app\admin\analytics\page.jsx
+  22:8   error    React Hook useEffect has a missing dependency: 'fetchAnalyticsData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  63:33  warning  Expected { after 'if' condition                                                                                        curly
+
+D:\Projects\app\admin\dashboard\page.js
+   60:21   error    Empty block statement            no-empty
+   62:143  error    Empty block statement            no-empty
+   67:26   warning  Expected { after 'if' condition  curly
+   82:33   warning  Expected { after 'if' condition  curly
+  105:18   warning  Expected { after 'if' condition  curly
+  212:88   error    'window' is not defined          no-undef
+  212:130  warning  Expected { after 'if' condition  curly
+
+D:\Projects\app\admin\departments\page.js
+  20:25  warning  Expected { after 'if' condition  curly
+  41:14  error    'confirm' is not defined         no-undef
+  41:50  warning  Expected { after 'if' condition  curly
+  44:26  warning  Expected { after 'if' condition  curly
+  49:18  warning  Expected { after 'if' condition  curly
+
+D:\Projects\app\admin\reports\page.js
+  23:29  warning  Expected { after 'if' condition  curly
+  32:26  warning  Expected { after 'if' condition  curly
+  35:23  error    'document' is not defined        no-undef
+  40:18  warning  Expected { after 'if' condition  curly
+
+D:\Projects\app\admin\users\create\page.js
+  28:12  error  'loadingWards' is assigned a value but never used  no-unused-vars
+
+D:\Projects\app\admin\users\page.js
+  11:7    error    'ROLE_BADGE' is assigned a value but never used  no-unused-vars
+  29:25   warning  Expected { after 'if' condition                  curly
+  36:83   warning  Expected { after 'if' condition                  curly
+  36:123  error    Empty block statement                            no-empty
+  42:26   warning  Expected { after 'if' condition                  curly
+  50:26   warning  Expected { after 'if' condition                  curly
+  58:26   warning  Expected { after 'if' condition                  curly
+  66:18   warning  Expected { after 'if' condition                  curly
+
+D:\Projects\app\api\admin\analytics\departments\route.js
+  16:59  error  'req' is defined but never used  no-unused-vars
+
+D:\Projects\app\api\admin\analytics\overview\route.js
+  12:59  error  'req' is defined but never used  no-unused-vars
+
+D:\Projects\app\api\admin\analytics\stuck\route.js
+  4:8  error  'StateHistory' is defined but never used  no-unused-vars
+
+D:\Projects\app\api\admin\analytics\workflow\route.js
+  22:59  error  'req' is defined but never used                                   no-unused-vars
+  83:15  error  'avgTimeReportedToInProgress' is assigned a value but never used  no-unused-vars
+  87:15  error  'avgTimeInProgressToResolved' is assigned a value but never used  no-unused-vars
+
+D:\Projects\app\api\auth\me\route.js
+  8:27  error  'req' is defined but never used  no-unused-vars
+
+D:\Projects\app\api\auth\register\route.js
+  3:8  error  'bcrypt' is defined but never used  no-unused-vars
+
+D:\Projects\app\api\citizen-engagement\route.js
+  4:8  error  'User' is defined but never used  no-unused-vars
+
+D:\Projects\app\api\commissioner\briefing\route.js
+  4:8  error  'User' is defined but never used  no-unused-vars
+
+D:\Projects\app\api\departments\[id]\route.js
+  2:10  error  'authMiddleware' is defined but never used  no-unused-vars
+  2:26  error  'roleMiddleware' is defined but never used  no-unused-vars
+
+D:\Projects\app\api\issues\[id]\route.js
+  2:26  error  'roleMiddleware' is defined but never used  no-unused-vars
+
+D:\Projects\app\api\issues\department\assigned\route.js
+  4:8  error  'Department' is defined but never used  no-unused-vars
+
+D:\Projects\app\api\issues\department\resolved\route.js
+  4:8  error  'Department' is defined but never used  no-unused-vars
+
+D:\Projects\app\api\issues\department\route.js
+  5:8  error  'mongoose' is defined but never used  no-unused-vars
+
+D:\Projects\app\api\issues\department\stats\route.js
+  4:8  error  'Department' is defined but never used  no-unused-vars
+
+D:\Projects\app\api\issues\route.js
+   50:23  warning  Expected { after 'if' condition                curly
+   51:21  warning  Expected { after 'if' condition                curly
+   52:23  warning  Expected { after 'if' condition                curly
+   53:33  warning  Expected { after 'if' condition                curly
+  118:13  error    'priority' is assigned a value but never used  no-unused-vars
+
+D:\Projects\app\api\performance\route.js
+   25:17  warning  'query' is never reassigned. Use 'const' instead      prefer-const
+  236:21  warning  'staffPerf' is never reassigned. Use 'const' instead  prefer-const
+  243:17  warning  'deptPerf' is never reassigned. Use 'const' instead   prefer-const
+
+D:\Projects\app\api\public-dashboard\route.js
+  18:13  warning  'query' is never reassigned. Use 'const' instead  prefer-const
+  19:19  warning  Expected { after 'if' condition                   curly
+  20:25  warning  Expected { after 'if' condition                   curly
+  40:46  warning  Expected { after 'if' condition                   curly
+  66:46  warning  Expected { after 'if' condition                   curly
+  67:76  warning  Expected { after 'if' condition                   curly
+  68:38  warning  Expected { after 'if' condition                   curly
+  95:46  warning  Expected { after 'if' condition                   curly
+  96:76  warning  Expected { after 'if' condition                   curly
+  97:38  warning  Expected { after 'if' condition                   curly
+
+D:\Projects\app\api\reports\route.js
+   1:10  error  'NextResponse' is defined but never used      no-unused-vars
+  54:17  error  Unexpected lexical declaration in case block  no-case-declarations
+
+D:\Projects\app\api\sla\route.js
+  20:13  warning  'query' is never reassigned. Use 'const' instead  prefer-const
+
+D:\Projects\app\api\stats\route.js
+   4:10  error  'roleMiddleware' is defined but never used  no-unused-vars
+  11:59  error  'req' is defined but never used             no-unused-vars
+
+D:\Projects\app\api\users\[id]\route.js
+  2:10  error  'roleMiddleware' is defined but never used  no-unused-vars
+
+D:\Projects\app\api\users\admin\route.js
+    2:10  error  'roleMiddleware' is defined but never used  no-unused-vars
+  138:59  error  'req' is defined but never used             no-unused-vars
+
+D:\Projects\app\citizen\dashboard\page.js
+  44:46  error    'navigator' is not defined       no-undef
+  45:11  error    'navigator' is not defined       no-undef
+  47:13  error    Expected error to be handled     handle-callback-err
+  47:14  error    'err' is defined but never used  no-unused-vars
+  73:31  warning  Expected { after 'if' condition  curly
+  74:35  warning  Expected { after 'if' condition  curly
+  75:36  warning  Expected { after 'if' condition  curly
+
+D:\Projects\app\citizen\report\page.js
+    5:8   error    'Link' is defined but never used  no-unused-vars
+  137:26  warning  Expected { after 'if' condition   curly
+  172:23  warning  Expected { after 'if' condition   curly
+
+D:\Projects\app\commissioner\dashboard\page.js
+  11:13  error    'user' is assigned a value but never used  no-unused-vars
+  63:18  warning  Expected { after 'if' condition            curly
+
+D:\Projects\app\commissioner\issues\page.js
+  28:16  warning  Expected { after 'if' condition  curly
+  28:47  warning  Expected { after 'if' condition  curly
+  49:29  warning  Expected { after 'if' condition  curly
+  50:31  warning  Expected { after 'if' condition  curly
+  51:33  warning  Expected { after 'if' condition  curly
+  58:18  warning  Expected { after 'if' condition  curly
+
+D:\Projects\app\department\dashboard\page.js
+  35:26  error    'setInterval' is not defined     no-undef
+  36:22  error    'clearInterval' is not defined   no-undef
+  40:34  warning  Expected { after 'if' condition  curly
+  41:36  warning  Expected { after 'if' condition  curly
+  52:18  warning  Expected { after 'if' condition  curly
+
+D:\Projects\app\department\issues\page.js
+  42:17  warning  Expected { after 'if' condition  curly
+  44:17  warning  Expected { after 'if' condition  curly
+  46:17  warning  Expected { after 'if' condition  curly
+  60:32  warning  Expected { after 'if' condition  curly
+  65:19  error    'setInterval' is not defined     no-undef
+  66:22  error    'clearInterval' is not defined   no-undef
+  72:29  warning  Expected { after 'if' condition  curly
+  73:31  warning  Expected { after 'if' condition  curly
+  86:28  warning  Expected { after 'if' condition  curly
+  94:18  warning  Expected { after 'if' condition  curly
+
+D:\Projects\app\department\profile\page.js
+  12:16  warning  Expected { after 'if' condition  curly
+
+D:\Projects\app\department\resolved\page.js
+  33:16  warning  Expected { after 'if' condition  curly
+  46:32  warning  Expected { after 'if' condition  curly
+  75:18  warning  Expected { after 'if' condition  curly
+
+D:\Projects\app\department\stats\page.js
+  41:32  warning  Expected { after 'if' condition  curly
+  46:19  error    'setInterval' is not defined     no-undef
+  47:22  error    'clearInterval' is not defined   no-undef
+  79:51  warning  Expected { after 'if' condition  curly
+  93:18  warning  Expected { after 'if' condition  curly
+
+D:\Projects\app\issues\[id]\edit\page.js
+   32:8   error    React Hook useEffect has a missing dependency: 'fetchIssue'. Either include it or remove the dependency array                                                                                                                                                                            react-hooks/exhaustive-deps
+   86:33  warning  Expected { after 'if' condition                                                                                                                                                                                                                                                          curly
+   93:38  error    'FormData' is not defined                                                                                                                                                                                                                                                                no-undef
+   96:34  warning  Unexpected `await` inside a loop                                                                                                                                                                                                                                                         no-await-in-loop
+  105:32  warning  Unexpected `await` inside a loop                                                                                                                                                                                                                                                         no-await-in-loop
+  140:14  error    'navigator' is not defined                                                                                                                                                                                                                                                               no-undef
+  145:9   error    'navigator' is not defined                                                                                                                                                                                                                                                               no-undef
+  339:45  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\Projects\app\issues\[id]\page.js
+   38:38   warning  Expected { after 'if' condition                                  curly
+   72:18   warning  Expected { after 'if' condition                                  curly
+   80:17   warning  Expected { after 'if' condition                                  curly
+   84:66   error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+   84:87   error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  140:115  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  140:140  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+D:\Projects\app\map\page.js
+  52:12  error    'selectedIssue' is assigned a value but never used                                                              no-unused-vars
+  60:35  warning  Expected { after 'if' condition                                                                                 curly
+  61:33  warning  Expected { after 'if' condition                                                                                 curly
+  62:35  warning  Expected { after 'if' condition                                                                                 curly
+  67:31  warning  Expected { after 'if' condition                                                                                 curly
+  68:18  warning  Expected { after 'else'                                                                                         curly
+  76:41  error    React Hook useEffect has a missing dependency: 'fetchIssues'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\Projects\app\municipal\dashboard\page.js
+  66:18  warning  Expected { after 'if' condition  curly
+
+D:\Projects\app\municipal\departments\page.js
+  25:29  warning  Expected { after 'if' condition  curly
+  26:31  warning  Expected { after 'if' condition  curly
+  45:18  warning  Expected { after 'if' condition  curly
+
+D:\Projects\app\municipal\sla-dashboard\page.js
+   4:8   error    'Link' is defined but never used  no-unused-vars
+  26:20  warning  Expected { after 'if' condition   curly
+  27:30  warning  Expected { after 'if' condition   curly
+  28:31  warning  Expected { after 'if' condition   curly
+  42:33  warning  Expected { after 'if' condition   curly
+  43:33  warning  Expected { after 'if' condition   curly
+  45:26  warning  Expected { after 'if' condition   curly
+  53:18  warning  Expected { after 'if' condition   curly
+
+D:\Projects\app\public-dashboard\page.js
+   3:31  error    'useMemo' is defined but never used  no-unused-vars
+  10:16  warning  Expected { after 'if' condition      curly
+  10:47  warning  Expected { after 'if' condition      curly
+  23:34  warning  Expected { after 'if' condition      curly
+  24:34  warning  Expected { after 'if' condition      curly
+  26:29  warning  Expected { after 'if' condition      curly
+  32:18  warning  Expected { after 'if' condition      curly
+
+D:\Projects\components\DashboardProtection.js
+   35:66  warning  Expected { after 'if' condition                                                                                           curly
+   87:40  warning  Expected { after 'if' condition                                                                                           curly
+   97:49  warning  Expected { after 'if' condition                                                                                           curly
+  114:8   error    React Hook useEffect has a missing dependency: 'effectiveAllowedRoles'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\Projects\components\DepartmentStats.jsx
+   6:51  error    'departmentName' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     no-unused-vars
+  21:45  warning  Expected { after 'if' condition                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                curly
+  57:9   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  55 |         }).length;
+  56 |
+> 57 |         setStats({
+     |         ^^^^^^^^ Avoid calling setState() directly within an effect
+  58 |             total,
+  59 |             pending,
+  60 |             inProgress,  react-hooks/set-state-in-effect
+
+D:\Projects\components\DuplicateModal.jsx
+   9:29  warning  Expected { after 'if' condition  curly
+  22:25  warning  Expected { after 'if' condition  curly
+  23:25  warning  Expected { after 'if' condition  curly
+  24:23  warning  Expected { after 'if' condition  curly
+
+D:\Projects\components\ErrorBoundary.js
+  31:33  error  'window' is not defined  no-undef
+
+D:\Projects\components\FeedbackModal.jsx
+  7:18  warning  Expected { after 'if' condition  curly
+
+D:\Projects\components\I18nProvider.jsx
+  10:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+   8 |
+   9 |     useEffect(() => {
+> 10 |         setMounted(true);
+     |         ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  11 |     }, []);
+  12 |
+  13 |     if (!mounted) {  react-hooks/set-state-in-effect
+
+D:\Projects\components\ImageUploader.jsx
+   13:31  warning  Expected { after 'if' condition                                                                                                                                                                                                                                                          curly
+   15:18  error    'confirm' is not defined                                                                                                                                                                                                                                                                 no-undef
+   15:89  warning  Expected { after 'if' condition                                                                                                                                                                                                                                                          curly
+   36:30  error    'FormData' is not defined                                                                                                                                                                                                                                                                no-undef
+   40:29  error    'XMLHttpRequest' is not defined                                                                                                                                                                                                                                                          no-undef
+   52:24  warning  Expected { after 'else'                                                                                                                                                                                                                                                                  curly
+   63:33  warning  Expected { after 'if' condition                                                                                                                                                                                                                                                          curly
+   81:51  warning  Expected { after 'if' condition                                                                                                                                                                                                                                                          curly
+   87:13  error    'setTimeout' is not defined                                                                                                                                                                                                                                                              no-undef
+  155:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  169:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\Projects\components\IssueCardRefactored.js
+  185:45  warning  Expected { after 'if' condition                         curly
+  216:70  error    'showSensitiveData' is assigned a value but never used  no-unused-vars
+  222:34  warning  Expected { after 'if' condition                         curly
+  239:17  error    'window' is not defined                                 no-undef
+
+D:\Projects\components\IssueMap.jsx
+  13:11  error  'shadowSize' is assigned a value but never used  no-unused-vars
+  53:12  error  'map' is assigned a value but never used         no-unused-vars
+
+D:\Projects\components\IssuePopup.jsx
+  6:17  warning  Expected { after 'if' condition  curly
+
+D:\Projects\components\LocationPicker.jsx
+   24:11  error  'map' is assigned a value but never used     no-unused-vars
+   52:11  error  'mapRef' is assigned a value but never used  no-unused-vars
+   94:14  error  'navigator' is not defined                   no-undef
+  100:9   error  'navigator' is not defined                   no-undef
+  108:13  error  Expected error to be handled                 handle-callback-err
+  108:14  error  'err' is defined but never used              no-unused-vars
+
+D:\Projects\components\NearbyIssuesMap.jsx
+  29:24  warning  Expected { after 'if' condition  curly
+
+D:\Projects\components\PrivacyNotice.js
+   40:23  warning  Expected { after 'if' condition                                  curly
+  120:93  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+D:\Projects\components\RatingModal.jsx
+  13:13  error  'alert' is not defined  no-undef
+  18:13  error  'alert' is not defined  no-undef
+
+D:\Projects\components\StatusTimeline.jsx
+  62:56  error    'currentStatus' is defined but never used  no-unused-vars
+  83:23  warning  Expected { after 'if' condition            curly
+  84:24  warning  Expected { after 'if' condition            curly
+  85:25  warning  Expected { after 'if' condition            curly
+  86:23  warning  Expected { after 'if' condition            curly
+
+D:\Projects\components\VoiceInput.jsx
+   2:20  error    'useEffect' is defined but never used  no-unused-vars
+  11:16  warning  Expected { after 'if' condition        curly
+  13:44  error    'window' is not defined                no-undef
+  13:80  error    'window' is not defined                no-undef
+  19:39  error    'window' is not defined                no-undef
+  19:67  error    'window' is not defined                no-undef
+
+D:\Projects\components\ui\SpotlightCard.jsx
+  16:44  warning  Expected { after 'if' condition  curly
+
+D:\Projects\eslint.config.mjs
+  9:7  error  '__dirname' is assigned a value but never used  no-unused-vars
+
+D:\Projects\jest.setup.js
+  17:5  error  'global' is not defined  no-undef
+
+D:\Projects\lib\ai.js
+    7:32  error    'AbortController' is not defined  no-undef
+    8:27  error    'setTimeout' is not defined       no-undef
+   15:26  warning  Expected { after 'if' condition   curly
+   20:31  warning  Expected { after 'if' condition   curly
+   23:13  error    'clearTimeout' is not defined     no-undef
+   37:13  error    'clearTimeout' is not defined     no-undef
+   43:32  error    'AbortController' is not defined  no-undef
+   44:27  error    'setTimeout' is not defined       no-undef
+   48:26  warning  Expected { after 'if' condition   curly
+   51:32  warning  Expected { after 'if' condition   curly
+   77:13  error    'clearTimeout' is not defined     no-undef
+   93:13  error    'clearTimeout' is not defined     no-undef
+   99:32  error    'AbortController' is not defined  no-undef
+  100:27  error    'setTimeout' is not defined       no-undef
+  104:26  warning  Expected { after 'if' condition   curly
+  132:31  warning  Expected { after 'if' condition   curly
+  135:13  error    'clearTimeout' is not defined     no-undef
+  151:13  error    'clearTimeout' is not defined     no-undef
+
+D:\Projects\lib\components.js
+  167:41  warning  Expected { after 'if' condition  curly
+  242:18  warning  Expected { after 'if' condition  curly
+
+D:\Projects\lib\contexts\UserContext.js
+   65:9   error  'setTimeout' is not defined      no-undef
+  203:13  error  'window' is not defined          no-undef
+  240:21  error  'localStorage' is not defined    no-undef
+  241:21  error  'sessionStorage' is not defined  no-undef
+
+D:\Projects\lib\email-templates\department-assignment.js
+  113:87  error  'baseUrl' is assigned a value but never used  no-unused-vars
+
+D:\Projects\lib\email-templates\status-update.js
+  81:43  error  'index' is defined but never used  no-unused-vars
+
+D:\Projects\lib\error-handler.js
+   48:40  error    'context' is assigned a value but never used  no-unused-vars
+   82:21  warning  Expected { after 'if' condition               curly
+   85:21  warning  Expected { after 'if' condition               curly
+  239:3   error    'setInterval' is not defined                  no-undef
+
+D:\Projects\lib\mailer.js
+  80:22  warning  Unexpected `await` inside a loop  no-await-in-loop
+
+D:\Projects\lib\security.js
+    4:16  warning  Expected { after 'if' condition          curly
+   26:20  warning  Expected { after 'if' condition          curly
+   58:42  warning  Expected { after 'if' condition          curly
+   59:43  warning  Expected { after 'if' condition          curly
+   81:38  warning  Expected { after 'if' condition          curly
+   82:56  warning  Expected { after 'if' condition          curly
+   83:57  warning  Expected { after 'if' condition          curly
+   89:61  error    'requesterId' is defined but never used  no-unused-vars
+  108:36  warning  Expected { after 'if' condition          curly
+  123:41  warning  Expected { after 'if' condition          curly
+  134:17  warning  Expected { after 'if' condition          curly
+  137:28  warning  Expected { after 'if' condition          curly
+  143:19  warning  Expected { after 'if' condition          curly
+  146:28  warning  Expected { after 'if' condition          curly
+
+D:\Projects\lib\utils.js
+   47:34  warning  Expected { after 'if' condition  curly
+  182:26  warning  Expected { after 'if' condition  curly
+
+D:\Projects\manual_tests\category.js
+   44:7   error  'structureValid' is assigned a value but never used  no-unused-vars
+   83:11  error  'result' is assigned a value but never used          no-unused-vars
+  142:15  error  'key' is assigned a value but never used             no-unused-vars
+
+D:\Projects\manual_tests\image-upload.js
+   30:11  error  'result' is assigned a value but never used  no-unused-vars
+   55:11  error  'result' is assigned a value but never used  no-unused-vars
+   84:11  error  'result' is assigned a value but never used  no-unused-vars
+  166:11  error  'result' is assigned a value but never used  no-unused-vars
+
+D:\Projects\manual_tests\location.js
+  33:11  error  'result' is assigned a value but never used  no-unused-vars
+  53:11  error  'result' is assigned a value but never used  no-unused-vars
+
+D:\Projects\models\DepartmentPerformance.js
+  208:39  warning  Expected { after 'if' condition  curly
+  209:44  warning  Expected { after 'if' condition  curly
+  210:43  warning  Expected { after 'if' condition  curly
+  213:43  warning  Expected { after 'if' condition  curly
+  214:48  warning  Expected { after 'if' condition  curly
+  215:48  warning  Expected { after 'if' condition  curly
+
+D:\Projects\models\StaffPerformance.js
+  114:31  warning  Expected { after 'if' condition  curly
+  115:31  warning  Expected { after 'if' condition  curly
+
+D:\Projects\models\User.js
+  88:37  warning  Expected { after 'if' condition  curly
+
+✖ 281 problems (121 errors, 160 warnings)
+  0 errors and 154 warnings potentially fixable with the `--fix` option.
+

@@ -1,0 +1,112 @@
+'use client';
+
+import { useState, useEffect, useMemo } from 'react';
+import DashboardLayout from '@/components/DashboardLayout';
+import DashboardProtection from '@/components/DashboardProtection';
+import toast from 'react-hot-toast';
+
+/* PAGE F5: Admin — Analytics Overview */
+
+function AnalyticsContent() {
+    const [issues, setIssues] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await fetch('/api/issues', { credentials: 'include' });
+                if (res.ok) { const d = await res.json(); setIssues(Array.isArray(d) ? d : d.issues || []); }
+            } catch { toast.error('Failed to load'); }
+            finally { setLoading(false); }
+        })();
+    }, []);
+
+    const analytics = useMemo(() => {
+        const byStatus = {};
+        const byPriority = {};
+        const byDept = {};
+        const byMonth = {};
+
+        issues.forEach(i => {
+            byStatus[i.status] = (byStatus[i.status] || 0) + 1;
+            byPriority[i.priority] = (byPriority[i.priority] || 0) + 1;
+            const dept = i.assignedDepartment || 'unassigned';
+            byDept[dept] = (byDept[dept] || 0) + 1;
+            const month = new Date(i.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+            byMonth[month] = (byMonth[month] || 0) + 1;
+        });
+
+        return { byStatus, byPriority, byDept, byMonth };
+    }, [issues]);
+
+    if (loading) return (
+        <DashboardLayout><div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-gold/30 border-t-gold rounded-full animate-spin" /></div></DashboardLayout>
+    );
+
+    const barMax = (obj) => Math.max(...Object.values(obj), 1);
+
+    const BarChart = ({ data, title }) => {
+        const max = barMax(data);
+        return (
+            <div className="bg-card rounded-card border border-border p-5">
+                <h2 className="section-header">{title}</h2>
+                <div className="space-y-3 mt-4">
+                    {Object.entries(data).map(([key, val]) => (
+                        <div key={key}>
+                            <div className="flex justify-between text-sm mb-1">
+                                <span className="text-white capitalize">{key}</span>
+                                <span className="text-gold font-medium">{val}</span>
+                            </div>
+                            <div className="w-full bg-border rounded-full h-2">
+                                <div className="bg-gold h-2 rounded-full transition-all" style={{ width: `${(val / max) * 100}%` }} />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <DashboardLayout>
+            <div className="space-y-6">
+                <div>
+                    <h1 className="text-2xl font-bold text-white">Analytics</h1>
+                    <p className="text-text-secondary text-sm mt-1">System-wide data breakdown</p>
+                </div>
+
+                {/* Top Row Stats */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
+                    {[
+                        { label: 'Total Issues', value: issues.length, icon: '📊' },
+                        { label: 'Open', value: issues.filter(i => !['resolved', 'rejected'].includes(i.status)).length, icon: '📋' },
+                        { label: 'Resolved', value: issues.filter(i => i.status === 'resolved').length, icon: '✅' },
+                        { label: 'Avg/Month', value: Object.keys(analytics.byMonth).length > 0 ? Math.round(issues.length / Object.keys(analytics.byMonth).length) : 0, icon: '📈' },
+                    ].map(s => (
+                        <div key={s.label} className="stat-card">
+                            <span className="text-xl mb-2 block">{s.icon}</span>
+                            <div className="stat-value">{s.value}</div>
+                            <div className="stat-label">{s.label}</div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Charts Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <BarChart data={analytics.byStatus} title="By Status" />
+                    <BarChart data={analytics.byPriority} title="By Priority" />
+                    <BarChart data={analytics.byDept} title="By Department" />
+                    <BarChart data={analytics.byMonth} title="By Month" />
+                </div>
+            </div>
+        </DashboardLayout>
+    );
+}
+
+export default function AdminAnalytics() {
+    return (
+        <DashboardProtection allowedRoles={['SYSTEM_ADMIN', 'admin']}>
+            <AnalyticsContent />
+        </DashboardProtection>
+    );
+}

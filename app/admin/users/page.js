@@ -3,344 +3,165 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
-import ErrorBoundary from '@/components/ErrorBoundary';
-import Card from '@/components/ui/Card';
+import DashboardProtection from '@/components/DashboardProtection';
 import toast from 'react-hot-toast';
-import { getDepartmentDisplayName } from '@/lib/department-mapper';
 
-export default function AdminUsersPage() {
+/* PAGE F2: Admin — User Management */
+
+const ROLE_BADGE = {
+    citizen: 'bg-blue-500/20 text-blue-400 border border-blue-500/40',
+    department: 'bg-amber-500/20 text-amber-400 border border-amber-500/40',
+    municipal: 'bg-purple-500/20 text-purple-400 border border-purple-500/40',
+    admin: 'bg-gold/20 text-gold border border-gold/40',
+    commissioner: 'bg-red-500/20 text-red-400 border border-red-500/40',
+};
+
+function UsersContent() {
     const [users, setUsers] = useState([]);
+    const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
-    const [departments, setDepartments] = useState([]);
-    const [loadingDepartments, setLoadingDepartments] = useState(true);
-    const [selectedRoles, setSelectedRoles] = useState({});
-    const [selectedDepartments, setSelectedDepartments] = useState({});
+    const inputCls = "bg-input border border-border rounded-input text-white px-4 py-2.5 focus:border-gold focus:outline-none text-sm";
 
     const fetchUsers = useCallback(async () => {
         try {
-            const response = await fetch('/api/users/admin');
-            if (!response.ok) {
-                throw new Error('Failed to fetch users');
-            }
-            const data = await response.json();
-            setUsers(data);
-        } catch (error) {
-            toast.error('Failed to load users');
-            console.error('Error fetching users:', error);
-            // Fallback: Create sample data for demonstration
-            setUsers([
-                {
-                    _id: '1',
-                    name: 'John Doe',
-                    email: 'john@example.com',
-                    role: 'citizen',
-                    isActive: true,
-                    createdAt: new Date().toISOString()
-                },
-                {
-                    _id: '2',
-                    name: 'Jane Smith',
-                    email: 'jane@municipal.gov',
-                    role: 'municipal',
-                    isActive: true,
-                    createdAt: new Date().toISOString()
-                }
-            ]);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    // Fetch departments
-    const fetchDepartments = useCallback(async () => {
-        try {
-            setLoadingDepartments(true);
-            const response = await fetch('/api/departments');
-            if (!response.ok) {
-                throw new Error('Failed to fetch departments');
-            }
-            const data = await response.json();
-            setDepartments(data);
-        } catch (error) {
-            toast.error('Failed to load departments');
-            console.error('Error fetching departments:', error);
-        } finally {
-            setLoadingDepartments(false);
-        }
+            const res = await fetch('/api/users/admin');
+            if (res.ok) setUsers(await res.json());
+        } catch { toast.error('Failed to load users'); }
+        finally { setLoading(false); }
     }, []);
 
     useEffect(() => {
         fetchUsers();
-        fetchDepartments();
-    }, [fetchUsers, fetchDepartments]);
+        (async () => { try { const r = await fetch('/api/departments'); if (r.ok) setDepartments(await r.json()); } catch {} })();
+    }, [fetchUsers]);
 
-    const filteredUsers = users.filter(user => {
-        if (filter === 'all') return true;
-        return user.role === filter;
-    });
-
-    const getUserStats = () => {
-        return users.reduce((acc, user) => {
-            acc[user.role] = (acc[user.role] || 0) + 1;
-            return acc;
-        }, {});
-    };
-
-    const userStats = getUserStats();
-
-    const handleToggleStatus = async (userId, currentStatus) => {
+    const handleToggle = async (id, active) => {
         try {
-            const response = await fetch(`/api/users/${userId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ isActive: !currentStatus }),
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Failed to update user status');
-            }
-
-            toast.success('User status updated successfully');
-            fetchUsers();
-        } catch (error) {
-            toast.error(error.message || 'Failed to update user status');
-            console.error('Error updating user status:', error);
-        }
+            const res = await fetch(`/api/users/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isActive: !active }) });
+            if (!res.ok) throw new Error();
+            toast.success('Status updated'); fetchUsers();
+        } catch { toast.error('Failed'); }
     };
 
-    const handleUpdateUser = async (userId, updates) => {
+    const handleRoleChange = async (id, role) => {
         try {
-            const response = await fetch(`/api/users/${userId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(updates),
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Failed to update user');
-            }
-
-            toast.success('User updated successfully');
-            fetchUsers();
-        } catch (error) {
-            toast.error(error.message || 'Failed to update user');
-            console.error('Error updating user:', error);
-        }
+            const res = await fetch(`/api/users/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role }) });
+            if (!res.ok) throw new Error();
+            toast.success('Role updated'); fetchUsers();
+        } catch { toast.error('Failed'); }
     };
 
-    const handleRoleChange = (userId, newRole) => {
-        const user = users.find(u => u._id === userId);
-        if (user.role === 'admin') {
-            toast.error('Cannot modify admin role');
-            return;
-        }
-
-        setSelectedRoles(prev => ({ ...prev, [userId]: newRole }));
-
-        if (newRole !== 'department') {
-            setSelectedDepartments(prev => ({ ...prev, [userId]: null }));
-            handleUpdateUser(userId, { role: newRole, department: null });
-        } else {
-            // If changing to department role, require department selection
-            const currentDepartment = selectedDepartments[userId] || user.department?._id || user.department;
-            if (!currentDepartment) {
-                toast.error('Please select a department first');
-                return;
-            }
-            handleUpdateUser(userId, { role: newRole, department: currentDepartment });
-        }
+    const handleDeptChange = async (id, deptId) => {
+        try {
+            const res = await fetch(`/api/users/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ department: deptId }) });
+            if (!res.ok) throw new Error();
+            toast.success('Department updated'); fetchUsers();
+        } catch { toast.error('Failed'); }
     };
 
-    const handleDepartmentChange = (userId, departmentId) => {
-        const user = users.find(u => u._id === userId);
-        const currentRole = selectedRoles[userId] || user.role;
-        
-        setSelectedDepartments(prev => ({ ...prev, [userId]: departmentId }));
-        
-        // If user is (or will be) a department role, update both role and department
-        if (currentRole === 'department') {
-            handleUpdateUser(userId, { role: 'department', department: departmentId });
-        } else {
-            handleUpdateUser(userId, { department: departmentId });
-        }
-    };
+    const filtered = users.filter(u => filter === 'all' || u.role === filter);
+    const stats = users.reduce((a, u) => { a[u.role] = (a[u.role] || 0) + 1; return a; }, {});
 
-    if (loading) {
-        return (
-            <DashboardLayout>
-                <div className="flex items-center justify-center h-64">
-                    <div className="text-lg text-gray-600">Loading...</div>
-                </div>
-            </DashboardLayout>
-        );
-    }
+    if (loading) return (
+        <DashboardLayout><div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-gold/30 border-t-gold rounded-full animate-spin" /></div></DashboardLayout>
+    );
 
     return (
         <DashboardLayout>
-            <ErrorBoundary>
-                <div className="space-y-6">
-                    <div className="flex justify-between items-center">
-                        <h1 className="text-2xl font-semibold text-contrast-primary">User Management</h1>
-                        <div className="flex gap-3">
-                            <Link href="/admin/users/create" className="px-4 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-primary font-medium transition-colors">
-                                Create Staff User
-                            </Link>
-                        </div>
+            <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl font-bold text-white">User Management</h1>
+                        <p className="text-text-secondary text-sm mt-1">Manage all system users</p>
                     </div>
-
-                    {/* User Statistics */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <Card className="bg-neutral-surface">
-                            <h3 className="text-lg font-medium text-contrast-primary">Total Users</h3>
-                            <p className="mt-2 text-3xl font-semibold text-brand-primary">{users.length}</p>
-                        </Card>
-                        <Card className="bg-brand-soft/10">
-                            <h3 className="text-lg font-medium text-contrast-primary">Citizens</h3>
-                            <p className="mt-2 text-3xl font-semibold text-contrast-light">{userStats.citizen || 0}</p>
-                        </Card>
-                        <Card className="bg-status-success/10">
-                            <h3 className="text-lg font-medium text-contrast-primary">Municipal Staff</h3>
-                            <p className="mt-2 text-3xl font-semibold text-status-success">{userStats.municipal || 0}</p>
-                        </Card>
-                        <Card className="bg-status-warning/10">
-                            <h3 className="text-lg font-medium text-contrast-primary">Department Staff</h3>
-                            <p className="mt-2 text-3xl font-semibold text-status-warning">{userStats.department || 0}</p>
-                        </Card>
-                    </div>
-
-                    {/* Filters */}
-                    <Card className="flex gap-4 p-4">
-                        <select
-                            className="border border-neutral-border rounded-lg px-3 py-2 bg-neutral-surface text-contrast-primary focus:outline-none focus:ring-2 focus:ring-brand-primary"
-                            value={filter}
-                            onChange={(e) => setFilter(e.target.value)}
-                        >
-                            <option value="all">All Users</option>
-                            <option value="citizen">Citizens</option>
-                            <option value="municipal">Municipal Staff</option>
-                            <option value="department">Department Staff</option>
-                            <option value="admin">Administrators</option>
-                        </select>
-                    </Card>
-
-                    {/* Users Table */}
-                    <Card className="p-0 overflow-hidden">
-                        <div className="p-6">
-                            <h3 className="text-lg font-medium text-contrast-primary mb-4">
-                                Users ({filteredUsers.length})
-                            </h3>
-
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-neutral-border">
-                                    <thead className="bg-neutral-bg">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-contrast-secondary uppercase tracking-wider">
-                                                User
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-contrast-secondary uppercase tracking-wider">
-                                                Role
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-contrast-secondary uppercase tracking-wider">
-                                                Department
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-contrast-secondary uppercase tracking-wider">
-                                                Status
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-contrast-secondary uppercase tracking-wider">
-                                                Created
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-contrast-secondary uppercase tracking-wider">
-                                                Actions
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-neutral-surface divide-y divide-neutral-border">
-                                        {filteredUsers.map((user) => (
-                                            <tr key={user._id} className="hover:bg-neutral-bg/50">
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div>
-                                                        <div className="text-sm font-medium text-contrast-primary">
-                                                            {user.name}
-                                                        </div>
-                                                        <div className="text-sm text-contrast-light">
-                                                            {user.email}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <select
-                                                        className="text-xs border border-neutral-border rounded px-2 py-1 bg-neutral-surface text-contrast-secondary focus:outline-none focus:ring-1 focus:ring-brand-primary"
-                                                        value={selectedRoles[user._id] || user.role}
-                                                        onChange={(e) => handleRoleChange(user._id, e.target.value)}
-                                                        disabled={user.role === 'admin'}
-                                                    >
-                                                        <option value="citizen">Citizen</option>
-                                                        <option value="municipal">Municipal</option>
-                                                        <option value="department">Department</option>
-                                                        {user.role === 'admin' && <option value="admin">Admin</option>}
-                                                    </select>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {(selectedRoles[user._id] === 'department' || user.role === 'department') ? (
-                                                        <select
-                                                            className="text-xs border border-neutral-border rounded px-2 py-1 bg-neutral-surface text-contrast-secondary focus:outline-none focus:ring-1 focus:ring-brand-primary"
-                                                            value={selectedDepartments[user._id] || user.department?._id || user.department || ''}
-                                                            onChange={(e) => handleDepartmentChange(user._id, e.target.value)}
-                                                            disabled={loadingDepartments}
-                                                            required={selectedRoles[user._id] === 'department' || user.role === 'department'}
-                                                        >
-                                                            <option value="">Select</option>
-                                                            {departments.map((dept) => (
-                                                                <option key={dept._id} value={dept._id}>
-                                                                    {getDepartmentDisplayName(dept.name)}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    ) : (
-                                                        <span className="text-sm text-contrast-light">—</span>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.isActive
-                                                        ? 'bg-status-success/10 text-status-success border border-status-success/30'
-                                                        : 'bg-status-error/10 text-status-error border border-status-error/30'
-                                                        }`}>
-                                                        {user.isActive ? 'Active' : 'Inactive'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-contrast-light">
-                                                    {new Date(user.createdAt).toLocaleDateString()}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                    <div className="flex gap-2">
-                                                        <button
-                                                            onClick={() => handleToggleStatus(user._id, user.isActive)}
-                                                            disabled={user.role === 'admin'}
-                                                            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${user.isActive
-                                                                ? 'bg-status-error/10 text-status-error hover:bg-status-error/20 border border-status-error/30'
-                                                                : 'bg-status-success/10 text-status-success hover:bg-status-success/20 border border-status-success/30'
-                                                                } ${user.role === 'admin' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                        >
-                                                            {user.isActive ? 'Deactivate' : 'Activate'}
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </Card>
+                    <Link href="/admin/users/create" className="btn-gold px-4 py-2 text-sm">+ Create Staff User</Link>
                 </div>
-            </ErrorBoundary>
+
+                {/* Stats */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
+                    {[
+                        { label: 'Total', value: users.length, icon: '👥' },
+                        { label: 'Citizens', value: stats.citizen || 0, icon: '🏠' },
+                        { label: 'Staff', value: (stats.municipal || 0) + (stats.department || 0), icon: '🏢' },
+                        { label: 'Admins', value: stats.admin || 0, icon: '🔑' },
+                    ].map(s => (
+                        <div key={s.label} className="stat-card">
+                            <span className="text-xl mb-2 block">{s.icon}</span>
+                            <div className="stat-value">{s.value}</div>
+                            <div className="stat-label">{s.label}</div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Filter */}
+                <div className="bg-card rounded-card border border-border p-4">
+                    <select value={filter} onChange={e => setFilter(e.target.value)} className={inputCls}>
+                        <option value="all">All Users</option>
+                        <option value="citizen">Citizens</option>
+                        <option value="municipal">Municipal Staff</option>
+                        <option value="department">Department Staff</option>
+                        <option value="admin">Admins</option>
+                    </select>
+                </div>
+
+                {/* Users Table */}
+                <div className="bg-card rounded-card border border-border overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="table-dark w-full">
+                            <thead><tr><th>User</th><th>Role</th><th>Department</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+                            <tbody>
+                                {filtered.map(u => (
+                                    <tr key={u._id}>
+                                        <td>
+                                            <div className="text-white text-sm font-medium">{u.name}</div>
+                                            <div className="text-text-muted text-xs">{u.email}</div>
+                                        </td>
+                                        <td>
+                                            <select value={u.role} onChange={e => handleRoleChange(u._id, e.target.value)} disabled={u.role === 'admin'}
+                                                className="bg-transparent border border-border rounded-pill text-xs px-2 py-1 text-white focus:border-gold focus:outline-none disabled:opacity-50">
+                                                <option value="citizen">Citizen</option>
+                                                <option value="municipal">Municipal</option>
+                                                <option value="department">Department</option>
+                                                {u.role === 'admin' && <option value="admin">Admin</option>}
+                                            </select>
+                                        </td>
+                                        <td>
+                                            {u.role === 'department' ? (
+                                                <select value={u.department?._id || u.department || ''} onChange={e => handleDeptChange(u._id, e.target.value)}
+                                                    className="bg-transparent border border-border rounded-pill text-xs px-2 py-1 text-white focus:border-gold focus:outline-none">
+                                                    <option value="">Select</option>
+                                                    {departments.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
+                                                </select>
+                                            ) : <span className="text-text-muted text-xs">—</span>}
+                                        </td>
+                                        <td>
+                                            <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${u.isActive ? 'bg-green-500/20 text-green-400 border border-green-500/40' : 'bg-red-500/20 text-red-400 border border-red-500/40'}`}>
+                                                {u.isActive ? 'Active' : 'Inactive'}
+                                            </span>
+                                        </td>
+                                        <td className="text-text-muted text-xs">{new Date(u.createdAt).toLocaleDateString()}</td>
+                                        <td>
+                                            <button onClick={() => handleToggle(u._id, u.isActive)} disabled={u.role === 'admin'}
+                                                className={`px-2 py-1 rounded-pill text-xs font-medium disabled:opacity-50 ${u.isActive ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'}`}>
+                                                {u.isActive ? 'Deactivate' : 'Activate'}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </DashboardLayout>
+    );
+}
+
+export default function AdminUsersPage() {
+    return (
+        <DashboardProtection allowedRoles={['SYSTEM_ADMIN', 'admin']}>
+            <UsersContent />
+        </DashboardProtection>
     );
 }

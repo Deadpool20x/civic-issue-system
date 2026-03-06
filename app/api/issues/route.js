@@ -8,15 +8,28 @@ import Department from '@/lib/models/Department';
 import { sendEmail } from '@/lib/email';
 import { createIssueSchema } from '@/lib/schemas';
 import { calculatePriority } from '@/lib/priority-calculator';
-import { getDepartmentForCategory, getDepartmentDisplayName } from '@/lib/department-mapper';
+import { getDepartmentForCategory, getDepartmentDisplayName, getDepartmentCodeForCategory } from '@/lib/department-mapper';
 import { createDepartmentAssignmentEmail } from '@/lib/email-templates/department-assignment';
+import { createNotification } from '@/lib/notifications';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+import { getRoleFilter } from '@/lib/roleFilter';
+
 export const GET = withAuth(async (req) => {
     try {
         await connectDB();
+
+        const roleFilter = getRoleFilter(req.user);
+
+        // Block SYSTEM_ADMIN
+        if (roleFilter === null) {
+            return Response.json(
+                { success: false, error: 'ACCESS_DENIED' },
+                { status: 403 }
+            );
+        }
 
         const { searchParams } = new URL(req.url);
         const category = searchParams.get('category');
@@ -33,37 +46,32 @@ export const GET = withAuth(async (req) => {
         }
 
         // Build query based on filters
-        const query = {};
+        const query = { ...roleFilter };
         if (category) query.category = category;
         if (status) query.status = status;
         if (priority) query.priority = priority;
         if (assignedDepartment) query.assignedDepartment = assignedDepartment;
 
-        // Add role-based filters
-        if (req.user.role === 'department') {
-            query.assignedDepartment = req.user.department;
-        } else if (req.user.role === 'citizen') {
-            query.reportedBy = req.user.userId;
-        }
-
         let issues;
         try {
             issues = await Issue.find(query)
-                .select('reportId title description category status priority location upvotes upvotedBy createdAt')
+                .select('reportId title description category status priority location upvotes upvotedBy createdAt ward assignedDepartmentCode assignedDepartment')
                 .populate('reportedBy', 'name email')
                 .populate('assignedTo', 'name department')
                 .populate('assignedStaff', 'name email')
                 .populate('departmentHead', 'name email')
                 .populate('upvotedBy', 'name')
-                .sort({ createdAt: -1 });
+                .populate('assignedDepartment', 'name')
+                .sort({ 'sla.deadline': 1 });
         } catch (populateError) {
             console.log('Some populate fields not available, using fallback:', populateError.message);
             issues = await Issue.find(query)
-                .select('reportId title description category status priority location upvotes upvotedBy createdAt')
+                .select('reportId title description category status priority location upvotes upvotedBy createdAt ward assignedDepartmentCode assignedDepartment')
                 .populate('reportedBy', 'name email')
                 .populate('assignedTo', 'name department')
                 .populate('upvotedBy', 'name')
-                .sort({ createdAt: -1 });
+                .populate('assignedDepartment', 'name')
+                .sort({ 'sla.deadline': 1 });
         }
 
         // Filter sensitive data based on user role
@@ -71,7 +79,10 @@ export const GET = withAuth(async (req) => {
             return filterSensitiveData(issue.toObject(), req.user.role, req.user.userId);
         });
 
-        return new Response(JSON.stringify(filteredIssues), {
+        return new Response(JSON.stringify({
+            success: true,
+            issues: filteredIssues
+        }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
         });
@@ -105,7 +116,10 @@ export const POST = withAuth(async (req) => {
             category,
             subcategory,
             priority,
-            images
+            images,
+            detectionSource,
+            cvModelResults,
+            ward
         } = validationResult.data;
 
         // ⭐ CALCULATE PRIORITY AUTOMATICALLY ⭐
@@ -173,10 +187,12 @@ export const POST = withAuth(async (req) => {
         // Log the processed location for debugging
         console.log('Processed location:', JSON.stringify(processedLocation, null, 2));
 
-        // Determine ward based on location (simplified logic)
-        const ward = location?.address ?
-            `Ward ${Math.floor(Math.random() * 20) + 1}` : // Placeholder logic
-            'Unknown';
+        // Determine ward based on location (simplified logic) if not provided by user
+        let finalWard = ward;
+        if (!finalWard) {
+            // Default to ward-1 for demo/fallback if no address
+            finalWard = 'ward-1';
+        }
 
         // Calculate SLA deadline based on calculated priority
         const now = new Date();
@@ -202,19 +218,17 @@ export const POST = withAuth(async (req) => {
 
         // ⭐ AUTO-ASSIGN DEPARTMENT ⭐
         const departmentName = getDepartmentForCategory(category, subcategory);
+        const deptCode = getDepartmentCodeForCategory(category);
         const departmentDisplayName = getDepartmentDisplayName(departmentName);
 
-        console.log('📍 Auto-assigned department:', departmentName, 'for category:', category);
+        console.log('📍 Auto-assigned department:', departmentName, '(code:', deptCode, ') for category:', category);
 
-        // Look up department by name to get the ObjectId
+        // Look up department by name to get the ObjectId (legacy ref)
         let assignedDepartmentId = null;
         try {
             const department = await Department.findOne({ name: departmentName });
             if (department) {
                 assignedDepartmentId = department._id;
-                console.log('📍 Found department ObjectId:', assignedDepartmentId);
-            } else {
-                console.warn('⚠️ Department not found in database:', departmentName);
             }
         } catch (deptError) {
             console.error('Error looking up department:', deptError);
@@ -226,24 +240,66 @@ export const POST = withAuth(async (req) => {
             location: processedLocation,
             category,
             subcategory,
-            priority: calculatedPriority, // ⭐ AUTO-ASSIGNED PRIORITY ⭐
+            priority: calculatedPriority,
             images: (images || []).map(img => typeof img === 'string' ? { url: img, publicId: '' } : img),
             reportedBy: req.user.userId,
             assignedDepartment: assignedDepartmentId,
-            ward,
-            zone: ward,
+            assignedDepartmentCode: deptCode,
+            ward: finalWard,
+            zone: finalWard.startsWith('ward-') && parseInt(finalWard.split('-')[1]) <= 8 ? 'North Zone' : 'South Zone',
             sla: {
                 deadline: slaDeadline
             },
             dueTime: dueTime,
-            status: 'pending'
+            status: 'pending',
+            detectionSource,
+            cvModelResults
         };
+
+        // ⭐ AUTO-ASSIGN OFFICER ⭐
+        const officer = await User.findOne({
+            role: { $in: ['FIELD_OFFICER', 'department'] },
+            wardId: finalWard,
+            departmentId: deptCode,
+            isActive: true
+        });
+
+        if (officer) {
+            issueData.assignedTo = officer._id;
+            issueData.assignedStaff = officer._id;
+            issueData.status = 'assigned';
+            console.log('👷 Auto-assigned to Field Officer:', officer.email);
+        } else {
+            // Assign to Department Manager as fallback
+            const manager = await User.findOne({
+                role: { $in: ['DEPARTMENT_MANAGER', 'municipal'] },
+                departmentId: deptCode,
+                isActive: true
+            });
+
+            if (manager) {
+                issueData.assignedTo = manager._id;
+                issueData.status = 'assigned';
+                console.log('👨‍💼 Auto-assigned to Department Manager:', manager.email);
+            }
+        }
 
         console.log('💾 Saving to database:', JSON.stringify(issueData, null, 2));
 
         const issue = await Issue.create(issueData);
 
         await issue.populate('reportedBy', 'name email');
+
+        // Create notification for assigned officer
+        if (issue.status === 'assigned' && issue.assignedTo) {
+            await createNotification({
+                userId: issue.assignedTo,
+                type: 'NEW_ASSIGNMENT',
+                issueId: issue._id,
+                title: 'New Assignment',
+                message: `New ${issue.priority} issue ${issue.reportId} assigned in ${issue.ward}`
+            });
+        }
 
         console.log('Issue created successfully:', issue.reportId);
 
@@ -264,7 +320,7 @@ export const POST = withAuth(async (req) => {
             notes: `Auto-assigned to ${departmentDisplayName}`
         });
 
-        // Send emails asynchronously (fire and forget)
+        // Send emails asynchronously - fire and forget with proper error handling
         (async () => {
             try {
                 // User confirmation email
@@ -310,6 +366,7 @@ export const POST = withAuth(async (req) => {
                 }
             } catch (emailError) {
                 console.error('Failed to send issue emails:', emailError);
+                // Non-blocking - email failure shouldn't affect issue creation
             }
         })();
 

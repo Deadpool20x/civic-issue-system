@@ -75,17 +75,22 @@ export async function POST(req) {
 
         // Send welcome email on first login if not sent
         if (!user.welcomeEmailSent) {
-          (async () => {
-              try {
-                const welcomeText = `Welcome back ${user.name}!\n\nThank you for logging into the Civic Issue System.\n\nYou can now report and track civic issues in your area.\n\nIf you have any questions, contact support.\n\nBest regards,\nCivic Issue System Team`;
-                await sendEmail(user.email, 'Welcome to Civic Issue System', welcomeText);
-                user.welcomeEmailSent = true;
-                await user.save();
-                console.log('Welcome email sent to:', user.email);
-              } catch (emailError) {
-                console.error('Failed to send welcome email:', emailError);
-              }
-          })();
+            // Send email with proper error handling - don't block response
+            user.welcomeEmailSent = true;
+            user.save().then(() => {
+                // Email sending after response is sent
+                (async () => {
+                    try {
+                        const welcomeText = `Welcome back ${user.name}!\n\nThank you for logging into the Civic Issue System.\n\nYou can now report and track civic issues in your area.\n\nIf you have any questions, contact support.\n\nBest regards,\nCivic Issue System Team`;
+                        await sendEmail(user.email, 'Welcome to Civic Issue System', welcomeText);
+                        console.log('Welcome email sent to:', user.email);
+                    } catch (emailError) {
+                        console.error('Failed to send welcome email:', emailError);
+                    }
+                })();
+            }).catch(err => {
+                console.error('Failed to update welcomeEmailSent flag:', err);
+            });
         }
 
         const token = await generateToken(user);
@@ -110,17 +115,26 @@ export async function POST(req) {
 
         // Determine redirect URL based on role
         let redirectUrl;
-        switch (user.role) {
-            case 'admin':
+        const role = user.role?.toUpperCase();
+
+        switch (role) {
+            case 'ADMIN':
+            case 'SYSTEM_ADMIN':
                 redirectUrl = '/admin/dashboard';
                 break;
-            case 'municipal':
+            case 'MUNICIPAL':
                 redirectUrl = '/municipal/dashboard';
                 break;
-            case 'department':
+            case 'COMMISSIONER':
+            case 'MUNICIPAL_COMMISSIONER':
+                redirectUrl = '/commissioner/dashboard';
+                break;
+            case 'DEPARTMENT':
+            case 'DEPARTMENT_MANAGER':
+            case 'FIELD_OFFICER':
                 redirectUrl = '/department/dashboard';
                 break;
-            case 'citizen':
+            case 'CITIZEN':
             default:
                 redirectUrl = '/citizen/dashboard';
                 break;

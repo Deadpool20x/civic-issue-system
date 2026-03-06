@@ -1,0 +1,9 @@
+[dotenv@17.3.1] injecting env (10) from .env.local -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+Connecting to MongoDB...
+Connected.
+✅ Success: Reset password for roads.manager@civicpulse.in
+✅ Success: Reset password for water.manager@civicpulse.in
+✅ Success: Reset password for officer.w1.roads@civicpulse.in
+✅ Success: Reset password for commissioner@civicpulse.in
+
+All targeted passwords have been set to: admin123

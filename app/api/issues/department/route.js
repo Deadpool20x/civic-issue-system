@@ -7,14 +7,22 @@ import mongoose from 'mongoose';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+/**
+ * GET /api/issues/department
+ *
+ * Returns all issues for the logged-in Field Officer's department.
+ * Ward filter applied if user has a ward.
+ * Query params: ?status=resolved (optional filter)
+ *
+ * Frontend pages C1–C4 ALL use this single endpoint.
+ */
+import { getRoleFilter } from '@/lib/roleFilter';
+
 export async function GET(req) {
     try {
-        // 1. Connect to database
         await connectDB();
 
-        // 2. Get logged-in user data from token
         const userData = await getTokenData(req);
-        
         if (!userData) {
             return NextResponse.json(
                 { error: 'Unauthorized - No authentication token' },
@@ -22,42 +30,38 @@ export async function GET(req) {
             );
         }
 
-        // 3. Check if user role is "department"
-        if (userData.role !== 'department') {
+        const roleFilter = getRoleFilter(userData);
+
+        // Block SYSTEM_ADMIN
+        if (roleFilter === null) {
             return NextResponse.json(
-                { error: 'Department access required' },
+                { success: false, error: 'ACCESS_DENIED' },
                 { status: 403 }
             );
         }
 
-        // 4. Get full user with department populated
-        const User = mongoose.model('User');
-        const user = await User.findById(userData.userId).populate('department');
+        // Optional status filter from query string (e.g. ?status=resolved)
+        const { searchParams } = new URL(req.url);
+        const statusFilter = searchParams.get('status');
 
-        // 5. Check if user has department
-        if (!user.department) {
-            return NextResponse.json({
-                issues: [],
-                message: 'No department assigned to your account'
-            });
+        const query = { ...roleFilter };
+        if (statusFilter) {
+            query.status = statusFilter;
         }
 
-        const departmentId = user.department._id;
-
-        // 6. Fetch department-specific issues
-        const issues = await Issue.find({ assignedDepartment: departmentId })
-            .select('reportId title description category subcategory status priority location createdAt upvotes')
+        const issues = await Issue.find(query)
+            .select('reportId title description category subcategory status priority location ward sla resolutionTime feedback createdAt updatedAt upvotes assignedDepartmentCode')
             .populate('reportedBy', 'name email')
             .populate('assignedDepartment', 'name')
-            .sort({ priority: -1, createdAt: -1 })
+            .sort({ 'sla.deadline': 1 })
             .lean();
 
-        // 7. Return issues array
         return NextResponse.json({
             success: true,
             issues,
             count: issues.length,
-            departmentName: user.department.name
+            departmentId: userData.departmentId,
+            wardId: userData.wardId || null
         });
 
     } catch (error) {

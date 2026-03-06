@@ -2,349 +2,200 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/DashboardLayout';
-import DashboardProtection from '@/components/DashboardProtection';
-import toast from 'react-hot-toast';
-import { getDepartmentDisplayName } from '@/lib/department-mapper';
+import PageHeader from '@/components/PageHeader';
+import { toast } from 'react-hot-toast';
 
-export default function AdminCreateUserPage() {
+const ROLES = [
+    { value: 'CITIZEN', label: 'Citizen' },
+    { value: 'FIELD_OFFICER', label: 'Field Officer' },
+    { value: 'DEPARTMENT_MANAGER', label: 'Department Manager' },
+    { value: 'MUNICIPAL_COMMISSIONER', label: 'Municipal Commissioner' }
+];
+
+const DEPARTMENTS = [
+    { value: 'roads', label: 'Roads & Infrastructure' },
+    { value: 'water', label: 'Water & Drainage' },
+    { value: 'waste', label: 'Waste Management' },
+    { value: 'lighting', label: 'Street Lighting' },
+    { value: 'parks', label: 'Parks & Public Spaces' },
+    { value: 'traffic', label: 'Traffic & Signage' },
+    { value: 'health', label: 'Public Health & Safety' }
+];
+
+export default function CreateUserPage() {
     const router = useRouter();
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
+    const [wards, setWards] = useState([]);
+    const [loadingWards, setLoadingWards] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         password: '',
         phone: '',
-        role: 'department',
-        department: '',
-        address: {
-            street: '',
-            city: '',
-            state: '',
-            pincode: ''
-        }
+        role: 'CITIZEN',
+        wardId: '',
+        departmentId: '',
     });
 
-    const [departments, setDepartments] = useState([]);
-    const [loadingDepartments, setLoadingDepartments] = useState(true);
-
-    // Reset success message after 3 seconds
     useEffect(() => {
-        if (success) {
-            const timer = setTimeout(() => setSuccess(''), 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [success]);
-
-    // Fetch departments when component mounts
-    useEffect(() => {
-        const fetchDepartments = async () => {
+        const fetchWards = async () => {
             try {
-                setLoadingDepartments(true);
-                const response = await fetch('/api/departments');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch departments');
+                const res = await fetch('/api/wards');
+                if (res.ok) {
+                    const data = await res.json();
+                    setWards(data.all || []);
                 }
-                const data = await response.json();
-                setDepartments(data);
-            } catch (error) {
-                console.error('Error fetching departments:', error);
-                toast.error('Failed to load departments');
+            } catch (err) {
+                console.error('Failed to fetch wards:', err);
             } finally {
-                setLoadingDepartments(false);
+                setLoadingWards(false);
             }
         };
-
-        fetchDepartments();
+        fetchWards();
     }, []);
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-
-        if (name.includes('.')) {
-            const [parent, child] = name.split('.');
-            setFormData(prev => ({
-                ...prev,
-                [parent]: {
-                    ...prev[parent],
-                    [child]: value
-                }
-            }));
-        } else {
-            setFormData(prev => ({
-                ...prev,
-                [name]: value
-            }));
-        }
-    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
-        setSuccess('');
-        setLoading(true);
+        setSubmitting(true);
 
         try {
-            // Prepare payload - only include department if role is department
-            const payload = {
-                name: formData.name,
-                email: formData.email,
-                password: formData.password,
-                phone: formData.phone,
-                role: formData.role,
-                address: formData.address
-            };
-
-            // Add department only if role is department
-            if (formData.role === 'department') {
-                payload.department = formData.department;
-            }
-
-            const response = await fetch('/api/admin/create-user', {
+            const res = await fetch('/api/admin/create-user', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-                body: JSON.stringify(payload),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
             });
 
-            const data = await response.json();
+            const data = await res.json();
 
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to create user');
+            if (res.ok) {
+                toast.success('Account created successfully');
+                router.push('/admin/users');
+            } else {
+                toast.error(data.error || 'Failed to create account');
             }
-
-            // Success - show message and clear form
-            setSuccess('Staff user created successfully');
-            setFormData({
-                name: '',
-                email: '',
-                password: '',
-                phone: '',
-                role: 'department',
-                department: '',
-                address: {
-                    street: '',
-                    city: '',
-                    state: '',
-                    pincode: ''
-                }
-            });
-            toast.success('Staff user created successfully');
-
         } catch (err) {
-            setError(err.message);
-            toast.error(err.message);
+            toast.error('Network error. Please try again.');
         } finally {
-            setLoading(false);
+            setSubmitting(false);
         }
     };
 
-    const Content = () => (
-        <div className="max-w-2xl mx-auto">
-            <div className="mb-6">
-                <h1 className="text-2xl font-semibold text-contrast-primary">Create Staff User</h1>
-                <p className="text-sm text-contrast-light mt-1">Create department or municipal staff accounts</p>
-            </div>
+    const isOfficer = formData.role === 'FIELD_OFFICER';
+    const isManager = formData.role === 'DEPARTMENT_MANAGER';
 
-            {/* Success Message */}
-            {success && (
-                <div className="mb-4 p-3 bg-status-success/10 border border-status-success text-status-success rounded-lg">
-                    {success}
-                </div>
-            )}
+    return (
+        <div className="max-w-2xl mx-auto animate-fade-in">
+            <PageHeader
+                title="Create Account"
+                subtitle="Provision a new account for citizens or municipal staff."
+            />
 
-            {/* Error Message */}
-            {error && (
-                <div className="mb-4 p-3 bg-status-error/10 border border-status-error text-status-error rounded-lg">
-                    {error}
-                </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg border border-neutral-border">
-                <div>
-                    <label className="block text-sm font-medium text-contrast-secondary mb-1">
-                        Name *
-                    </label>
-                    <input
-                        type="text"
-                        name="name"
-                        required
-                        value={formData.name}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border border-neutral-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary bg-white text-contrast-primary"
-                        placeholder="John Doe"
-                        disabled={loading}
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-contrast-secondary mb-1">
-                        Email *
-                    </label>
-                    <input
-                        type="email"
-                        name="email"
-                        required
-                        value={formData.email}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border border-neutral-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary bg-white text-contrast-primary"
-                        placeholder="john@example.com"
-                        disabled={loading}
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-contrast-secondary mb-1">
-                        Password *
-                    </label>
-                    <input
-                        type="password"
-                        name="password"
-                        required
-                        value={formData.password}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border border-neutral-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary bg-white text-contrast-primary"
-                        placeholder="Min. 6 characters"
-                        minLength={6}
-                        disabled={loading}
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-contrast-secondary mb-1">
-                        Phone
-                    </label>
-                    <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border border-neutral-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary bg-white text-contrast-primary"
-                        placeholder="+1234567890"
-                        disabled={loading}
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-contrast-secondary mb-1">
-                        Role *
-                    </label>
-                    <select
-                        name="role"
-                        required
-                        value={formData.role}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border border-neutral-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary bg-white text-contrast-primary"
-                        disabled={loading}
-                    >
-                        <option value="department">Department Staff</option>
-                        <option value="municipal">Municipal Staff</option>
-                    </select>
-                </div>
-
-                {/* Department field - only shown when role is department */}
-                {formData.role === 'department' && (
-                    <div>
-                        <label className="block text-sm font-medium text-contrast-secondary mb-1">
-                            Department *
-                        </label>
-                        <select
-                            name="department"
+            <form onSubmit={handleSubmit} className="card space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-1.5">
+                        <label>Full Name</label>
+                        <input
+                            type="text"
                             required
-                            value={formData.department}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 border border-neutral-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary bg-white text-contrast-primary"
-                            disabled={loading || loadingDepartments}
+                            placeholder="e.g. Rahul Sharma"
+                            className="w-full"
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label>Email Address</label>
+                        <input
+                            type="email"
+                            required
+                            placeholder="r.sharma@civicpulse.in"
+                            className="w-full"
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        />
+                    </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-1.5">
+                        <label>Temporary Password</label>
+                        <input
+                            type="password"
+                            required
+                            placeholder="••••••••"
+                            className="w-full"
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label>Role</label>
+                        <select
+                            className="w-full"
+                            value={formData.role}
+                            onChange={(e) => setFormData({ ...formData, role: e.target.value, wardId: '', departmentId: '' })}
                         >
-                            <option value="">Select Department</option>
-                            {departments.map((dept) => (
-                                <option key={dept._id} value={dept._id}>
-                                    {getDepartmentDisplayName(dept.name)}
-                                </option>
+                            {ROLES.map(r => (
+                                <option key={r.value} value={r.value}>{r.label}</option>
                             ))}
                         </select>
-                        {loadingDepartments && (
-                            <p className="text-xs text-contrast-light mt-1">Loading departments...</p>
-                        )}
-                    </div>
-                )}
-
-                {/* Address Section */}
-                <div className="pt-2 border-t border-neutral-border">
-                    <p className="text-sm font-medium text-contrast-secondary mb-3">Address (Optional)</p>
-                    <div className="space-y-3">
-                        <input
-                            type="text"
-                            name="address.street"
-                            value={formData.address.street}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 border border-neutral-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary bg-white text-contrast-primary"
-                            placeholder="Street"
-                            disabled={loading}
-                        />
-                        <div className="grid grid-cols-2 gap-3">
-                            <input
-                                type="text"
-                                name="address.city"
-                                value={formData.address.city}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-neutral-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary bg-white text-contrast-primary"
-                                placeholder="City"
-                                disabled={loading}
-                            />
-                            <input
-                                type="text"
-                                name="address.state"
-                                value={formData.address.state}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-neutral-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary bg-white text-contrast-primary"
-                                placeholder="State"
-                                disabled={loading}
-                            />
-                        </div>
-                        <input
-                            type="text"
-                            name="address.pincode"
-                            value={formData.address.pincode}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 border border-neutral-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary bg-white text-contrast-primary"
-                            placeholder="PIN Code"
-                            disabled={loading}
-                        />
                     </div>
                 </div>
 
-                <div className="pt-4 flex justify-end gap-3">
-                    <button
-                        type="button"
-                        onClick={() => router.back()}
-                        className="px-4 py-2 border border-neutral-border text-contrast-secondary rounded-lg hover:bg-neutral-bg transition-colors"
-                        disabled={loading}
-                    >
-                        Cancel
-                    </button>
+                {/* ── CONDITIONAL FIELDS ── */}
+                <div className={`space-y-6 overflow-hidden transition-all duration-300 ${(isOfficer || isManager) ? 'max-h-96 opacity-100 mt-4' : 'max-h-0 opacity-0'}`}>
+                    <div className="h-px bg-border my-6" />
+
+                    <div className="grid md:grid-cols-2 gap-6">
+                        {isOfficer && (
+                            <div className="space-y-1.5">
+                                <label>Assigned Ward</label>
+                                <select
+                                    required={isOfficer}
+                                    className="w-full"
+                                    value={formData.wardId}
+                                    onChange={(e) => setFormData({ ...formData, wardId: e.target.value })}
+                                >
+                                    <option value="">Select Ward</option>
+                                    {wards.map(w => (
+                                        <option key={w.wardId} value={w.wardId}>{w.wardName} ({w.zone})</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
+                        {(isOfficer || isManager) && (
+                            <div className="space-y-1.5">
+                                <label>Department</label>
+                                <select
+                                    required={isOfficer || isManager}
+                                    className="w-full"
+                                    value={formData.departmentId}
+                                    onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
+                                >
+                                    <option value="">Select Department</option>
+                                    {DEPARTMENTS.map(d => (
+                                        <option key={d.value} value={d.value}>{d.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="pt-4">
                     <button
                         type="submit"
-                        disabled={loading}
-                        className="px-6 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-primary disabled:opacity-50 font-medium transition-colors"
+                        disabled={submitting}
+                        className="btn-gold w-full py-3 h-12"
                     >
-                        {loading ? 'Creating...' : 'Create User'}
+                        {submitting ? (
+                            <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                        ) : 'Create Account'}
                     </button>
                 </div>
             </form>
         </div>
-    );
-
-    return (
-        <DashboardProtection requiredRole="admin">
-            <DashboardLayout>
-                <Content />
-            </DashboardLayout>
-        </DashboardProtection>
     );
 }

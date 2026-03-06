@@ -1,252 +1,188 @@
 'use client';
 import { useState } from 'react';
 import imageCompression from 'browser-image-compression';
-
-export default function ImageUploader({ onImagesChange, maxImages = 3 }) {
+export default function ImageUploader({ onImagesChange, onVideosChange, maxImages = 3 }) {
+    const [mode, setMode] = useState('photo'); // 'photo' or 'video'
     const [images, setImages] = useState([]);
+    const [videos, setVideos] = useState([]);
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState({});
     const [errors, setErrors] = useState([]);
 
+    const toggleMode = (newMode) => {
+        if (newMode === mode) return;
+        if ((mode === 'photo' && images.length > 0) || (mode === 'video' && videos.length > 0)) {
+            if (!confirm('Switching modes will clear your current uploads. Continue?')) return;
+        }
+        setImages([]);
+        setVideos([]);
+        onImagesChange?.([]);
+        onVideosChange?.([]);
+        setMode(newMode);
+        setErrors([]);
+    };
+
     const compressImage = async (file) => {
         const options = {
-            maxSizeMB: 0.5, // 500KB
+            maxSizeMB: 0.5,
             maxWidthOrHeight: 1920,
             useWebWorker: true,
-            fileType: 'image/jpeg', // Convert all to JPEG
+            fileType: 'image/jpeg',
         };
-
-        try {
-            const compressedFile = await imageCompression(file, options);
-            return compressedFile;
-        } catch (error) {
-            console.error('Image compression error:', error);
-            throw new Error('Failed to compress image');
-        }
+        return await imageCompression(file, options);
     };
 
     const uploadToCloudinary = async (file, index) => {
         const formData = new FormData();
         formData.append('file', file);
 
-        try {
-            // Track upload progress
-            setUploadProgress(prev => ({ ...prev, [index]: 0 }));
-
+        return new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
-
-            return new Promise((resolve, reject) => {
-                // Progress tracking
-                xhr.upload.addEventListener('progress', (e) => {
-                    if (e.lengthComputable) {
-                        const percentComplete = Math.round((e.loaded / e.total) * 100);
-                        setUploadProgress(prev => ({ ...prev, [index]: percentComplete }));
-                    }
-                });
-
-                xhr.addEventListener('load', () => {
-                    if (xhr.status === 200) {
-                        const response = JSON.parse(xhr.responseText);
-                        resolve(response.url);
-                    } else {
-                        reject(new Error('Upload failed'));
-                    }
-                });
-
-                xhr.addEventListener('error', () => reject(new Error('Upload failed')));
-
-                xhr.open('POST', '/api/upload');
-                xhr.send(formData);
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    setUploadProgress(prev => ({ ...prev, [index]: percent }));
+                }
             });
-        } catch (error) {
-            console.error('Upload error:', error);
-            throw error;
-        }
+
+            xhr.addEventListener('load', () => {
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    resolve(response); // returns { url, publicId, thumbnailUrl }
+                } else reject(new Error('Upload failed'));
+            });
+
+            xhr.addEventListener('error', () => reject(new Error('Upload failed')));
+            xhr.open('POST', '/api/upload');
+            xhr.send(formData);
+        });
     };
 
     const handleFileSelect = async (e) => {
         const files = Array.from(e.target.files);
-
-        // Check max images limit
-        if (images.length + files.length > maxImages) {
-            setErrors([`Maximum ${maxImages} images allowed`]);
-            return;
-        }
-
-        // Validate file types
-        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/heic'];
-        const invalidFiles = files.filter(file => !validTypes.includes(file.type));
-
-        if (invalidFiles.length > 0) {
-            setErrors(['Only JPG, PNG, and HEIC images are allowed']);
-            return;
-        }
+        if (files.length === 0) return;
 
         setErrors([]);
         setUploading(true);
 
         try {
-            const uploadPromises = files.map(async (file, index) => {
-                // Compress image
-                const compressedFile = await compressImage(file);
-
-                // Upload to Cloudinary
-                const url = await uploadToCloudinary(compressedFile, images.length + index);
-
-                return {
-                    url,
-                    name: file.name,
-                    size: compressedFile.size,
-                };
-            });
-
-            const uploadedImages = await Promise.all(uploadPromises);
-            const newImages = [...images, ...uploadedImages];
-
-            setImages(newImages);
-            onImagesChange(newImages.map(img => img.url));
-
-            // Clear progress after success
-            setTimeout(() => {
-                setUploadProgress({});
-            }, 1000);
-
-        } catch (error) {
-            console.error('Upload error:', error);
-            setErrors(['Failed to upload images. Please try again.']);
+            if (mode === 'photo') {
+                const allowed = files.slice(0, maxImages - images.length);
+                const uploaded = await Promise.all(allowed.map(async (file, i) => {
+                    const compressed = await compressImage(file);
+                    const res = await uploadToCloudinary(compressed, images.length + i);
+                    return { url: res.url, name: file.name, size: compressed.size };
+                }));
+                const newImages = [...images, ...uploaded];
+                setImages(newImages);
+                onImagesChange?.(newImages.map(img => img.url));
+            } else {
+                const file = files[0];
+                if (file.size > 50 * 1024 * 1024) throw new Error('Video must be under 50MB');
+                const res = await uploadToCloudinary(file, 0);
+                const newVideos = [{ url: res.url, thumbnailUrl: res.thumbnailUrl, publicId: res.publicId }];
+                setVideos(newVideos);
+                onVideosChange?.(newVideos);
+            }
+            setTimeout(() => setUploadProgress({}), 1000);
+        } catch (err) {
+            setErrors([err.message || 'Failed to upload.']);
         } finally {
             setUploading(false);
         }
     };
 
     const removeImage = (index) => {
-        const newImages = images.filter((_, i) => i !== index);
-        setImages(newImages);
-        onImagesChange(newImages.map(img => img.url));
+        if (mode === 'photo') {
+            const newImages = images.filter((_, i) => i !== index);
+            setImages(newImages);
+            onImagesChange?.(newImages.map(img => img.url));
+        } else {
+            setVideos([]);
+            onVideosChange?.([]);
+        }
     };
 
     return (
         <div className="space-y-4">
-            {/* Upload button */}
-            {images.length < maxImages && (
-                <div>
-                    <label
-                        htmlFor="image-upload"
-                        className={`
-              flex flex-col items-center justify-center w-full h-32 
-              border-2 border-dashed rounded-xl cursor-pointer
-              transition-all
-              ${uploading
-                                ? 'border-neutral-border bg-neutral-bg cursor-not-allowed'
-                                : 'border-brand-primary bg-brand-soft/20 hover:bg-brand-soft/40'
-                            }
-            `}
-                    >
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <svg
-                                className="w-10 h-10 mb-3 text-brand-primary"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                />
-                            </svg>
-                            <p className="mb-2 text-sm text-contrast-primary font-medium">
-                                {uploading ? 'Uploading...' : 'Click to upload images (optional)'}
-                            </p>
-                            <p className="text-xs text-contrast-secondary">
-                                JPG, PNG, or HEIC - Max 500KB each - Up to {maxImages} images
-                            </p>
-                        </div>
-                        <input
-                            id="image-upload"
-                            type="file"
-                            className="hidden"
-                            accept="image/jpeg,image/jpg,image/png,image/heic"
-                            multiple
-                            onChange={handleFileSelect}
-                            disabled={uploading}
-                        />
-                    </label>
-                </div>
+            {/* Mode Toggle */}
+            <div className="flex bg-page-input p-1 rounded-2xl w-fit border border-border">
+                <button
+                    type="button"
+                    onClick={() => toggleMode('photo')}
+                    className={`px-6 py-1.5 rounded-xl text-xs font-bold transition-all ${mode === 'photo' ? 'bg-gold text-page-bg shadow-lg' : 'text-text-muted hover:text-white'}`}
+                >
+                    PHOTOS
+                </button>
+                <button
+                    type="button"
+                    onClick={() => toggleMode('video')}
+                    className={`px-6 py-1.5 rounded-xl text-xs font-bold transition-all ${mode === 'video' ? 'bg-gold text-page-bg shadow-lg' : 'text-text-muted hover:text-white'}`}
+                >
+                    VIDEO
+                </button>
+            </div>
+
+            {((mode === 'photo' && images.length < maxImages) || (mode === 'video' && videos.length === 0)) && (
+                <label className={`flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-3xl cursor-pointer transition-all ${uploading ? 'border-border bg-white/5 cursor-wait' : 'border-gold/30 bg-gold/5 hover:bg-gold/10'}`}>
+                    <div className="flex flex-col items-center justify-center py-5">
+                        <span className="text-4xl mb-3">{mode === 'photo' ? '📸' : '🎥'}</span>
+                        <p className="text-sm text-white font-black tracking-tight">{uploading ? 'UPLOADING...' : `UPLOAD ${mode.toUpperCase()}`}</p>
+                        <p className="text-[10px] text-text-muted uppercase tracking-widest mt-2">
+                            {mode === 'photo' ? `Up to ${maxImages} photos • 500KB each` : '1 Video • Max 50MB • MP4/MOV'}
+                        </p>
+                    </div>
+                    <input
+                        type="file"
+                        className="hidden"
+                        accept={mode === 'photo' ? "image/*" : "video/*"}
+                        multiple={mode === 'photo'}
+                        onChange={handleFileSelect}
+                        disabled={uploading}
+                    />
+                </label>
             )}
 
-            {/* Error messages */}
             {errors.length > 0 && (
-                <div className="bg-status-error/10 border border-status-error/30 text-status-error px-4 py-3 rounded-xl text-sm">
-                    {errors.map((error, i) => (
-                        <p key={i}>{error}</p>
-                    ))}
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-2 rounded-xl text-xs font-medium animate-shake">
+                    {errors[0]}
                 </div>
             )}
 
-            {/* Upload progress */}
-            {Object.keys(uploadProgress).length > 0 && (
-                <div className="space-y-2">
-                    {Object.entries(uploadProgress).map(([index, progress]) => (
-                        <div key={index} className="space-y-1">
-                            <div className="flex justify-between text-xs text-contrast-secondary">
-                                <span>Uploading image {parseInt(index) + 1}...</span>
-                                <span>{progress}%</span>
+            <div className="grid grid-cols-3 gap-4">
+                {mode === 'photo' && images.map((img, i) => (
+                    <div key={i} className="relative aspect-square rounded-2xl overflow-hidden border border-border group shadow-xl">
+                        <img src={img.url} className="w-full h-full object-cover" />
+                        <button type="button" onClick={() => removeImage(i)} className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                        {uploadProgress[i] !== undefined && uploadProgress[i] < 100 && (
+                            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center text-xs font-black text-gold">
+                                {uploadProgress[i]}%
                             </div>
-                            <div className="w-full bg-neutral-bg rounded-full h-2">
-                                <div
-                                    className="bg-brand-primary h-2 rounded-full transition-all duration-300"
-                                    style={{ width: `${progress}%` }}
-                                />
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
+                        )}
+                    </div>
+                ))}
 
-            {/* Image thumbnails */}
-            {images.length > 0 && (
-                <div className="grid grid-cols-3 gap-4">
-                    {images.map((image, index) => (
-                        <div
-                            key={index}
-                            className="relative group aspect-square rounded-xl overflow-hidden border-2 border-neutral-border bg-neutral-bg"
-                        >
-                            <img
-                                src={image.url}
-                                alt={`Upload ${index + 1}`}
-                                className="w-full h-full object-cover"
-                            />
-
-                            {/* Remove button */}
-                            <button
-                                type="button"
-                                onClick={() => removeImage(index)}
-                                className="absolute top-2 right-2 bg-status-error text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-status-error/90"
-                                title="Remove image"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-
-                            {/* Image info */}
-                            <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white p-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                                <p className="truncate">{image.name}</p>
-                                <p>{(image.size / 1024).toFixed(0)} KB</p>
+                {mode === 'video' && videos.map((vid, i) => (
+                    <div key={i} className="relative aspect-square rounded-2xl overflow-hidden border border-border group shadow-xl bg-black">
+                        <img src={vid.thumbnailUrl || vid.url} className="w-full h-full object-cover opacity-60" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-md">
+                                <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
                             </div>
                         </div>
-                    ))}
-                </div>
-            )}
-
-            {/* Image count */}
-            {images.length > 0 && (
-                <p className="text-sm text-contrast-secondary text-center">
-                    {images.length} / {maxImages} images uploaded
-                </p>
-            )}
+                        <button type="button" onClick={() => removeImage(i)} className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                        {uploadProgress[0] !== undefined && uploadProgress[0] < 100 && (
+                            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center text-xs font-black text-gold">
+                                {uploadProgress[0]}%
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }

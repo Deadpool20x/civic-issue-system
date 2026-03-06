@@ -1,0 +1,95 @@
+[dotenv@17.3.1] injecting env (10) from .env.local -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+✅ Connected to database
+
+🧪 TESTING ALL ROLES
+
+============================================================
+
+👤 ADMIN USER TEST:
+   ✅ Admin found: System Admin (admin@civicpulse.in) [Role: SYSTEM_ADMIN]
+
+🏢 DEPARTMENT USERS TEST:
+   Found 10 department users:
+   - Roads Department Manager (roads.manager@civicpulse.in) [Role: DEPARTMENT_MANAGER]
+     Department: N/A
+   - Water Manager (water.manager@civicpulse.in) [Role: DEPARTMENT_MANAGER]
+     Department: N/A
+   - Waste Manager (waste.manager@civicpulse.in) [Role: DEPARTMENT_MANAGER]
+     Department: N/A
+   - Lighting Manager (light.manager@civicpulse.in) [Role: DEPARTMENT_MANAGER]
+     Department: N/A
+   - Parks Manager (parks.manager@civicpulse.in) [Role: DEPARTMENT_MANAGER]
+     Department: N/A
+   - Health Manager (health.manager@civicpulse.in) [Role: DEPARTMENT_MANAGER]
+     Department: N/A
+   - Ward 1 Roads Officer (officer.w1.roads@civicpulse.in) [Role: FIELD_OFFICER]
+     Department: N/A
+   - Ward 2 Water Officer (officer.w2.water@civicpulse.in) [Role: FIELD_OFFICER]
+     Department: N/A
+   - Ward 3 Roads Officer (officer.w3.roads@civicpulse.in) [Role: FIELD_OFFICER]
+     Department: N/A
+   - Ward 4 Waste Officer (officer.w4.waste@civicpulse.in) [Role: FIELD_OFFICER]
+     Department: N/A
+
+👥 CITIZEN USERS TEST:
+   Found 1 citizen users:
+   - Yash Patel (yashvraj@gmail.com) [Role: citizen]
+
+📋 ISSUES TEST:
+   Found 4 issues:
+   - R00001: xyz
+     Status: resolved
+     Priority: medium
+     Reported by: Yash Patel
+     Assigned to: water-drainage
+   - R00002: light issue solving
+     Status: resolved
+     Priority: medium
+     Reported by: Yash Patel
+     Assigned to: street-lighting
+   - R00003: road damaged
+     Status: resolved
+     Priority: medium
+     Reported by: Yash Patel
+     Assigned to: roads-infrastructure
+   - R00004: dumping in resident area
+     Status: pending
+     Priority: high
+     Reported by: Yash Patel
+     Assigned to: waste-management
+
+🏢 DEPARTMENTS TEST:
+   Found 8 departments:
+   - roads-infrastructure (Active)
+   - water-drainage (Active)
+   - street-lighting (Active)
+   - waste-management (Active)
+   - traffic-signage (Active)
+   - parks-public-spaces (Active)
+   - public-health-safety (Active)
+   - general-administration (Active)
+
+🔍 DATA INTEGRITY TEST:
+   Issues with string department: 0 ✅
+   Department users without department: 0 ✅
+
+🎯 ISSUE ASSIGNMENT TEST:
+   Issues with assigned department: 4 ✅
+
+🎭 USER ROLES TEST:
+   Admins: 0 ❌
+   Department Staff: 0 ❌
+   Citizens: 1 ✅
+
+📊 ISSUE STATUS TEST:
+   resolved: 3
+   pending: 1
+
+🆔 REPORT ID TEST:
+   Issues with reportId: 4 ✅
+
+============================================================
+
+⚠️  SOME TESTS FAILED - REVIEW ISSUES
+
+

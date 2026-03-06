@@ -15,6 +15,36 @@ const baseConfigs = [
   },
   {
     files: ["**/*.{js,jsx,ts,tsx,mjs,cjs}"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      globals: {
+        console: "readonly",
+        process: "readonly",
+        require: "readonly",
+        Response: "readonly",
+        Request: "readonly",
+        URL: "readonly",
+        URLSearchParams: "readonly",
+        __dirname: "readonly",
+        module: "readonly",
+        Buffer: "readonly",
+        jest: "readonly",
+        describe: "readonly",
+        test: "readonly",
+        it: "readonly",
+        expect: "readonly",
+        beforeEach: "readonly",
+        afterAll: "readonly",
+        beforeAll: "readonly",
+        fetch: "readonly"
+      },
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true
+        }
+      }
+    },
     plugins: {
       "@next/next": nextPlugin,
       "react": reactPlugin,
@@ -25,6 +55,8 @@ const baseConfigs = [
       ...(nextPlugin.configs?.["core-web-vitals"]?.rules || {}),
       ...(reactPlugin.configs?.recommended?.rules || {}),
       ...(hooksPlugin.configs?.recommended?.rules || {}),
+      "react/react-in-jsx-scope": "off",
+      "react/prop-types": "off"
     },
   },
 ];

@@ -51,14 +51,24 @@ const issueSchema = new mongoose.Schema({
         default: 'medium',
         index: true
     },
-    
+
     priorityOverriddenBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
-    
+
     priorityOverriddenAt: Date,
-    
+
+    detectionSource: {
+        type: String,
+        enum: ['roboflow', 'gemini', 'openai', 'keyword', 'manual', 'AI_CONFIRMED', 'AI_OVERRIDDEN'],
+        default: 'manual'
+    },
+    cvModelResults: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null
+    },
+
     status: {
         type: String,
         enum: ['pending', 'assigned', 'in-progress', 'resolved', 'rejected', 'reopened', 'escalated'],
@@ -71,6 +81,11 @@ const issueSchema = new mongoose.Schema({
     images: [{
         url: String,
         publicId: String
+    }],
+    videos: [{
+        url: String,
+        publicId: String,
+        thumbnailUrl: String
     }],
     reportedBy: {
         type: mongoose.Schema.Types.ObjectId,
@@ -85,6 +100,12 @@ const issueSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Department',
         default: null
+    },
+    assignedDepartmentCode: {
+        type: String,
+        trim: true,
+        default: null
+        // Values: "roads" | "water" | "waste" | "lighting" | "parks" | "traffic" | "health" | "general"
     },
     // SLA and Escalation System
     sla: {
@@ -116,7 +137,8 @@ const issueSchema = new mongoose.Schema({
     // Location and Ward Classification
     ward: {
         type: String,
-        trim: true
+        trim: true,
+        default: null
     },
     zone: {
         type: String,
@@ -147,13 +169,23 @@ const issueSchema = new mongoose.Schema({
             min: 1,
             max: 5
         },
-        isResolved: Boolean, // true = yes, false = no (renamed from resolved for clarity)
+        isResolved: Boolean,
         comment: String,
         submittedAt: Date,
         submittedBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User'
         }
+    },
+    // Citizen Verification (Phase 4D)
+    citizenConfirmed: {
+        type: Boolean,
+        default: null
+    },
+    citizenConfirmedAt: Date,
+    reopenReason: {
+        type: String,
+        trim: true
     },
     // Performance Tracking
     resolutionTime: {

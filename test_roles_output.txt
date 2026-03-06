@@ -1,0 +1,75 @@
+[dotenv@17.3.1] injecting env (10) from .env.local -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+✅ Connected to database
+
+🧪 TESTING ALL ROLES
+
+============================================================
+
+👤 ADMIN USER TEST:
+   ❌ No admin user found
+
+🏢 DEPARTMENT USERS TEST:
+   Found 0 department users:
+
+👥 CITIZEN USERS TEST:
+   Found 1 citizen users:
+   - Yash Patel (yashvraj@gmail.com)
+
+📋 ISSUES TEST:
+   Found 4 issues:
+   - R00001: xyz
+     Status: resolved
+     Priority: medium
+     Reported by: Yash Patel
+     Assigned to: water-drainage
+   - R00002: light issue solving
+     Status: resolved
+     Priority: medium
+     Reported by: Yash Patel
+     Assigned to: street-lighting
+   - R00003: road damaged
+     Status: resolved
+     Priority: medium
+     Reported by: Yash Patel
+     Assigned to: roads-infrastructure
+   - R00004: dumping in resident area
+     Status: pending
+     Priority: high
+     Reported by: Yash Patel
+     Assigned to: waste-management
+
+🏢 DEPARTMENTS TEST:
+   Found 8 departments:
+   - roads-infrastructure (Active)
+   - water-drainage (Active)
+   - street-lighting (Active)
+   - waste-management (Active)
+   - traffic-signage (Active)
+   - parks-public-spaces (Active)
+   - public-health-safety (Active)
+   - general-administration (Active)
+
+🔍 DATA INTEGRITY TEST:
+   Issues with string department: 0 ✅
+   Department users without department: 0 ✅
+
+🎯 ISSUE ASSIGNMENT TEST:
+   Issues with assigned department: 4 ✅
+
+🎭 USER ROLES TEST:
+   Admins: 0 ❌
+   Department Staff: 0 ❌
+   Citizens: 1 ✅
+
+📊 ISSUE STATUS TEST:
+   pending: 1
+   resolved: 3
+
+🆔 REPORT ID TEST:
+   Issues with reportId: 4 ✅
+
+============================================================
+
+⚠️  SOME TESTS FAILED - REVIEW ISSUES
+
+

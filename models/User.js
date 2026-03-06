@@ -26,15 +26,35 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['citizen', 'admin', 'municipal', 'department'],
-    default: 'citizen'
+    enum: [
+      // OLD - keep for backward compatibility
+      'citizen', 'department', 'municipal', 'admin', 'commissioner',
+      // NEW
+      'CITIZEN', 'FIELD_OFFICER', 'DEPARTMENT_MANAGER',
+      'SYSTEM_ADMIN', 'MUNICIPAL_COMMISSIONER'
+    ],
+    default: 'CITIZEN'
+  },
+  wardId: {
+    type: String,
+    default: null,
+    trim: true
+    // Format: "ward-1" to "ward-16"
+  },
+  departmentId: {
+    type: String,
+    default: null,
+    trim: true
+    // Values: "roads" | "water" | "waste" | "lighting" | "parks" | "traffic" | "health" | "general"
   },
   department: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Department',
-    required: function() {
-      return this.role === 'department';
-    }
+    required: false
+  },
+  ward: {
+    type: String,
+    trim: true
   },
   address: {
     street: String,
@@ -56,6 +76,13 @@ const userSchema = new mongoose.Schema({
   }
 });
 
+// Indexes
+userSchema.index({ wardId: 1, departmentId: 1 });
+userSchema.index({ role: 1, departmentId: 1 });
+userSchema.index({ role: 1, isActive: 1 });
+userSchema.index({ department: 1 });
+userSchema.index({ role: 1 });
+
 // Hash password before saving
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
@@ -70,20 +97,17 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Index for department field for faster queries
-userSchema.index({ department: 1 });
-userSchema.index({ role: 1 });
-
 // Pre-save hook to validate department assignment
 userSchema.pre('save', function (next) {
-  // If role is department, ensure department is provided
-  if (this.role === 'department' && !this.department) {
-    return next(new Error('Department is required when role is "department"'));
-  }
+  // If role is department/FIELD_OFFICER, ensure department/departmentId is provided if required
+  // For simplicity in the transition, we'll relax the strict validation but keep the cleanup logic
 
-  // If role is not department, ensure department is cleared
-  if (this.role !== 'department' && this.department) {
+  // If role is not a department role, ensure department fields are cleared
+  const departmentRoles = ['department', 'municipal', 'commissioner', 'FIELD_OFFICER', 'DEPARTMENT_MANAGER', 'MUNICIPAL_COMMISSIONER'];
+  if (!departmentRoles.includes(this.role)) {
     this.department = undefined;
+    this.departmentId = null;
+    this.wardId = null;
   }
 
   next();

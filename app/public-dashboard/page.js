@@ -1,229 +1,167 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import Card from '@/components/ui/Card';
-import StatCard from '@/components/ui/StatCard';
+
+/* PAGE 26: Public Dashboard (Dark Theme) */
+
+function timeAgo(date) {
+    const h = Math.floor((Date.now() - new Date(date)) / 3600000);
+    if (h < 1) return 'just now'; if (h < 24) return `${h}h ago`; return `${Math.floor(h / 24)}d ago`;
+}
 
 export default function PublicDashboardPage() {
-    const [dashboardData, setDashboardData] = useState(null);
+    const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [selectedWard, setSelectedWard] = useState('all');
-    const [selectedDepartment, setSelectedDepartment] = useState('all');
+    const [w, setW] = useState('all');
+    const [d, setD] = useState('all');
 
     useEffect(() => {
-        const fetchDashboardData = async () => {
+        (async () => {
             try {
                 const params = new URLSearchParams();
-                if (selectedWard !== 'all') params.append('ward', selectedWard);
-                if (selectedDepartment !== 'all') params.append('department', selectedDepartment);
+                if (w !== 'all') params.append('ward', w);
+                if (d !== 'all') params.append('department', d);
+                const res = await fetch(`/api/public-dashboard?${params}`);
+                if (res.ok) setData(await res.json());
+            } catch (e) { console.error('Error fetching public dash:', e); }
+            finally { setLoading(false); }
+        })();
+    }, [w, d]);
 
-                const response = await fetch(`/api/public-dashboard?${params}`);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch dashboard data');
-                }
-                const data = await response.json();
-                setDashboardData(data);
-            } catch (error) {
-                console.error('Error fetching dashboard data:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchDashboardData();
-    }, [selectedWard, selectedDepartment]);
-
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-                <div className="text-lg text-slate-600">Loading public dashboard...</div>
+    if (loading) return (
+        <div className="min-h-screen bg-page text-white flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                <span className="text-sm text-text-secondary">Loading public data...</span>
             </div>
-        );
-    }
+        </div>
+    );
+
+    const inputCls = "bg-input border border-border rounded-input text-white focus:border-gold focus:outline-none px-4 py-2.5 text-sm";
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-page text-white">
             {/* Header */}
-            <header className="bg-white border-b border-slate-200 shadow-sm">
+            <header className="bg-card border-b border-border shadow-sm sticky top-0 z-30">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-col sm:flex-row justify-between h-16 gap-4">
-                        <div className="flex items-center">
-                            <h1 className="text-xl font-bold text-slate-900">Civic Issue System - Public Dashboard</h1>
-                        </div>
+                    <div className="flex flex-col sm:flex-row justify-between h-16 items-center gap-4">
+                        <Link href="/" className="text-xl font-bold font-heading text-white hover:text-gold transition-colors">
+                            Civic Issue System
+                        </Link>
                         <div className="flex items-center space-x-4">
-                            <Link
-                                href="/login"
-                                className="text-slate-700 hover:text-slate-900 px-3 py-3 rounded-xl text-sm font-medium min-h-[44px] flex items-center justify-center"
-                            >
-                                Login
-                            </Link>
-                            <Link
-                                href="/register"
-                                className="bg-indigo-600 text-white hover:bg-indigo-700 px-4 py-3 rounded-xl text-sm font-medium min-h-[44px] flex items-center justify-center shadow-sm"
-                            >
-                                Report Issue
-                            </Link>
+                            <Link href="/login" className="text-text-secondary hover:text-white px-3 py-2 text-sm font-medium transition-colors">Login</Link>
+                            <Link href="/register" className="btn-gold px-4 py-2 text-sm">Report Issue</Link>
                         </div>
                     </div>
                 </div>
             </header>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+                <div>
+                    <h1 className="text-3xl font-bold font-heading mb-2">Public Dashboard</h1>
+                    <p className="text-text-secondary">Real-time transparency into city-wide civic issues</p>
+                </div>
+
                 {/* Filters */}
-                <div className="mb-6 flex flex-col sm:flex-row space-y-4 sm:space-y-0 space-x-4">
-                    <select
-                        value={selectedWard}
-                        onChange={(e) => setSelectedWard(e.target.value)}
-                        className="px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[44px] bg-white"
-                    >
+                <div className="flex flex-col sm:flex-row gap-4 bg-card p-4 border border-border rounded-card">
+                    <select value={w} onChange={e => setW(e.target.value)} className={inputCls + " flex-1"}>
                         <option value="all">All Wards</option>
-                        {dashboardData?.wardStats?.map(ward => (
-                            <option key={ward.ward} value={ward.ward}>{ward.ward}</option>
-                        ))}
+                        {data?.wardStats?.map(w => <option key={w.ward} value={w.ward}>{w.ward}</option>)}
                     </select>
-                    <select
-                        value={selectedDepartment}
-                        onChange={(e) => setSelectedDepartment(e.target.value)}
-                        className="px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[44px] bg-white"
-                    >
+                    <select value={d} onChange={e => setD(e.target.value)} className={inputCls + " flex-1"}>
                         <option value="all">All Departments</option>
-                        <option value="water">Water</option>
-                        <option value="electricity">Electricity</option>
-                        <option value="roads">Roads</option>
-                        <option value="garbage">Garbage</option>
-                        <option value="parks">Parks</option>
-                        <option value="other">Other</option>
+                        <option value="water">Water</option><option value="electricity">Electricity</option>
+                        <option value="roads">Roads</option><option value="garbage">Garbage</option>
+                        <option value="parks">Parks</option><option value="other">Other</option>
                     </select>
                 </div>
 
-                {/* Summary Cards */}
-                <div className="grid grid-cols-1 gap-6 mb-8">
-                    <StatCard
-                        label="Total Issues"
-                        value={dashboardData?.summary?.totalIssues || 0}
-                        accent="border-l-4 border-l-slate-400"
-                        iconBg="bg-slate-100"
-                        iconColor="text-slate-600"
-                        iconPath="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                    <StatCard
-                        label="Resolved Issues"
-                        value={dashboardData?.summary?.resolvedIssues || 0}
-                        accent="border-l-4 border-l-emerald-400"
-                        iconBg="bg-emerald-50"
-                        iconColor="text-emerald-600"
-                        iconPath="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                    <StatCard
-                        label="Pending Issues"
-                        value={dashboardData?.summary?.pendingIssues || 0}
-                        accent="border-l-4 border-l-amber-400"
-                        iconBg="bg-amber-50"
-                        iconColor="text-amber-600"
-                        iconPath="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                    <StatCard
-                        label="SLA Compliance"
-                        value={`${dashboardData?.summary?.slaComplianceRate?.toFixed(1) || 0}%`}
-                        accent="border-l-4 border-l-purple-400"
-                        iconBg="bg-purple-50"
-                        iconColor="text-purple-600"
-                        iconPath="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
+                {/* Summary Stats */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
+                    <div className="stat-card">
+                        <span className="text-xl mb-2 block">📊</span>
+                        <div className="stat-value">{data?.summary?.totalIssues || 0}</div>
+                        <div className="stat-label">Total Issues</div>
+                    </div>
+                    <div className="stat-card">
+                        <span className="text-xl mb-2 block">✅</span>
+                        <div className="stat-value text-green-400">{data?.summary?.resolvedIssues || 0}</div>
+                        <div className="stat-label">Resolved</div>
+                    </div>
+                    <div className="stat-card">
+                        <span className="text-xl mb-2 block">⏳</span>
+                        <div className="stat-value text-amber-400">{data?.summary?.pendingIssues || 0}</div>
+                        <div className="stat-label">Pending</div>
+                    </div>
+                    <div className="stat-card">
+                        <span className="text-xl mb-2 block">📈</span>
+                        <div className="stat-value text-gold">{data?.summary?.slaComplianceRate?.toFixed(1) || 0}%</div>
+                        <div className="stat-label">SLA Compliance</div>
+                    </div>
                 </div>
 
-                {/* Department Performance Leaderboard */}
-                <Card className="mb-8">
-                    <div className="p-6">
-                        <h3 className="text-lg font-semibold text-slate-900 mb-4">Department Performance Leaderboard</h3>
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Performance Score</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SLA Compliance</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issues Resolved</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Resolution Time</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {dashboardData?.departmentRankings?.map((dept, index) => (
-                                        <tr key={dept.department}>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${index === 0 ? 'bg-yellow-100 text-yellow-800' :
-                                                    index === 1 ? 'bg-gray-100 text-gray-800' :
-                                                        index === 2 ? 'bg-orange-100 text-orange-800' :
-                                                            'bg-gray-50 text-gray-600'
-                                                    }`}>
-                                                    #{index + 1}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 capitalize">
-                                                {dept.department}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center">
-                                                    <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                                                        <div
-                                                            className="bg-blue-600 h-2 rounded-full"
-                                                            style={{ width: `${dept.performanceScore}%` }}
-                                                        ></div>
-                                                    </div>
-                                                    <span className="text-sm text-gray-600">{dept.performanceScore.toFixed(1)}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                                {dept.slaComplianceRate.toFixed(1)}%
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                                {dept.totalIssuesResolved}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                                {dept.averageResolutionTime.toFixed(1)}h
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                {/* Dept Rankings & Top Issues Split */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                    {/* Dept Leaderboard */}
+                    <div className="bg-card rounded-card border border-border h-full flex flex-col">
+                        <div className="p-5 border-b border-border">
+                            <h2 className="section-header mb-0">Department Performance</h2>
+                        </div>
+                        <div className="p-5 flex-1 space-y-6">
+                            {data?.departmentRankings?.map((d, i) => (
+                                <div key={d.department} className="space-y-2">
+                                    <div className="flex justify-between items-center text-sm">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-gold/20 text-gold border border-gold/40' : 'bg-background text-text-muted border border-border'}`}>
+                                                #{i + 1}
+                                            </span>
+                                            <span className="font-semibold text-white capitalize">{d.department}</span>
+                                        </div>
+                                        <div className="text-text-secondary text-xs">
+                                            {d.slaComplianceRate.toFixed(0)}% SLA • {d.totalIssuesResolved} res.
+                                        </div>
+                                    </div>
+                                    <div className="w-full bg-border rounded-full h-1.5 flex items-center">
+                                        <div className="bg-gold h-1.5 rounded-full transition-all" style={{ width: `${d.performanceScore}%` }} />
+                                    </div>
+                                    <div className="flex justify-between text-xs text-text-muted uppercase tracking-widest px-8">
+                                        <span>Score: {d.performanceScore.toFixed(1)}</span>
+                                        <span>Avg res: {d.averageResolutionTime.toFixed(1)}h</span>
+                                    </div>
+                                </div>
+                            ))}
+                            {(!data?.departmentRankings || data.departmentRankings.length === 0) && (
+                                <div className="text-center py-12 text-text-secondary">No department data</div>
+                            )}
                         </div>
                     </div>
-                </Card>
 
-                {/* Most Upvoted Issues */}
-                <div className="bg-white rounded-lg shadow mb-8">
-                    <div className="p-6">
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">Most Upvoted Issues</h3>
-                        <div className="space-y-4">
-                            {dashboardData?.mostUpvotedIssues?.map((issue, index) => (
-                                <div key={issue._id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border border-gray-200 rounded-lg gap-4">
-                                    <div className="flex-1">
-                                        <h4 className="text-sm font-medium text-gray-900">{issue.title}</h4>
-                                        <p className="text-sm text-gray-500">
-                                            {issue.department} • {issue.ward} • {new Date(issue.createdAt).toLocaleDateString()}
-                                        </p>
+                    {/* Upvoted Issues */}
+                    <div className="bg-card rounded-card border border-border h-full flex flex-col">
+                        <div className="p-5 border-b border-border">
+                            <h2 className="section-header mb-0">Most Upvoted Issues</h2>
+                        </div>
+                        <div className="p-0 flex-1 overflow-y-auto max-h-[500px]">
+                            {data?.mostUpvotedIssues?.length === 0 ? (
+                                <div className="text-center py-12 text-text-secondary">No trending issues</div>
+                            ) : data?.mostUpvotedIssues?.map((i) => (
+                                <div key={i._id} className="p-5 border-b border-border hover:bg-white/5 transition-colors flex gap-4 items-start">
+                                    <div className="bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-lg p-3 text-center min-w-[60px]">
+                                        <div className="text-xl leading-none font-bold mb-1">👍</div>
+                                        <div className="text-xs font-bold">{i.upvotes}</div>
                                     </div>
-                                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-                                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${issue.priority === 'urgent' ? 'bg-red-100 text-red-800' :
-                                            issue.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                                                issue.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                                    'bg-green-100 text-green-800'
-                                            }`}>
-                                            {issue.priority.toUpperCase()}
-                                        </span>
-                                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${issue.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                                            issue.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
-                                                'bg-yellow-100 text-yellow-800'
-                                            }`}>
-                                            {issue.status.toUpperCase()}
-                                        </span>
-                                        <div className="flex items-center text-sm text-gray-600">
-                                            <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.834a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
-                                            </svg>
-                                            {issue.upvotes}
+                                    <div className="flex-1">
+                                        <a href={`/issues/${i.reportId || i._id}`} className="text-white font-medium hover:text-gold block mb-1">
+                                            {i.title}
+                                        </a>
+                                        <p className="text-xs text-text-muted mb-3 uppercase tracking-wider">
+                                            {i.department} • {i.ward} • {timeAgo(i.createdAt)}
+                                        </p>
+                                        <div className="flex gap-2">
+                                            <span className="px-2 py-[2px] rounded-full text-[10px] font-bold uppercase border border-border bg-background text-text-secondary">{i.status}</span>
+                                            <span className="px-2 py-[2px] rounded-full text-[10px] font-bold uppercase border border-border bg-background text-text-secondary">{i.priority}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -232,56 +170,37 @@ export default function PublicDashboardPage() {
                     </div>
                 </div>
 
-                {/* Ward-wise Performance */}
-                <div className="bg-white rounded-lg shadow">
-                    <div className="p-6">
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">Ward-wise Performance</h3>
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ward</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Issues</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resolved</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resolution Rate</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Upvotes</th>
+                {/* Ward Performance */}
+                <div className="bg-card rounded-card border border-border overflow-hidden">
+                    <div className="p-5 border-b border-border">
+                        <h2 className="section-header mb-0">Ward-wise Overview</h2>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="table-dark w-full">
+                            <thead><tr><th>Ward</th><th>Total Issues</th><th>Resolved</th><th>Resolution Rate</th><th>Upvotes</th></tr></thead>
+                            <tbody>
+                                {data?.wardStats?.length === 0 ? (
+                                    <tr><td colSpan={5} className="text-center py-8 text-text-secondary">No ward data</td></tr>
+                                ) : data?.wardStats?.map(w => (
+                                    <tr key={w.ward}>
+                                        <td className="text-white font-medium">{w.ward}</td>
+                                        <td>{w.totalIssues}</td>
+                                        <td>{w.resolvedIssues}</td>
+                                        <td><span className="text-gold font-medium">{w.resolutionRate?.toFixed(1) || 0}%</span></td>
+                                        <td><span className="bg-blue-500/10 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-pill text-xs font-bold">{w.upvotes}</span></td>
                                     </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {dashboardData?.wardStats?.map((ward) => (
-                                        <tr key={ward.ward}>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                {ward.ward}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                                {ward.totalIssues}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                                {ward.resolvedIssues}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                                {ward.resolutionRate?.toFixed(1) || 0}%
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                                {ward.upvotes}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
                 {/* Footer */}
-                <div className="mt-8 text-center text-sm text-gray-500">
-                    <p>Last updated: {new Date(dashboardData?.lastUpdated).toLocaleString()}</p>
-                    <p className="mt-2">
-                        This dashboard provides transparency in civic issue resolution.
-                        Data is updated every 5 minutes.
-                    </p>
+                <div className="text-center text-xs text-text-muted mt-8 pb-12">
+                    <p>Last updated: {data?.lastUpdated ? new Date(data.lastUpdated).toLocaleString() : 'Now'}</p>
+                    <p className="mt-1">Providing transparency in civic issue resolution. Data is updated in real-time.</p>
                 </div>
             </div>
-        </div >
+        </div>
     );
 }

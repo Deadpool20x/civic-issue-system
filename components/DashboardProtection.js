@@ -5,82 +5,138 @@ import { useUser } from '@/lib/contexts/UserContext';
 import { useRouter, usePathname } from 'next/navigation';
 import toast from 'react-hot-toast';
 
+/* ============================================================
+   ROLE MAPPING — Normalize DB roles to check against allowedRoles
+   
+   DB can store roles in different formats:
+     'citizen'     or 'CITIZEN'
+     'department'  or 'FIELD_OFFICER'
+     'municipal'   or 'DEPARTMENT_MANAGER'
+     'commissioner' or 'MUNICIPAL_COMMISSIONER'
+     'admin'       or 'SYSTEM_ADMIN'
+   
+   Both formats are accepted in allowedRoles arrays.
+   ============================================================ */
+
+const ROLE_ALIASES = {
+    'citizen': ['citizen', 'CITIZEN'],
+    'CITIZEN': ['citizen', 'CITIZEN'],
+    'department': ['department', 'FIELD_OFFICER'],
+    'FIELD_OFFICER': ['department', 'FIELD_OFFICER'],
+    'municipal': ['municipal', 'DEPARTMENT_MANAGER'],
+    'DEPARTMENT_MANAGER': ['municipal', 'DEPARTMENT_MANAGER'],
+    'commissioner': ['commissioner', 'MUNICIPAL_COMMISSIONER'],
+    'MUNICIPAL_COMMISSIONER': ['commissioner', 'MUNICIPAL_COMMISSIONER'],
+    'admin': ['admin', 'SYSTEM_ADMIN'],
+    'SYSTEM_ADMIN': ['admin', 'SYSTEM_ADMIN'],
+};
+
+function roleMatches(userRole, allowedRoles) {
+    if (!userRole || !allowedRoles || allowedRoles.length === 0) return false;
+
+    // Get all aliases for the user's role
+    const aliases = ROLE_ALIASES[userRole] || [userRole];
+
+    // Check if any alias is in the allowed list
+    return aliases.some(alias => allowedRoles.includes(alias));
+}
+
+/* ============================================================
+   DASHBOARD ROUTING — Per SYSTEM_FEATURES_MASTER.md
+   ============================================================ */
+function getDashboardForRole(role) {
+    const map = {
+        'admin': '/admin/dashboard',
+        'SYSTEM_ADMIN': '/admin/dashboard',
+        'municipal': '/municipal/dashboard',
+        'DEPARTMENT_MANAGER': '/municipal/dashboard',
+        'department': '/department/dashboard',
+        'FIELD_OFFICER': '/department/dashboard',
+        'citizen': '/citizen/dashboard',
+        'CITIZEN': '/citizen/dashboard',
+        'commissioner': '/commissioner/dashboard',
+        'MUNICIPAL_COMMISSIONER': '/commissioner/dashboard',
+    };
+    return map[role] || '/citizen/dashboard';
+}
+
 /**
  * DashboardProtection Component
- * Ensures users can only access their designated dashboard
- * Enforces role-based access control at the page level
+ * 
+ * Usage (per SYSTEM_FEATURES_MASTER.md):
+ *   <DashboardProtection allowedRoles={['CITIZEN', 'citizen']}>
+ *   <DashboardProtection allowedRoles={['FIELD_OFFICER', 'department']}>
+ *   <DashboardProtection allowedRoles={['DEPARTMENT_MANAGER', 'municipal']}>
+ *   <DashboardProtection allowedRoles={['MUNICIPAL_COMMISSIONER']}>
+ *   <DashboardProtection allowedRoles={['SYSTEM_ADMIN', 'admin']}>
+ * 
+ * Also supports legacy single-role via requiredRole prop.
+ * 
+ * IMPORTANT: SYSTEM_ADMIN does NOT have bypass access to other dashboards.
+ * Admin is BLOCKED from issue endpoints per spec Section F.
  */
-export default function DashboardProtection({ children, requiredRole }) {
+export default function DashboardProtection({ children, allowedRoles, requiredRole }) {
     const { user, loading, isInitialized } = useUser();
     const router = useRouter();
     const pathname = usePathname();
 
+    // Support both allowedRoles array and legacy requiredRole string
+    const effectiveAllowedRoles = allowedRoles || (requiredRole ? [requiredRole] : []);
+
     useEffect(() => {
         if (!isInitialized || loading) return;
 
-        // Not logged in
+        // Not logged in → redirect to login
         if (!user) {
             toast.error('Authentication required');
             router.replace('/login');
             return;
         }
 
-        // Check role-based access
-        const userRole = user.role;
-        
-        // Admin can access everything
-        if (userRole === 'admin') {
-            return;
-        }
+        // No allowed roles specified → allow any authenticated user
+        if (effectiveAllowedRoles.length === 0) return;
 
-        // Check if user is trying to access wrong dashboard
-        if (requiredRole && userRole !== requiredRole) {
-            const correctDashboard = getDashboardForRole(userRole);
-            toast.error(`Access denied. You don't have permission to access this page.`);
+        // Check role match
+        if (!roleMatches(user.role, effectiveAllowedRoles)) {
+            const correctDashboard = getDashboardForRole(user.role);
+            toast.error("Access denied. Redirecting to your dashboard.");
             router.replace(correctDashboard);
             return;
         }
 
-        // Additional checks for department staff
-        if (userRole === 'department' && !user.department) {
-            toast.error('Department staff user has no department assigned');
+        // Additional check: Field Officer must have department assigned
+        if ((user.role === 'department' || user.role === 'FIELD_OFFICER') && !user.departmentId) {
+            toast.error('Department not assigned. Contact administrator.');
             router.replace('/login');
             return;
         }
 
-    }, [user, loading, isInitialized, requiredRole, router, pathname]);
+    }, [user, loading, isInitialized, router, pathname]);
 
-    // Show loading while checking
+    /* ── Loading state ── */
     if (loading || !isInitialized) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-neutral-bg">
-                <div className="text-lg text-contrast-secondary">
-                    Verifying access...
+            <div className="min-h-screen flex items-center justify-center bg-page">
+                <div className="flex flex-col items-center gap-3">
+                    <div className="w-8 h-8 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                    <span className="text-sm text-text-secondary">Verifying access...</span>
                 </div>
             </div>
         );
     }
 
-    // Show nothing if user is not authorized yet
+    /* ── Not authenticated ── */
     if (!user) {
         return null;
     }
 
-    // Check role match
-    if (requiredRole && user.role !== requiredRole && user.role !== 'admin') {
+    /* ── Not authorized ── */
+    if (effectiveAllowedRoles.length > 0 && !roleMatches(user.role, effectiveAllowedRoles)) {
         return null;
     }
 
     return children;
 }
 
-// Helper function
-function getDashboardForRole(role) {
-    switch (role) {
-        case 'admin': return '/admin/dashboard';
-        case 'municipal': return '/municipal/dashboard';
-        case 'department': return '/department/dashboard';
-        case 'citizen': return '/citizen/dashboard';
-        default: return '/citizen/dashboard';
-    }
-}
+// Export helper for use in other components (e.g., landing page redirect)
+export { getDashboardForRole };

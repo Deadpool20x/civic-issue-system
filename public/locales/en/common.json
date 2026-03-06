@@ -1,0 +1,85 @@
+{
+    "nav": {
+        "home": "Home",
+        "viewMap": "View Issues Map",
+        "signIn": "Sign In",
+        "signUp": "Sign Up",
+        "logout": "Logout"
+    },
+    "landing": {
+        "hero": "Empowering Citizens. Enabling Smarter Cities.",
+        "subtext": "Report civic issues instantly and track their resolution.",
+        "reportButton": "Report Issue",
+        "howItWorks": "How It Works",
+        "step1": "Report Issue",
+        "step2": "Authorities Resolve",
+        "step3": "Track Progress"
+    },
+    "report": {
+        "title": "Report a New Issue",
+        "subtitle": "Provide accurate details to ensure faster resolution by the municipal staff.",
+        "issueTitle": "Issue Title",
+        "titlePlaceholder": "e.g. Large pothole near Main Street",
+        "description": "Description",
+        "descriptionPlaceholder": "Provide specific details about the issue...",
+        "category": "Category",
+        "selectCategory": "Select Category",
+        "subcategory": "Subcategory",
+        "selectSubcategory": "Select Subcategory",
+        "ward": "Ward",
+        "selectWard": "Select Ward",
+        "urgencyLevel": "Urgency Level",
+        "location": "Location",
+        "landmarkAddress": "Landmark / Specific Address",
+        "issueDetails": "Issue Details",
+        "photos": "Photos",
+        "video": "Video",
+        "voiceHint": "Tap mic to describe by voice",
+        "submit": "Submit Report",
+        "aiDetected": "AI detected",
+        "confirm": "Confirm",
+        "change": "Change Category",
+        "upvoteSuccess": "Issue upvoted successfully!",
+        "upvoteError": "Failed to upvote issue"
+    },
+    "status": {
+        "pending": "Pending",
+        "assigned": "Assigned",
+        "inProgress": "In Progress",
+        "resolved": "Resolved",
+        "rejected": "Rejected",
+        "escalated": "Escalated",
+        "reopened": "Reopened"
+    },
+    "priority": {
+        "urgent": "Urgent",
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+    },
+    "citizen": {
+        "dashboard": "My Dashboard",
+        "dashboardSubtitle": "Welcome back, {{name}}. You have {{count}} active issues.",
+        "myIssues": "My Issues",
+        "reportIssue": "Report Issue",
+        "totalReports": "Total Reports",
+        "pending": "Pending",
+        "inProgress": "In Progress",
+        "resolved": "Resolved",
+        "confirmFixed": "Confirm Fixed",
+        "requestReopen": "Request Reopen",
+        "nearbyIssues": "Nearby Issues",
+        "noIssuesDesc": "You haven't reported any issues yet. Help improve the city by reporting your first issue.",
+        "noIssuesFilteredDesc": "No issues found with status: {{status}}"
+    },
+    "common": {
+        "loading": "Loading...",
+        "error": "Something went wrong",
+        "noData": "No data found",
+        "viewDetails": "View Details",
+        "back": "Back",
+        "save": "Save",
+        "cancel": "Cancel",
+        "search": "Search"
+    }
+}

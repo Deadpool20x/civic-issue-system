@@ -68,7 +68,7 @@ export async function POST(req) {
 
         console.log('User created successfully with ID:', user._id); // Debug log
 
-        // Send confirmation email asynchronously
+        // Send confirmation email asynchronously after response
         (async () => {
             try {
                 const confirmationText = `Welcome ${user.name}!\n\nYour account has been created successfully on the Civic Issue System.\n\nYou can now report and track civic issues.\n\nBest regards,\nCivic Issue System Team`;
@@ -76,6 +76,7 @@ export async function POST(req) {
                 console.log('Confirmation email sent to:', user.email);
             } catch (emailError) {
                 console.error('Failed to send confirmation email:', emailError);
+                // Non-blocking - email failure shouldn't affect registration success
             }
         })();
 

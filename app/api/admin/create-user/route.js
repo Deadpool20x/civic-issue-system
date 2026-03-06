@@ -41,55 +41,40 @@ export const POST = strictRoleMiddleware(['admin'])(async (req) => {
             );
         }
 
-        const { name, email, password, phone, role, department, address } = result.data;
+        const {
+            name, email, password, phone, role,
+            department, address, wardId, departmentId
+        } = result.data;
 
-        // SECURITY: Reject admin creation
-        if (role === 'admin') {
+        // SECURITY: Reject admin creation (SYSTEM_ADMIN or admin)
+        if (role === 'admin' || role === 'SYSTEM_ADMIN') {
             return new Response(
-                JSON.stringify({ error: 'Cannot create admin accounts through this endpoint' }),
+                JSON.stringify({ error: 'Cannot create system admin accounts through this endpoint' }),
                 { status: 403, headers: { 'Content-Type': 'application/json' } }
             );
         }
 
-        // SECURITY: Only allow department or municipal roles
-        const allowedRoles = ['department', 'municipal'];
-        if (!allowedRoles.includes(role)) {
+        // Role Validation based on Phase 2 requirements
+        if (role === 'FIELD_OFFICER' && (!wardId || !departmentId)) {
             return new Response(
-                JSON.stringify({ error: 'Invalid role. Only department or municipal allowed' }),
+                JSON.stringify({ error: 'FIELD_OFFICER requires both wardId and departmentId' }),
                 { status: 400, headers: { 'Content-Type': 'application/json' } }
             );
         }
 
-        // SECURITY: Department is required for department staff
-        if (role === 'department' && !department) {
+        if (role === 'DEPARTMENT_MANAGER' && !departmentId) {
             return new Response(
-                JSON.stringify({ error: 'Department is required for department staff' }),
+                JSON.stringify({ error: 'DEPARTMENT_MANAGER requires departmentId' }),
                 { status: 400, headers: { 'Content-Type': 'application/json' } }
             );
         }
 
-        // SECURITY: Municipal staff cannot have department
-        if (role === 'municipal' && department) {
-            return new Response(
-                JSON.stringify({ error: 'Municipal staff cannot have department assigned' }),
-                { status: 400, headers: { 'Content-Type': 'application/json' } }
-            );
-        }
-
-        // SECURITY: Validate department exists if provided
+        // SECURITY: Validate department exists if provided (legacy)
         if (department) {
             const existingDepartment = await Department.findById(department);
             if (!existingDepartment) {
                 return new Response(
                     JSON.stringify({ error: 'Selected department does not exist' }),
-                    { status: 400, headers: { 'Content-Type': 'application/json' } }
-                );
-            }
-
-            // SECURITY: Validate department is active
-            if (!existingDepartment.isActive) {
-                return new Response(
-                    JSON.stringify({ error: 'Selected department is not active' }),
                     { status: 400, headers: { 'Content-Type': 'application/json' } }
                 );
             }
@@ -120,7 +105,9 @@ export const POST = strictRoleMiddleware(['admin'])(async (req) => {
             password,
             phone: cleanPhone,
             role,
-            department: role === 'department' ? departmentObjectId : undefined,
+            department: departmentObjectId,
+            wardId: wardId || null,
+            departmentId: departmentId || null,
             address: address || {}
         });
 
@@ -129,15 +116,15 @@ export const POST = strictRoleMiddleware(['admin'])(async (req) => {
         // Return success without password
         return new Response(
             JSON.stringify({
-                message: 'Staff account created successfully',
+                message: 'Account created successfully',
                 user: {
                     _id: user._id,
                     name: user.name,
                     email: user.email,
                     phone: user.phone,
                     role: user.role,
-                    department: user.department,
-                    address: user.address,
+                    wardId: user.wardId,
+                    departmentId: user.departmentId,
                     isActive: user.isActive,
                     createdAt: user.createdAt
                 }

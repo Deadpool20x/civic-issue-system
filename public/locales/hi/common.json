@@ -1,0 +1,85 @@
+{
+    "nav": {
+        "home": "होम",
+        "viewMap": "नक्शा देखें",
+        "signIn": "साइन इन",
+        "signUp": "साइन अप",
+        "logout": "लॉगआउट"
+    },
+    "landing": {
+        "hero": "नागरिक सशक्तिकरण। स्मार्ट शहर।",
+        "subtext": "नागरिक समस्याओं को तुरंत रिपोर्ट करें और उनके समाधान को ट्रैक करें।",
+        "reportButton": "स्मस्या दर्ज करें",
+        "howItWorks": "यह कैसे काम करता है",
+        "step1": "रिपोर्ट करें",
+        "step2": "अधिकारी समाधान करेंगे",
+        "step3": "प्रगति ट्रैक करें"
+    },
+    "report": {
+        "title": "नई समस्या दर्ज करें",
+        "subtitle": "नगर निगम द्वारा तेजी से समाधान सुनिश्चित करने के लिए सटीक विवरण प्रदान करें।",
+        "issueTitle": "समस्या का शीर्षक",
+        "titlePlaceholder": "उदा. मेन स्ट्रीट के पास बड़ा गड्ढा",
+        "description": "विवरण",
+        "descriptionPlaceholder": "समस्या के बारे में विशिष्ट विवरण प्रदान करें...",
+        "category": "श्रेणी",
+        "selectCategory": "श्रेणी चुनें",
+        "subcategory": "उप-श्रेणी",
+        "selectSubcategory": "उप-श्रेणी चुनें",
+        "ward": "वार्ड",
+        "selectWard": "वार्ड चुनें",
+        "urgencyLevel": "प्राथमिकता स्तर",
+        "location": "स्थान",
+        "landmarkAddress": "लैंडमार्क / विशिष्ट पता",
+        "issueDetails": "विवरण",
+        "photos": "फोटो",
+        "video": "वीडियो",
+        "voiceHint": "आवाज द्वारा वर्णन करने के लिए माइक दबाएं",
+        "submit": "रिपोर्ट जमा करें",
+        "aiDetected": "AI द्वारा पहचाना गया",
+        "confirm": "पुष्टि करें",
+        "change": "श्रेणी बदलें",
+        "upvoteSuccess": "वोट सफलतापूर्वक दिया गया!",
+        "upvoteError": "वोट देने में विफल"
+    },
+    "status": {
+        "pending": "लंबित",
+        "assigned": "सौंपा गया",
+        "inProgress": "प्रगति में",
+        "resolved": "समाधान",
+        "rejected": "अस्वीकृत",
+        "escalated": "बढ़ाया गया",
+        "reopened": "फिर से खोलें"
+    },
+    "priority": {
+        "urgent": "अति आवश्यक",
+        "high": "उच्च",
+        "medium": "मध्यम",
+        "low": "कम"
+    },
+    "citizen": {
+        "dashboard": "मेरा डैशबोर्ड",
+        "dashboardSubtitle": "वापस स्वागत है, {{name}}। आपके पास {{count}} सक्रिय समस्याएं हैं।",
+        "myIssues": "मेरी समस्याएं",
+        "reportIssue": "रिपोर्ट दर्ज करें",
+        "totalReports": "कुल रिपोर्ट",
+        "pending": "लंबित",
+        "inProgress": "प्रगति में",
+        "resolved": "समाधान",
+        "confirmFixed": "पुष्टि ठीक हो गई",
+        "requestReopen": "फिर से खोलने का अनुरोध",
+        "nearbyIssues": "पास की समस्याएं",
+        "noIssuesDesc": "आपने अभी तक कोई समस्या रिपोर्ट नहीं की है। पहली रिपोर्ट करके शहर को बेहतर बनाने में मदद करें।",
+        "noIssuesFilteredDesc": "इस स्थिति के साथ कोई समस्या नहीं मिली: {{status}}"
+    },
+    "common": {
+        "loading": "लोड हो रहा है...",
+        "error": "कुछ गलत हो गया",
+        "noData": "कोई डेटा नहीं मिला",
+        "viewDetails": "विवरण देखें",
+        "back": "वापस",
+        "save": "सहेजें",
+        "cancel": "रद्द करें",
+        "search": "खोजें"
+    }
+}

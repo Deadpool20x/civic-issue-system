@@ -1,0 +1,85 @@
+{
+    "nav": {
+        "home": "હોમ",
+        "viewMap": "નકશો જુઓ",
+        "signIn": "સાઇન ઇન",
+        "signUp": "સાઇન અપ",
+        "logout": "લૉગઆઉટ"
+    },
+    "landing": {
+        "hero": "નાગરિક સશક્તિકરણ. સ્માર્ટ સિટી.",
+        "subtext": "નગરપાલિકાની સમસ્યાઓ તાત્કાલિક રિપોર્ટ કરો અને તેના ઉકેલને ટ્રૅક કરો.",
+        "reportButton": "સમસ્યા નોંધો",
+        "howItWorks": "તે કેવી રીતે કામ કરે છે",
+        "step1": "રિપોર્ટ કરો",
+        "step2": "અધિકારી ઉકેલ લાવશે",
+        "step3": "પ્રગતિ ટ્રૅક કરો"
+    },
+    "report": {
+        "title": "નવી સમસ્યા નોંધો",
+        "subtitle": "મ્યુનિસિપલ સ્ટાફ દ્વારા ઝડપી ઉકેલ સુનિશ્ચિત કરવા માટે સચોટ વિગતો આપો.",
+        "issueTitle": "સમસ્યાનું શીર્ષક",
+        "titlePlaceholder": "દા.ત. મેઈન સ્ટ્રીટ પાસે મોટો ખાડો",
+        "description": "વર્ણન",
+        "descriptionPlaceholder": "સમસ્યા વિશે ચોક્કસ વિગતો આપો...",
+        "category": "શ્રેણી",
+        "selectCategory": "શ્રેણી પસંદ કરો",
+        "subcategory": "પેટા-શ્રેણી",
+        "selectSubcategory": "પેટા-શ્રેણી પસંદ કરો",
+        "ward": "વોર્ડ",
+        "selectWard": "વોર્ડ પસંદ કરો",
+        "urgencyLevel": "પ્રાથમિકતા સ્તર",
+        "location": "સ્થાન",
+        "landmarkAddress": "લેન્ડમાર્ક / ચોક્કસ સરનામું",
+        "issueDetails": "વિગતો",
+        "photos": "ફોટા",
+        "video": "વિડિઓ",
+        "voiceHint": "અવાજ દ્વારા વર્ણન કરવા માટે માઇક દબાવો",
+        "submit": "રિપોર્ટ સબમિટ કરો",
+        "aiDetected": "AI દ્વારા શોધી કાઢવામાં આવ્યું",
+        "confirm": "પુષ્ટિ કરો",
+        "change": "શ્રેણી બદલો",
+        "upvoteSuccess": "વોટ સફળતાપૂર્વક અપાયો!",
+        "upvoteError": "વોટ આપવામાં નિષ્ફળ"
+    },
+    "status": {
+        "pending": "બાકી",
+        "assigned": "સોંપેલ",
+        "inProgress": "કાર્ય ચાલુ",
+        "resolved": "ઉકેલાઈ ગયું",
+        "rejected": "અસ્વીકાર",
+        "escalated": "વધારેલ",
+        "reopened": "ફરીથી ખોલ્યું"
+    },
+    "priority": {
+        "urgent": "ખૂબ જ જરૂરી",
+        "high": "ઉચ્ચ",
+        "medium": "મધ્યમ",
+        "low": "ઓછું"
+    },
+    "citizen": {
+        "dashboard": "મારું ડેશબોર્ડ",
+        "dashboardSubtitle": "સ્વાગત છે, {{name}}. તમારી પાસે {{count}} સક્રિય સમસ્યાઓ છે.",
+        "myIssues": "મારી સમસ્યાઓ",
+        "reportIssue": "સમસ્યા નોંધો",
+        "totalReports": "કુલ રિપોર્ટ",
+        "pending": "બાકી",
+        "inProgress": "કાર્ય ચાલુ",
+        "resolved": "ઉકેલાઈ ગયું",
+        "confirmFixed": "ઉકેલની પુષ્ટિ કરો",
+        "requestReopen": "ફરીથી ખોલવાની વિનંતી",
+        "nearbyIssues": "આસપાસની સમસ્યાઓ",
+        "noIssuesDesc": "તમે હજુ સુધી કોઈ સમસ્યા રિપોર્ટ કરી નથી. શહેરને સુધારવામાં મદદ કરવા માટે તમારી પ્રથમ સમસ્યા નોંધો.",
+        "noIssuesFilteredDesc": "આ સ્થિતિ સાથે કોઈ સમસ્યા મળી નથી: {{status}}"
+    },
+    "common": {
+        "loading": "લોડ થઈ રહ્યું છે...",
+        "error": "કંઈક ખોટું થયું",
+        "noData": "કોઈ ડેટા મળ્યો નથી",
+        "viewDetails": "વિગતો જુઓ",
+        "back": "પાછા",
+        "save": "સાચવો",
+        "cancel": "રદ કરો",
+        "search": "શોધો"
+    }
+}

@@ -2,231 +2,129 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import ErrorBoundary from '@/components/ErrorBoundary';
-import Card from '@/components/ui/Card';
+import DashboardProtection from '@/components/DashboardProtection';
 import toast from 'react-hot-toast';
 
-export default function MunicipalDepartmentsPage() {
+/* PAGE D3: Department Management (Dept Manager) */
+
+const STATUS_STYLES = {
+    'pending': 'bg-gray-500/20 text-gray-400', 'in-progress': 'bg-amber-500/20 text-amber-400',
+    'resolved': 'bg-green-500/20 text-green-400', 'rejected': 'bg-red-500/20 text-red-400',
+};
+
+function DepartmentsContent() {
     const [departments, setDepartments] = useState([]);
     const [issues, setIssues] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const fetchData = useCallback(async () => {
         try {
-            // Fetch departments
-            const deptResponse = await fetch('/api/departments');
-            if (!deptResponse.ok) {
-                throw new Error('Failed to fetch departments');
-            }
-            const deptData = await deptResponse.json();
-            setDepartments(deptData);
-
-            // Fetch issues
-            const issuesResponse = await fetch('/api/issues');
-            if (!issuesResponse.ok) {
-                throw new Error('Failed to fetch issues');
-            }
-            const issuesData = await issuesResponse.json();
-            setIssues(issuesData);
-        } catch (error) {
-            toast.error('Failed to load data');
-            console.error('Error fetching data:', error);
-        } finally {
-            setLoading(false);
-        }
+            const [deptRes, issuesRes] = await Promise.all([
+                fetch('/api/departments'), fetch('/api/issues', { credentials: 'include' })
+            ]);
+            if (deptRes.ok) setDepartments(await deptRes.json());
+            if (issuesRes.ok) setIssues(await issuesRes.json());
+        } catch { toast.error('Failed to load data'); }
+        finally { setLoading(false); }
     }, []);
 
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+    useEffect(() => { fetchData(); }, [fetchData]);
 
-    const getDepartmentStats = () => {
-        const stats = {};
-        const departmentTypes = ['water', 'electricity', 'roads', 'garbage', 'parks', 'other'];
-
-        departmentTypes.forEach(type => {
-            // Map department types to actual department names
-            const deptName = type === 'water' ? 'Public Works' :
-                type === 'electricity' ? 'Public Works' :
-                    type === 'roads' ? 'Public Works' :
-                        type === 'garbage' ? 'Environmental Services' :
-                            type === 'parks' ? 'Parks and Recreation' :
-                                'Other Department';
-
-            const dept = departments.find(d => d.name === deptName);
-            const deptIssues = issues.filter(issue => issue.assignedDepartment === type);
-
-            stats[type] = {
-                department: dept,
-                issues: deptIssues,
-                staffCount: dept?.staffCount || 0,
-                issueCount: deptIssues.length
-            };
-        });
-
-        return stats;
-    };
-
-    const departmentStats = getDepartmentStats();
-
-    if (loading) {
-        return (
-            <DashboardLayout>
-                <div className="flex items-center justify-center h-64">
-                    <div className="text-lg text-slate-600">Loading...</div>
-                </div>
-            </DashboardLayout>
+    // Group issues by department
+    const deptTypes = ['water', 'electricity', 'roads', 'garbage', 'parks', 'other'];
+    const deptStats = deptTypes.map(type => {
+        const deptIssues = issues.filter(i => i.assignedDepartment === type);
+        const dept = departments.find(d =>
+            (type === 'water' || type === 'electricity' || type === 'roads') ? d.name === 'Public Works' :
+                type === 'garbage' ? d.name === 'Environmental Services' :
+                    type === 'parks' ? d.name === 'Parks and Recreation' : false
         );
-    }
+        return { type, dept, issues: deptIssues, staff: dept?.staffCount || 0, count: deptIssues.length };
+    });
+
+    if (loading) return (
+        <DashboardLayout>
+            <div className="flex items-center justify-center h-64">
+                <div className="w-8 h-8 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+            </div>
+        </DashboardLayout>
+    );
 
     return (
         <DashboardLayout>
-            <ErrorBoundary>
-                <div className="max-w-7xl mx-auto px-4 space-y-6">
-                    <div className="flex justify-between items-center">
-                        <h1 className="text-2xl font-bold text-slate-900">Department Management</h1>
-                    </div>
-
-                    {/* Department Overview */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {Object.entries(departmentStats).map(([deptType, data]) => (
-                            <Card key={deptType} className="p-6">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-slate-900 capitalize">
-                                            {deptType} Department
-                                        </h3>
-                                        <p className="text-sm text-slate-500">
-                                            {data.department?.name || 'Department'}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="text-center p-3 bg-slate-50 rounded-xl">
-                                        <div className="text-2xl font-bold text-indigo-600">
-                                            {data.staffCount}
-                                        </div>
-                                        <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Staff</div>
-                                    </div>
-                                    <div className="text-center p-3 bg-slate-50 rounded-xl">
-                                        <div className="text-2xl font-bold text-emerald-600">
-                                            {data.issueCount}
-                                        </div>
-                                        <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Issues</div>
-                                    </div>
-                                </div>
-
-                                {data.issues.length > 0 && (
-                                    <div className="mt-6 pt-4 border-t border-slate-100">
-                                        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Recent Activity</h4>
-                                        <div className="space-y-2">
-                                            {data.issues.slice(0, 3).map((issue) => (
-                                                <div key={issue._id} className="flex items-center justify-between text-sm">
-                                                    <span className="text-slate-600 truncate max-w-[60%]">{issue.title}</span>
-                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                                        issue.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                                                        issue.status === 'in-progress' ? 'bg-blue-100 text-blue-700' :
-                                                        issue.status === 'resolved' ? 'bg-emerald-100 text-emerald-700' :
-                                                        'bg-red-100 text-red-700'
-                                                    }`}>
-                                                        {issue.status}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                            {data.issues.length > 3 && (
-                                                <div className="text-xs text-indigo-600 font-medium mt-2">
-                                                    +{data.issues.length - 3} more issues
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                            </Card>
-                        ))}
-                    </div>
-
-                    {/* All Issues by Department */}
-                    <Card className="p-0 overflow-hidden">
-                        <div className="p-6 border-b border-slate-200">
-                            <h3 className="text-lg font-bold text-slate-900">
-                                All Issues by Department
-                            </h3>
-                        </div>
-
-                        {issues.length === 0 ? (
-                            <div className="text-center py-12">
-                                <p className="text-slate-500">No issues found.</p>
-                            </div>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-slate-200">
-                                    <thead className="bg-slate-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                                                Title
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                                                Department
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                                                Status
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                                                Priority
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                                                Reporter
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-slate-200">
-                                        {issues.map((issue) => (
-                                            <tr key={issue._id} className="hover:bg-slate-50 transition-colors">
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-medium text-slate-900">
-                                                        {issue.title}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-700 capitalize">
-                                                        {issue.assignedDepartment}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                                        issue.status === 'pending' ? 'bg-amber-100 text-amber-800' :
-                                                        issue.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
-                                                        issue.status === 'resolved' ? 'bg-emerald-100 text-emerald-800' :
-                                                        'bg-red-100 text-red-800'
-                                                    }`}>
-                                                        {issue.status.toUpperCase()}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                                        issue.priority === 'urgent' ? 'bg-red-100 text-red-800' :
-                                                        issue.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                                                        issue.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                                        'bg-green-100 text-green-800'
-                                                    }`}>
-                                                        {issue.priority.toUpperCase()}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-slate-500">
-                                                        {issue.reportedBy?.name || 'Unknown'}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </Card>
+            <div className="space-y-6">
+                <div>
+                    <h1 className="text-2xl font-bold text-white">Department Management</h1>
+                    <p className="text-text-secondary text-sm mt-1">Overview of all departments and their issues</p>
                 </div>
-            </ErrorBoundary>
+
+                {/* Department Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
+                    {deptStats.map(d => (
+                        <div key={d.type} className="bg-card rounded-card border border-border p-5 hover:border-gold/30 transition-colors">
+                            <h3 className="text-white font-semibold capitalize text-lg mb-1">{d.type}</h3>
+                            <p className="text-text-muted text-xs mb-4">{d.dept?.name || 'Department'}</p>
+
+                            <div className="grid grid-cols-2 gap-3 mb-4">
+                                <div className="bg-input rounded-input p-3 text-center">
+                                    <div className="text-xl font-bold text-gold">{d.staff}</div>
+                                    <div className="text-xs text-text-muted uppercase tracking-widest">Staff</div>
+                                </div>
+                                <div className="bg-input rounded-input p-3 text-center">
+                                    <div className="text-xl font-bold text-white">{d.count}</div>
+                                    <div className="text-xs text-text-muted uppercase tracking-widest">Issues</div>
+                                </div>
+                            </div>
+
+                            {d.issues.length > 0 && (
+                                <div className="border-t border-border pt-3 space-y-1.5">
+                                    <p className="text-xs text-text-muted uppercase tracking-widest mb-2">Recent</p>
+                                    {d.issues.slice(0, 3).map(issue => (
+                                        <div key={issue._id} className="flex items-center justify-between text-sm">
+                                            <span className="text-text-secondary truncate max-w-[60%]">{issue.title}</span>
+                                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[issue.status] || ''}`}>{issue.status}</span>
+                                        </div>
+                                    ))}
+                                    {d.issues.length > 3 && <p className="text-xs text-gold">+{d.issues.length - 3} more</p>}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                {/* All Issues Table */}
+                <div className="bg-card rounded-card border border-border overflow-hidden">
+                    <div className="p-4 border-b border-border">
+                        <h2 className="section-header mb-0">All Issues by Department</h2>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="table-dark w-full">
+                            <thead><tr><th>Title</th><th>Department</th><th>Status</th><th>Priority</th><th>Reporter</th></tr></thead>
+                            <tbody>
+                                {issues.length === 0 ? (
+                                    <tr><td colSpan={5} className="text-center py-8 text-text-secondary">No issues found</td></tr>
+                                ) : issues.map(issue => (
+                                    <tr key={issue._id}>
+                                        <td className="text-white text-sm max-w-[200px] truncate">{issue.title}</td>
+                                        <td className="capitalize text-text-secondary text-xs">{issue.assignedDepartment}</td>
+                                        <td><span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[issue.status] || ''}`}>{issue.status}</span></td>
+                                        <td className="text-text-muted text-xs capitalize">{issue.priority}</td>
+                                        <td className="text-text-muted text-xs">{issue.reportedBy?.name || 'Unknown'}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </DashboardLayout>
+    );
+}
+
+export default function MunicipalDepartmentsPage() {
+    return (
+        <DashboardProtection allowedRoles={['DEPARTMENT_MANAGER', 'municipal']}>
+            <DepartmentsContent />
+        </DashboardProtection>
     );
 }

@@ -1,431 +1,332 @@
 'use client';
 
-import { useState } from 'react';
-import Image from 'next/image';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import DashboardLayout from '@/components/DashboardLayout';
-import Card from '@/components/ui/Card';
-import PrimaryButton from '@/components/ui/PrimaryButton';
+import PageHeader from '@/components/PageHeader';
 import toast from 'react-hot-toast';
-import { CATEGORIES } from '@/lib/schemas';
+import { CATEGORIES } from '@/lib/categories';
 import ImageUploader from '@/components/ImageUploader';
 import DuplicateModal from '@/components/DuplicateModal';
+import { useTranslation } from 'react-i18next';
+import VoiceInput from '@/components/VoiceInput';
+import i18n from '@/lib/i18n';
+import DashboardLayout from '@/components/DashboardLayout';
 
-// Dynamic import to avoid SSR issues with Leaflet
 const LocationPicker = dynamic(() => import('@/components/LocationPicker'), {
-  ssr: false,
-  loading: () => (
-    <div className="h-96 bg-neutral-bg rounded-xl flex items-center justify-center">
-      <p className="text-contrast-secondary">Loading map...</p>
-    </div>
-  ),
+    ssr: false,
+    loading: () => (
+        <div className="h-72 bg-input rounded-card flex items-center justify-center border border-border animate-pulse">
+            <span className="text-text-secondary">Loading map systems...</span>
+        </div>
+    ),
 });
 
 export default function ReportIssuePage() {
+    const router = useRouter();
+    const { t } = useTranslation();
     const [formData, setFormData] = useState({
-        title: '',
-        description: '',
-        category: '',
-        subcategory: '',
-        priority: 'medium',
+        title: '', description: '', category: '', subcategory: '', priority: 'medium', wardId: '',
     });
     const [locationData, setLocationData] = useState({
-        address: '',
-        coordinates: null,
-        city: '',
-        state: '',
-        pincode: '',
+        address: '', coordinates: null, city: '', state: '', pincode: '',
     });
     const [manualAddress, setManualAddress] = useState('');
     const [imageUrls, setImageUrls] = useState([]);
+    const [videoData, setVideoData] = useState([]);
+
+    // AI State
+    const [aiResult, setAiResult] = useState(null);
+    const [aiLoading, setAiLoading] = useState(false);
+    const [detectionSource, setDetectionSource] = useState('manual');
+    const [cvModelResults, setCvModelResults] = useState(null);
+
     const [loading, setLoading] = useState(false);
     const [showDuplicateModal, setShowDuplicateModal] = useState(false);
     const [duplicates, setDuplicates] = useState([]);
     const [pendingSubmission, setPendingSubmission] = useState(null);
-    const router = useRouter();
+
+    const [wardData, setWardData] = useState({ northZone: [], southZone: [] });
+
+    useEffect(() => {
+        fetch('/api/wards')
+            .then(r => r.json())
+            .then(data => setWardData(data))
+            .catch(err => console.error('Failed to fetch wards:', err));
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (name === 'category') {
-            // When category changes, reset subcategory
-            setFormData(prev => ({
-                ...prev,
-                category: value,
-                subcategory: ''
-            }));
+            setFormData(prev => ({ ...prev, category: value, subcategory: '' }));
         } else {
-            setFormData(prev => ({
-                ...prev,
-                [name]: value
-            }));
+            setFormData(prev => ({ ...prev, [name]: value }));
         }
     };
 
-    // LocationPicker handles geolocation and reverse geocoding
+    const handleImagesChange = async (urls) => {
+        setImageUrls(urls);
 
-    // Check for duplicates before submitting
-    const checkForDuplicates = async (formData) => {
+        if (urls.length > 0 && detectionSource === 'manual' && !aiLoading && !aiResult) {
+            setAiLoading(true);
+            try {
+                const res = await fetch('/api/issues/detect-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageUrl: urls[0] })
+                });
+                const data = await res.json();
+
+                if (data.success && data.detection && data.detection.category && data.detection.category !== 'other') {
+                    setAiResult(data.detection);
+                    setCvModelResults(data.detection.raw);
+                }
+            } catch (err) {
+                console.error('AI detection error:', err);
+            } finally {
+                setAiLoading(false);
+            }
+        }
+    };
+
+    const confirmAi = () => {
+        setFormData(prev => ({
+            ...prev,
+            category: aiResult.category,
+            subcategory: aiResult.subcategory || ''
+        }));
+        setDetectionSource('AI_CONFIRMED');
+        setAiResult(null);
+        toast.success('AI classification applied');
+    };
+
+    const rejectAi = () => {
+        setDetectionSource('AI_OVERRIDDEN');
+        setAiResult(null);
+    };
+
+    const checkForDuplicates = async (issueData) => {
         try {
-            const response = await fetch('/api/issues/check-duplicate', {
+            const res = await fetch('/api/issues/check-duplicate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    category: formData.category,
-                    coordinates: formData.location.coordinates
-                })
+                body: JSON.stringify({ category: issueData.category, coordinates: issueData.location.coordinates }),
             });
-
-            const data = await response.json();
-            
-            if (data.duplicates && data.duplicates.length > 0) {
+            const data = await res.json();
+            if (data.duplicates?.length > 0) {
                 setDuplicates(data.duplicates);
-                setPendingSubmission(formData);
+                setPendingSubmission(issueData);
                 setShowDuplicateModal(true);
-                return true; // Duplicates found
+                return true;
             }
-            
-            return false; // No duplicates
-        } catch (error) {
-            console.error('Duplicate check error:', error);
-            return false; // Continue with submission if check fails
-        }
+            return false;
+        } catch { return false; }
     };
 
-    // Submit issue to API
-    const submitIssue = async (formData) => {
+    const submitIssue = async (issueData) => {
         try {
             setLoading(true);
-            
-            const response = await fetch('/api/issues', {
+            const res = await fetch('/api/issues', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-                body: JSON.stringify(formData),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(issueData),
             });
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.details || errorData.error || `HTTP ${response.status}`);
-            }
+            const result = await res.json();
+            if (!res.ok) throw new Error(result.error || 'Failed to submit');
 
-            const result = await response.json();
-            console.log('Issue created:', result);
             toast.success(`Report ${result.reportId} submitted successfully!`);
             router.push('/citizen/dashboard');
-        } catch (error) {
-            console.error('Submit error:', error);
-            toast.error(`Failed to report issue: ${error.message}`);
+        } catch (err) {
+            toast.error(err.message);
         } finally {
             setLoading(false);
         }
     };
 
-    // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!formData.title || !formData.description || !formData.category || !formData.subcategory) {
-            toast.error('Please fill in all required fields');
-            return;
-        }
-
-        if (!locationData.address && !manualAddress) {
-            toast.error('Please provide a location');
+        if (aiResult) {
+            toast.error('Please confirm or change the AI suggestion first.');
             return;
         }
 
         const issueData = {
             ...formData,
             location: {
-                address: locationData.address || manualAddress,
+                address: manualAddress || locationData.address,
                 coordinates: locationData.coordinates,
                 city: locationData.city,
                 state: locationData.state,
                 pincode: locationData.pincode,
             },
-            images: imageUrls
+            images: imageUrls,
+            videos: videoData,
+            detectionSource,
+            cvModelResults
         };
 
-        // Check for duplicates first
-        const hasDuplicates = await checkForDuplicates(issueData);
-        
-        if (hasDuplicates) {
-            return; // Show modal, wait for user decision
-        }
-        
-        // No duplicates, submit directly
-        await submitIssue(issueData);
+        const hasDups = await checkForDuplicates(issueData);
+        if (!hasDups) await submitIssue(issueData);
     };
 
-    // Handle upvote from modal
-    const handleUpvote = async (duplicate) => {
+    const handleVideosChange = (vids) => {
+        setVideoData(vids);
+        if (vids.length > 0) {
+            setDetectionSource('manual'); // Potential AI video logic later
+        }
+    };
+
+    const handleUpvote = async (dup) => {
         try {
-            const response = await fetch(`/api/issues/${duplicate._id}/upvote`, {
-                method: 'POST'
-            });
-            
-            if (response.ok) {
-                toast.success(`You upvoted report ${duplicate.reportId}`);
-                setShowDuplicateModal(false);
-                // Redirect to dashboard
+            const res = await fetch(`/api/issues/${dup._id}/upvote`, { method: 'POST' });
+            if (res.ok) {
+                toast.success(t('report.upvoteSuccess'));
                 router.push('/citizen/dashboard');
-            } else {
-                toast.error('Failed to upvote');
             }
-        } catch (error) {
-            toast.error('Error upvoting report');
-        }
+        } catch { toast.error(t('report.upvoteError')); }
     };
 
-    // Handle submit anyway
-    const handleSubmitAnyway = async () => {
-        setShowDuplicateModal(false);
-        await submitIssue(pendingSubmission);
+    const handleVoiceTranscript = (text) => {
+        setFormData(prev => ({
+            ...prev,
+            description: prev.description ? `${prev.description} ${text}` : text
+        }));
+        toast.success('Voice input received');
     };
 
     return (
         <DashboardLayout>
-            <div className="max-w-4xl mx-auto pt-0">
-                {/* Header Section */}
-                <Card className="mb-6">
-                    <div className="flex items-center justify-between">
+            <div className="max-w-3xl mx-auto space-y-8 animate-fade-in pb-12">
+                <PageHeader
+                    title={t('report.title')}
+                    subtitle={t('report.subtitle')}
+                />
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* ── PHOTOS ── */}
+                    <div className="card">
+                        <h3 className="section-header mb-4">{t('report.photos')} / {t('report.video')}</h3>
+                        <ImageUploader
+                            onImagesChange={handleImagesChange}
+                            onVideosChange={handleVideosChange}
+                            maxImages={3}
+                        />
+                        {aiLoading && (
+                            <div className="mt-4 flex items-center gap-3 text-gold text-sm font-medium animate-pulse">
+                                <div className="w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                                {t('common.loading')}
+                            </div>
+                        )}
+                        {aiResult && (
+                            <div className="mt-4 p-4 rounded-xl bg-gold/10 border border-gold/30 animate-fade-in">
+                                <p className="text-gold font-bold text-sm mb-3">✨ {t('report.aiDetected')}: {CATEGORIES[aiResult.category]?.label} — {aiResult.subcategory}</p>
+                                <div className="flex gap-2">
+                                    <button type="button" onClick={confirmAi} className="btn-gold px-4 py-1.5 text-xs">{t('report.confirm')}</button>
+                                    <button type="button" onClick={rejectAi} className="btn-outline px-4 py-1.5 text-xs border-gold/20 text-gold hover:bg-gold/5">{t('report.change')}</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* ── DETAILS ── */}
+                    <div className="card space-y-5">
+                        <h3 className="section-header">{t('report.issueDetails')}</h3>
                         <div>
-                            <h1 className="text-3xl font-bold text-contrast-primary mb-2">Report a New Issue</h1>
-                            <p className="text-slate-600">Help improve your community by reporting civic issues</p>
+                            <label>{t('report.issueTitle')}</label>
+                            <input name="title" required value={formData.title} onChange={handleChange} placeholder={t('report.titlePlaceholder')} />
                         </div>
-                        <div className="hidden md:block">
-                            <div className="w-16 h-16 bg-brand-soft rounded-full flex items-center justify-center">
-                                <svg className="w-8 h-8 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-                </Card>
-
-                {/* Form Section */}
-                <Card>
-                    <div className="px-6 py-4 border-b border-slate-200">
-                        <h2 className="text-lg font-semibold text-slate-900">Issue Details</h2>
-                        <p className="text-sm text-slate-600 mt-1">Please provide detailed information about the issue</p>
-                    </div>
-
-                    <form onSubmit={handleSubmit} className="p-6 space-y-8">
-                        {/* Basic Information */}
-                        <div className="bg-brand-soft/20 rounded-xl p-6 border border-brand-primary/20">
-                            <h3 className="text-lg font-medium text-contrast-primary mb-4 flex items-center">
-                                <svg className="w-5 h-5 text-brand-primary mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                Basic Information
-                            </h3>
-
-                            <div className="space-y-6">
-                                <div>
-                                    <label htmlFor="title" className="block text-sm font-semibold text-slate-700 mb-2">
-                                        Issue Title *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id="title"
-                                        name="title"
-                                        required
-                                        maxLength={200}
-                                        value={formData.title}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white text-slate-900 placeholder-slate-400"
-                                        placeholder="Brief description of the issue"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="description" className="block text-sm font-semibold text-slate-700 mb-2">
-                                        Description *
-                                    </label>
-                                    <textarea
-                                        id="description"
-                                        name="description"
-                                        required
-                                        rows={6}
-                                        maxLength={2000}
-                                        value={formData.description}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white text-slate-900 placeholder-slate-400 resize-none"
-                                        placeholder="Detailed description of the issue"
+                        <div>
+                            <div className="flex justify-between items-center mb-1">
+                                <label>{t('report.description')}</label>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] text-text-muted uppercase tracking-wider font-bold">{t('report.voiceHint')}</span>
+                                    <VoiceInput
+                                        locale={i18n.language}
+                                        onTranscript={handleVoiceTranscript}
                                     />
                                 </div>
                             </div>
+                            <textarea name="description" required rows={4} value={formData.description} onChange={handleChange} placeholder={t('report.descriptionPlaceholder')} />
                         </div>
-
-                        {/* Category and Priority */}
-                        <div className="bg-brand-soft/20 rounded-xl p-6 border border-brand-primary/20">
-                            <h3 className="text-lg font-medium text-contrast-primary mb-4 flex items-center">
-                                <svg className="w-5 h-5 text-status-warning mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                </svg>
-                                Classification
-                            </h3>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label htmlFor="category" className="block text-sm font-semibold text-slate-700 mb-2">
-                                        Category *
-                                    </label>
-                                    <select
-                                        id="category"
-                                        name="category"
-                                        required
-                                        value={formData.category}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white text-slate-900"
-                                    >
-                                        <option value="" className="text-slate-400">Select Category</option>
-                                        {Object.entries(CATEGORIES).map(([key, value]) => (
-                                            <option key={key} value={key}>{value.label}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label htmlFor="subcategory" className="block text-sm font-semibold text-slate-700 mb-2">
-                                        Subcategory *
-                                    </label>
-                                    <select
-                                        id="subcategory"
-                                        name="subcategory"
-                                        required
-                                        value={formData.subcategory}
-                                        onChange={handleChange}
-                                        disabled={!formData.category}
-                                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white text-slate-900 disabled:bg-slate-100 disabled:cursor-not-allowed"
-                                    >
-                                        <option value="" className="text-slate-400">
-                                            {formData.category ? 'Select Subcategory' : 'Select Category First'}
-                                        </option>
-                                        {formData.category && CATEGORIES[formData.category]?.subcategories.map((sub) => (
-                                            <option key={sub} value={sub}>{sub}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label>{t('report.category')}</label>
+                                <select name="category" required value={formData.category} onChange={handleChange}>
+                                    <option value="">{t('report.selectCategory')}</option>
+                                    {Object.entries(CATEGORIES).map(([k, v]) => (
+                                        <option key={k} value={k}>{v.label}</option>
+                                    ))}
+                                </select>
                             </div>
-
-                            <div className="mt-6">
-                                <label htmlFor="priority" className="block text-sm font-semibold text-slate-700 mb-2">
-                                    Priority Level
-                                </label>
-                                <select
-                                    id="priority"
-                                    name="priority"
-                                    value={formData.priority}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white text-slate-900"
-                                >
-                                    <option value="low">🟢 Low</option>
-                                    <option value="medium">🟡 Medium</option>
-                                    <option value="high">🟠 High</option>
-                                    <option value="urgent">🔴 Urgent</option>
+                            <div>
+                                <label>{t('report.subcategory')}</label>
+                                <select name="subcategory" required value={formData.subcategory} onChange={handleChange} disabled={!formData.category}>
+                                    <option value="">{t('report.selectSubcategory')}</option>
+                                    {formData.category && CATEGORIES[formData.category].subcategories.map(s => (
+                                        <option key={s} value={s}>{s}</option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
-
-                        {/* Location Information */}
-                        <div className="bg-brand-soft/20 rounded-xl p-6 border border-brand-primary/20">
-                            <h3 className="text-lg font-medium text-contrast-primary mb-4 flex items-center">
-                                <svg className="w-5 h-5 text-brand-primary mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                                Location
-                            </h3>
-
-                            <LocationPicker
-                                onLocationSelect={setLocationData}
-                                initialLocation={locationData.coordinates}
-                            />
-
-                            {/* Manual address input (fallback) */}
-                            <div className="mt-4">
-                                <label htmlFor="manualAddress" className="block text-sm font-semibold text-slate-700 mb-2">
-                                    Or enter address manually:
-                                </label>
-                                <input
-                                    type="text"
-                                    id="manualAddress"
-                                    value={manualAddress || locationData.address}
-                                    onChange={(e) => {
-                                        setManualAddress(e.target.value);
-                                        setLocationData(prev => ({ ...prev, address: e.target.value }));
-                                    }}
-                                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary transition-colors bg-white text-slate-900"
-                                    placeholder="Enter street address"
-                                />
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label>{t('report.urgencyLevel')}</label>
+                                <select name="priority" value={formData.priority} onChange={handleChange}>
+                                    <option value="low">{t('priority.low')}</option>
+                                    <option value="medium">{t('priority.medium')}</option>
+                                    <option value="high">{t('priority.high')}</option>
+                                    <option value="urgent">{t('priority.urgent')}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>{t('report.ward')}</label>
+                                <select name="wardId" required value={formData.wardId} onChange={handleChange}>
+                                    <option value="">{t('report.selectWard')}</option>
+                                    <optgroup label="North Zone">
+                                        {wardData.northZone?.map(w => <option key={w.wardId} value={w.wardId}>{w.wardName}</option>)}
+                                    </optgroup>
+                                    <optgroup label="South Zone">
+                                        {wardData.southZone?.map(w => <option key={w.wardId} value={w.wardId}>{w.wardName}</option>)}
+                                    </optgroup>
+                                </select>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Image Upload */}
-                        <div className="bg-brand-soft/20 rounded-xl p-6 border border-brand-primary/20">
-                            <h3 className="text-lg font-medium text-contrast-primary mb-4 flex items-center">
-                                <svg className="w-5 h-5 text-accent-lavender mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                Evidence Photos (Optional)
-                            </h3>
-                            
-                            <p className="text-sm text-contrast-secondary mb-4">
-                                Add up to 3 photos to help us understand the issue better. Images are optional but recommended.
-                            </p>
-                            
-                            <ImageUploader onImagesChange={setImageUrls} maxImages={3} />
+                    {/* ── LOCATION ── */}
+                    <div className="card space-y-4">
+                        <h3 className="section-header">{t('report.location')}</h3>
+                        <LocationPicker onLocationSelect={setLocationData} />
+                        <div>
+                            <label>{t('report.landmarkAddress')}</label>
+                            <input
+                                value={manualAddress || locationData.address}
+                                onChange={(e) => setManualAddress(e.target.value)}
+                                placeholder="Enter specific landmark or street name"
+                            />
                         </div>
+                    </div>
 
-                        {/* Action Buttons */}
-                        <div className="flex justify-end space-x-4 pt-6 border-t border-slate-200">
-                            <button
-                                type="button"
-                                onClick={() => router.back()}
-                                className="px-6 py-3 text-contrast-secondary bg-white rounded-xl hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 transition-colors font-medium border border-slate-300"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="px-8 py-3 bg-brand-primary text-white rounded-xl hover:bg-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium flex items-center gap-2 shadow-md"
-                            >
-                                {loading ? (
-                                    <>
-                                        <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Submitting...
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                        </svg>
-                                        Submit Report
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </form>
-                </Card>
+                    <div className="flex gap-4">
+                        <button type="button" onClick={() => router.back()} className="btn-outline flex-1 py-4">{t('common.cancel')}</button>
+                        <button type="submit" disabled={loading} className="btn-gold flex-[2] py-4 h-14">
+                            {loading ? t('common.loading') : t('report.submit')}
+                        </button>
+                    </div>
+                </form>
+
+                {showDuplicateModal && (
+                    <DuplicateModal
+                        duplicates={duplicates}
+                        onSubmitAnyway={() => { setShowDuplicateModal(false); submitIssue(pendingSubmission); }}
+                        onUpvote={handleUpvote}
+                        onClose={() => setShowDuplicateModal(false)}
+                    />
+                )}
             </div>
-            
-            {/* Duplicate Modal */}
-            {showDuplicateModal && (
-                <DuplicateModal
-                    duplicates={duplicates}
-                    onSubmitAnyway={handleSubmitAnyway}
-                    onUpvote={handleUpvote}
-                    onClose={() => setShowDuplicateModal(false)}
-                />
-            )}
         </DashboardLayout>
     );
 }

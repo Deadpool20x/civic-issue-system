@@ -1,72 +1,66 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import DashboardLayout from '@/components/DashboardLayout';
+import DashboardProtection from '@/components/DashboardProtection';
+import { useUser } from '@/lib/contexts/UserContext';
 
-export default function DepartmentProfile() {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+/* PAGE C5: FO — Profile */
 
-    useEffect(() => {
-        async function fetchUser() {
-            try {
-                const response = await fetch('/api/auth/me');
-                if (response.ok) {
-                    const userData = await response.json();
-                    setUser(userData);
-                }
-            } catch (error) {
-                console.error('Error fetching user:', error);
-            } finally {
-                setLoading(false);
-            }
-        }
+function FOProfileContent() {
+    const { user } = useUser();
 
-        fetchUser();
-    }, []);
+    if (!user) return null;
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            </div>
-        );
-    }
+    const fields = [
+        { label: 'Name', value: user.name || '—' },
+        { label: 'Email', value: user.email || '—' },
+        { label: 'Role', value: 'Field Officer' },
+        { label: 'Department', value: user.department?.name || user.departmentId || '—' },
+        { label: 'Ward', value: user.ward || '—' },
+        { label: 'Phone', value: user.phone || '—' },
+    ];
 
     return (
-        <div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">Profile Settings</h1>
-            <p className="text-gray-600 mb-6">Manage your profile information</p>
-            
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 max-w-2xl">
-                <div className="space-y-4">
-                    <div className="flex items-center gap-4 pb-4 border-b border-gray-200">
-                        <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-2xl font-bold">
-                            {user?.name?.charAt(0)?.toUpperCase() || 'D'}
+        <DashboardLayout>
+            <div className="space-y-6 max-w-2xl">
+                <div>
+                    <h1 className="text-2xl font-bold text-white">Profile</h1>
+                    <p className="text-text-secondary text-sm mt-1">Your account information</p>
+                </div>
+
+                <div className="bg-card rounded-card border border-border p-6">
+                    {/* Avatar + Name */}
+                    <div className="flex items-center gap-4 pb-6 border-b border-border">
+                        <div className="w-16 h-16 rounded-full bg-gold flex items-center justify-center">
+                            <span className="text-black font-bold text-2xl">
+                                {(user.name || 'U').charAt(0).toUpperCase()}
+                            </span>
                         </div>
                         <div>
-                            <p className="text-lg font-semibold text-gray-900">{user?.name || 'Department Staff'}</p>
-                            <p className="text-sm text-gray-500">{user?.email || 'N/A'}</p>
-                        </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <p className="text-sm text-gray-500 mb-1">Role</p>
-                            <p className="font-medium text-gray-900 capitalize">{user?.role || 'N/A'}</p>
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-500 mb-1">Department</p>
-                            <p className="font-medium text-gray-900">{user?.department?.name || 'N/A'}</p>
+                            <p className="text-lg font-semibold text-white">{user.name}</p>
+                            <p className="text-sm text-text-secondary">{user.email}</p>
                         </div>
                     </div>
 
-                    <div className="pt-4">
-                        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                            Edit Profile
-                        </button>
+                    {/* Info grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+                        {fields.map(f => (
+                            <div key={f.label}>
+                                <p className="text-xs text-text-muted uppercase tracking-widest mb-1">{f.label}</p>
+                                <p className="text-white font-medium">{f.value}</p>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>
-        </div>
+        </DashboardLayout>
+    );
+}
+
+export default function DepartmentProfile() {
+    return (
+        <DashboardProtection allowedRoles={['FIELD_OFFICER', 'department']}>
+            <FOProfileContent />
+        </DashboardProtection>
     );
 }

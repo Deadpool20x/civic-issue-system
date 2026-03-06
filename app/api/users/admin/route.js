@@ -28,7 +28,7 @@ export const POST = strictRoleMiddleware(['admin'])(async (req) => {
             );
         }
 
-        const { name, email, password, phone, role, department, address } = result.data;
+        const { name, email, password, phone, role, department, ward, address } = result.data;
 
         // SECURITY: Validate that only admin can create privileged accounts
         // Admin cannot create other admin accounts
@@ -88,6 +88,7 @@ export const POST = strictRoleMiddleware(['admin'])(async (req) => {
             phone: cleanPhone,
             role,
             department: role === 'department' ? department : undefined,
+            ward: role === 'department' ? ward : undefined,
             address: address || {}
         });
 
@@ -104,6 +105,7 @@ export const POST = strictRoleMiddleware(['admin'])(async (req) => {
                     phone: user.phone,
                     role: user.role,
                     department: user.department,
+                    ward: user.ward,
                     address: user.address,
                     isActive: user.isActive,
                     createdAt: user.createdAt
