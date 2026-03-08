@@ -27,7 +27,7 @@
     "jsonwebtoken": "^9.0.2",
     "leaflet": "^1.9.4",
     "mongoose": "^8.1.0",
-    "next": "14.2.15",
+    "next": "16.1.6",
     "next-cloudinary": "^6.3.0",
     "node-cron": "^3.0.3",
     "react": "^18.3.1",
