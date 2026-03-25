@@ -1,115 +1,88 @@
-import { connectDB } from '@/lib/mongodb';
-import User from '@/models/User';
-import bcrypt from 'bcryptjs';
-import { generateToken } from '@/lib/auth';
-import { sendEmail } from '@/lib/email';
-import { cookies } from 'next/headers';
-import { userRegisterSchema } from '@/lib/schemas';
+import { NextResponse } from 'next/server'
+import connectDB from '@/lib/mongodb'
+import User from '@/models/User'
+import { generateToken } from '@/lib/auth'
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export async function POST(request) {
+  try {
+    const { name, email, password, phone, address } = await request.json()
 
-export async function POST(req) {
-    try {
-        let body;
-        try {
-            body = await req.json();
-        } catch (e) {
-            return new Response(
-                JSON.stringify({ error: 'Invalid JSON body' }),
-                { status: 400, headers: { 'Content-Type': 'application/json' } }
-            );
-        }
-
-        const result = userRegisterSchema.safeParse(body);
-        if (!result.success) {
-            return new Response(
-                JSON.stringify({ error: result.error.errors[0].message }),
-                { status: 400, headers: { 'Content-Type': 'application/json' } }
-            );
-        }
-
-        const { name, email, password, phone, address } = result.data;
-
-        // PUBLIC REGISTRATION IS CITIZEN-ONLY
-        // Staff accounts are created by admins through the admin dashboard
-        // Role and department are NEVER read from client input
-        const role = 'citizen';
-        const department = undefined; // Citizens never have department assignments
-
-        console.log('Registration attempt for email:', email, 'role:', role); // Debug log
-
-        // Connect to database
-        await connectDB();
-
-        // Check if user already exists
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return new Response(
-                JSON.stringify({ error: 'Email already registered' }),
-                { status: 400, headers: { 'Content-Type': 'application/json' } }
-            );
-        }
-
-        // Clean up phone number - remove spaces and dashes for storage
-        const cleanPhone = phone ? phone.replace(/[\s-]/g, '') : undefined;
-
-        // Create user (password will be hashed by the User model pre-save middleware)
-        // PUBLIC REGISTRATION IS CITIZEN-ONLY - Staff accounts are created by admins
-        const user = await User.create({
-            name,
-            email,
-            password, // Don't hash here, let the model handle it
-            phone: cleanPhone,
-            role, // Always 'citizen' for public registration
-            department, // Always undefined for citizens
-            address
-        });
-
-        console.log('User created successfully with ID:', user._id); // Debug log
-
-        // Send confirmation email asynchronously after response
-        (async () => {
-            try {
-                const confirmationText = `Welcome ${user.name}!\n\nYour account has been created successfully on the Civic Issue System.\n\nYou can now report and track civic issues.\n\nBest regards,\nCivic Issue System Team`;
-                await sendEmail(user.email, 'Registration Confirmation - Civic Issue System', confirmationText);
-                console.log('Confirmation email sent to:', user.email);
-            } catch (emailError) {
-                console.error('Failed to send confirmation email:', emailError);
-                // Non-blocking - email failure shouldn't affect registration success
-            }
-        })();
-
-        // Generate token
-        const token = await generateToken(user);
-        const cookieStore = await cookies();
-
-        cookieStore.set('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60, // 7 days
-            path: '/'
-        });
-
-        // Prepare user response without sensitive data
-        const userResponse = {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            department: user.department
-        };
-
-        return new Response(
-            JSON.stringify({ message: 'Registration successful', user: userResponse }),
-            { status: 201, headers: { 'Content-Type': 'application/json' } }
-        );
-    } catch (error) {
-        console.error('Registration error:', error);
-        return new Response(
-            JSON.stringify({ error: 'Internal server error' }),
-            { status: 500, headers: { 'Content-Type': 'application/json' } }
-        );
+    if (!name || !email || !password) {
+      return NextResponse.json(
+        { error: 'Name, email and password are required' },
+        { status: 400 }
+      )
     }
+
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: 'Password must be at least 6 characters' },
+        { status: 400 }
+      )
+    }
+
+    await connectDB()
+
+    const existing = await User.findOne({
+      email: email.toLowerCase().trim()
+    })
+
+    if (existing) {
+      return NextResponse.json(
+        { error: 'An account with this email already exists' },
+        { status: 409 }
+      )
+    }
+
+    // User model's pre-save hook automatically hashes the password — do NOT pre-hash here
+    const normalizedPhone = typeof phone === 'string'
+      ? phone.replace(/\D/g, '')
+      : undefined
+
+    const user = await User.create({
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      password: password,
+      phone: normalizedPhone || undefined,
+      address: address || {},
+      role: 'CITIZEN',
+      wardId: null,
+      departmentId: null,
+      isActive: true,
+    })
+
+    console.log('Registration attempt for email:', email, 'role: CITIZEN')
+    console.log('User created successfully with ID:', user._id)
+
+    const token = generateToken(user)
+
+    // Create response with user data
+    const response = NextResponse.json({
+      success: true,
+      user: {
+        userId: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      }
+    }, { status: 201 })
+
+    // Set token cookie in the response
+    response.cookies.set('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+    })
+
+    return response
+
+  } catch (err) {
+    console.error('Register error:', err)
+    return NextResponse.json(
+      { error: 'Server error. Please try again.' },
+      { status: 500 }
+    )
+  }
 }

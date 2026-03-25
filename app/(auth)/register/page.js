@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useUser } from '@/lib/contexts/UserContext';
 import { useRouter } from 'next/navigation';
-import toast from 'react-hot-toast';
 
 /* ============================================================
    PAGE A3: REGISTER PAGE
@@ -22,7 +21,7 @@ import toast from 'react-hot-toast';
    ============================================================ */
 
 export default function RegisterPage() {
-    const { user, register } = useUser();
+    const { user } = useUser();
     const router = useRouter();
     const [formData, setFormData] = useState({
         name: '',
@@ -62,31 +61,39 @@ export default function RegisterPage() {
 
     const isPhoneValid = formData.phone && /^\+?[\d\s-]{10,}$/.test(formData.phone);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError('');
-        setLoading(true);
+    async function handleSubmit(e) {
+        e.preventDefault()
+        setError('')
+        setLoading(true)
 
-        // SECURITY: Only citizen data, no role/dept fields
-        const submitData = {
-            name: formData.name,
-            email: formData.email,
-            password: formData.password,
-            phone: formData.phone ? formData.phone.replace(/[\s-]/g, '') : '',
-            address: formData.address
-        };
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: formData.name,
+                    email: formData.email,
+                    password: formData.password,
+                    phone: formData.phone,
+                    address: formData.address
+                })
+            })
 
-        const result = await register(submitData);
+            const data = await res.json()
 
-        if (result.success) {
-            toast.success('Registration successful!');
-        } else {
-            setError(result.error || 'Registration failed');
-            toast.error(result.error || 'Registration failed');
+            if (!res.ok) {
+                setError(data.error || 'Registration failed')
+                return
+            }
+
+            router.push('/citizen/dashboard')
+
+        } catch (err) {
+            setError('Something went wrong. Please try again.')
+        } finally {
+            setLoading(false)
         }
-
-        setLoading(false);
-    };
+    }
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-page px-4 py-8">
