@@ -22,7 +22,7 @@ export const GET = async (req) => {
         // Get issues data
         const issues = await Issue.find(query)
             .populate('reportedBy', 'name')
-            .select('title status priority assignedDepartment ward upvotes createdAt sla feedback')
+            .select('title status priority assignedDepartment ward upvotes createdAt sla feedback location reportId')
             .sort({ createdAt: -1 });
 
         // Calculate statistics
@@ -41,7 +41,7 @@ export const GET = async (req) => {
             const expectedTime = issue.priority === 'urgent' ? 24 :
                 issue.priority === 'high' ? 48 :
                     issue.priority === 'medium' ? 72 : 120;
-            return issue.resolutionTime <= expectedTime;
+            return (issue.resolutionTime || 0) <= expectedTime;
         }).length;
 
         const slaComplianceRate = resolvedIssues > 0 ? (onTimeResolutions / resolvedIssues) * 100 : 0;
@@ -49,7 +49,7 @@ export const GET = async (req) => {
         // Department-wise statistics
         const departmentStats = {};
         issues.forEach(issue => {
-            const dept = issue.assignedDepartment;
+            const dept = issue.assignedDepartment || 'General';
             if (!departmentStats[dept]) {
                 departmentStats[dept] = {
                     department: dept,
@@ -71,7 +71,7 @@ export const GET = async (req) => {
 
         // Calculate department averages
         Object.values(departmentStats).forEach(dept => {
-            if (dept.resolvedIssues > 0) {
+            if (dept.totalIssues > 0) {
                 dept.resolutionRate = (dept.resolvedIssues / dept.totalIssues) * 100;
             }
         });
@@ -95,7 +95,7 @@ export const GET = async (req) => {
             if (issue.status === 'resolved') wardStats[wardName].resolvedIssues++;
             if (issue.status === 'pending' || issue.status === 'assigned') wardStats[wardName].pendingIssues++;
             if (issue.sla.isOverdue) wardStats[wardName].overdueIssues++;
-            wardStats[wardName].upvotes += issue.upvotes;
+            wardStats[wardName].upvotes += (issue.upvotes || 0);
         });
 
         // Calculate ward resolution rates
@@ -118,7 +118,8 @@ export const GET = async (req) => {
                 upvotes: issue.upvotes,
                 status: issue.status,
                 priority: issue.priority,
-                createdAt: issue.createdAt
+                createdAt: issue.createdAt,
+                reportId: issue.reportId
             }));
 
         // Get recent issues
@@ -132,7 +133,8 @@ export const GET = async (req) => {
             upvotes: issue.upvotes,
             hoursRemaining: issue.sla.hoursRemaining,
             isOverdue: issue.sla.isOverdue,
-            createdAt: issue.createdAt
+            createdAt: issue.createdAt,
+            reportId: issue.reportId
         }));
 
         // Get department performance rankings
@@ -146,7 +148,7 @@ export const GET = async (req) => {
             slaComplianceRate: dept.slaComplianceRate,
             totalIssuesResolved: dept.totalIssuesResolved,
             averageResolutionTime: dept.averageResolutionTime,
-            performanceScore: dept.getPerformanceScore()
+            performanceScore: typeof dept.getPerformanceScore === 'function' ? dept.getPerformanceScore() : 0
         }));
 
         const response = {
@@ -164,6 +166,7 @@ export const GET = async (req) => {
             mostUpvotedIssues,
             recentIssues,
             departmentRankings,
+            allIssues: issues, // Include for map
             lastUpdated: new Date().toISOString()
         };
 
@@ -171,13 +174,13 @@ export const GET = async (req) => {
             status: 200,
             headers: {
                 'Content-Type': 'application/json',
-                'Cache-Control': 'public, max-age=300' // Cache for 5 minutes
+                'Cache-Control': 'public, max-age=60' // Cache for 1 minute
             }
         });
     } catch (error) {
         console.error('Error fetching public dashboard data:', error);
         return new Response(
-            JSON.stringify({ error: 'Internal server error' }),
+            JSON.stringify({ error: 'Internal server error', details: error.message }),
             { status: 500, headers: { 'Content-Type': 'application/json' } }
         );
     }

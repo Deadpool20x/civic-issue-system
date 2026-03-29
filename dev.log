@@ -1,0 +1,15 @@
+
+> civic-issue-system@0.1.0 predev
+> echo "Starting Civic Issue System..." && echo "Checking configuration..."
+
+"Starting Civic Issue System..." 
+"Checking configuration..."
+
+> civic-issue-system@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.15
+  - Local:        http://localhost:3001
+  - Environments: .env.local
+
+ ✓ Starting...

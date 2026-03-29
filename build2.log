@@ -1,0 +1,52 @@
+
+> civic-issue-system@0.1.0 build
+> next build 
+
+  ▲ Next.js 14.2.15
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ ⚠ Compiled with warnings
+
+./node_modules/jose/dist/webapi/lib/deflate.js
+A Node.js API is used (CompressionStream at line: 10) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+Import trace for requested module:
+./node_modules/jose/dist/webapi/lib/deflate.js
+./node_modules/jose/dist/webapi/jwe/flattened/decrypt.js
+./node_modules/jose/dist/webapi/index.js
+
+./node_modules/jose/dist/webapi/lib/deflate.js
+A Node.js API is used (DecompressionStream at line: 26) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+Import trace for requested module:
+./node_modules/jose/dist/webapi/lib/deflate.js
+./node_modules/jose/dist/webapi/jwe/flattened/decrypt.js
+./node_modules/jose/dist/webapi/index.js
+
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+ ⨯ Static worker exited with code: 3221226505 and signal: null
+ ⨯ Static worker exited with code: 3221226505 and signal: null
+ ⨯ Static worker exited with code: 3221226505 and signal: null
+ ⨯ Static worker exited with code: 3221226505 and signal: null
+
+#
+# Fatal process OOM in Re-embedded builtins: set permissions
+#
+
+uncaughtException Error: spawn UNKNOWN
+    at ChildProcess.spawn (node:internal/child_process:420:11)
+    at spawn (node:child_process:762:9)
+    at fork (node:child_process:172:10)
+    at ChildProcessWorker.initialize (d:\Projects\node_modules\next\dist\compiled\jest-worker\index.js:1:10853)
+    at ChildProcessWorker._onExit (d:\Projects\node_modules\next\dist\compiled\jest-worker\index.js:1:12545)
+    at ChildProcess.emit (node:events:524:28)
+    at ChildProcess._handle.onexit (node:internal/child_process:293:12) {
+  errno: -4094,
+  code: 'UNKNOWN',
+  syscall: 'spawn'
+}

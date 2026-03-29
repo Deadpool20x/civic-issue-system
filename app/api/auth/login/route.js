@@ -1,166 +1,84 @@
-import { connectDB } from '@/lib/mongodb';
-import User from '@/models/User';
-import bcrypt from 'bcryptjs';
-import { generateToken } from '@/lib/auth';
-import { sendEmail } from '@/lib/email';
-import { cookies } from 'next/headers';
-import { loginSchema } from '@/lib/schemas';
+import { NextResponse } from 'next/server'
+import connectDB from '@/lib/mongodb'
+import User from '@/models/User'
+import { generateToken } from '@/lib/auth'
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
-
-export async function POST(req) {
+export async function POST(request) {
     try {
-        let body;
-        try {
-            body = await req.json();
-        } catch (e) {
-            return new Response(
-                JSON.stringify({ error: 'Invalid JSON body' }),
-                { status: 400, headers: { 'Content-Type': 'application/json' } }
-            );
+        const { email, password } = await request.json()
+
+        if (!email || !password) {
+            return NextResponse.json(
+                { error: 'Email and password are required' },
+                { status: 400 }
+            )
         }
 
-        const result = loginSchema.safeParse(body);
-        if (!result.success) {
-             return new Response(
-                JSON.stringify({ error: result.error.errors[0].message }),
-                { status: 400, headers: { 'Content-Type': 'application/json' } }
-            );
-        }
+        await connectDB()
 
-        const { email, password } = result.data;
+        // IMPORTANT: Must select password explicitly since it has `select: false` in the schema
+        const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+password')
 
-        console.log('Login attempt for email:', email); // Debug log
-
-        await connectDB();
-
-        const user = await User.findOne({ email }).select('+password');
-
-        console.log('User found:', !!user); // Debug log
+        console.log('Login attempt for email:', email.toLowerCase().trim())
+        console.log('User found:', !!user)
 
         if (!user) {
-            return new Response(
-                JSON.stringify({ error: 'Invalid credentials' }),
-                { status: 401, headers: { 'Content-Type': 'application/json' } }
-            );
-        }
-
-        // Try both comparison methods for backwards compatibility
-        let isPasswordValid = false;
-        try {
-            // First try the model method
-            isPasswordValid = await user.comparePassword(password);
-            console.log('Password valid with model method:', isPasswordValid);
-        } catch (error) {
-            console.log('Model method failed, trying direct bcrypt:', error.message);
-            // Fallback to direct bcrypt comparison for existing users
-            isPasswordValid = await bcrypt.compare(password, user.password);
-            console.log('Password valid with direct bcrypt:', isPasswordValid);
-        }
-
-        if (!isPasswordValid) {
-            return new Response(
-                JSON.stringify({ error: 'Invalid credentials' }),
-                { status: 401, headers: { 'Content-Type': 'application/json' } }
-            );
+            return NextResponse.json(
+                { error: 'Invalid email or password' },
+                { status: 401 }
+            )
         }
 
         if (!user.isActive) {
-            return new Response(
-                JSON.stringify({ error: 'Account is deactivated' }),
-                { status: 403, headers: { 'Content-Type': 'application/json' } }
-            );
+            return NextResponse.json(
+                { error: 'Account is deactivated. Please contact administrator.' },
+                { status: 403 }
+            )
         }
 
-        // Send welcome email on first login if not sent
-        if (!user.welcomeEmailSent) {
-            // Send email with proper error handling - don't block response
-            user.welcomeEmailSent = true;
-            user.save().then(() => {
-                // Email sending after response is sent
-                (async () => {
-                    try {
-                        const welcomeText = `Welcome back ${user.name}!\n\nThank you for logging into the Civic Issue System.\n\nYou can now report and track civic issues in your area.\n\nIf you have any questions, contact support.\n\nBest regards,\nCivic Issue System Team`;
-                        await sendEmail(user.email, 'Welcome to Civic Issue System', welcomeText);
-                        console.log('Welcome email sent to:', user.email);
-                    } catch (emailError) {
-                        console.error('Failed to send welcome email:', emailError);
-                    }
-                })();
-            }).catch(err => {
-                console.error('Failed to update welcomeEmailSent flag:', err);
-            });
+        // Use the model's comparePassword method which uses bcrypt.compare
+        const isPasswordValid = await user.comparePassword(password)
+
+        console.log('Password valid:', isPasswordValid)
+
+        if (!isPasswordValid) {
+            return NextResponse.json(
+                { error: 'Invalid email or password' },
+                { status: 401 }
+            )
         }
 
-        const token = await generateToken(user);
-        const cookieStore = await cookies();
+        const token = generateToken(user)
 
-        // Set cookie with better configuration
-        cookieStore.set('token', token, {
+        // Create response with user data
+        const response = NextResponse.json({
+            success: true,
+            user: {
+                userId: user._id.toString(),
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                wardId: user.wardId || null,
+                departmentId: user.departmentId || null,
+            }
+        })
+
+        // Set token cookie in the response
+        response.cookies.set('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax', // Changed from 'strict' to 'lax' for better compatibility
-            maxAge: 7 * 24 * 60 * 60, // 7 days
-            path: '/' // Ensure cookie is available on all paths
-        });
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 7, // 7 days
+            path: '/',
+        })
 
-        const userResponse = {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            department: user.department
-        };
+        return response
 
-        // Determine redirect URL based on role
-        let redirectUrl;
-        const role = user.role?.toUpperCase();
-
-        switch (role) {
-            case 'ADMIN':
-            case 'SYSTEM_ADMIN':
-                redirectUrl = '/admin/dashboard';
-                break;
-            case 'MUNICIPAL':
-                redirectUrl = '/municipal/dashboard';
-                break;
-            case 'COMMISSIONER':
-            case 'MUNICIPAL_COMMISSIONER':
-                redirectUrl = '/commissioner/dashboard';
-                break;
-            case 'DEPARTMENT':
-            case 'DEPARTMENT_MANAGER':
-            case 'FIELD_OFFICER':
-                redirectUrl = '/department/dashboard';
-                break;
-            case 'CITIZEN':
-            default:
-                redirectUrl = '/citizen/dashboard';
-                break;
-        }
-
-        return new Response(
-            JSON.stringify({ 
-                message: 'Login successful', 
-                user: userResponse,
-                redirectUrl 
-            }),
-            { status: 200, headers: { 'Content-Type': 'application/json' } }
-        );
-    } catch (error) {
-        console.error('Login error:', error);
-        
-        if (error.name === 'MongooseServerSelectionError' || error.name === 'MongoNetworkError') {
-             return new Response(
-                JSON.stringify({ error: 'Database service unavailable. Please try again later.' }),
-                { status: 503, headers: { 'Content-Type': 'application/json' } }
-            );
-        }
-
-        return new Response(
-            JSON.stringify({ error: 'Internal server error' }),
-            { status: 500, headers: { 'Content-Type': 'application/json' } }
-        );
+    } catch (err) {
+        console.error('Login error:', err)
+        return NextResponse.json(
+            { error: 'Server error. Please try again.' },
+            { status: 500 }
+        )
     }
 }

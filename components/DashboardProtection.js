@@ -76,7 +76,7 @@ function getDashboardForRole(role) {
  * Admin is BLOCKED from issue endpoints per spec Section F.
  */
 export default function DashboardProtection({ children, allowedRoles, requiredRole }) {
-    const { user, loading, isInitialized } = useUser();
+    const { user, loading } = useUser();
     const router = useRouter();
     const pathname = usePathname();
 
@@ -84,7 +84,7 @@ export default function DashboardProtection({ children, allowedRoles, requiredRo
     const effectiveAllowedRoles = allowedRoles || (requiredRole ? [requiredRole] : []);
 
     useEffect(() => {
-        if (!isInitialized || loading) return;
+        if (loading) return;
 
         // Not logged in → redirect to login
         if (!user) {
@@ -104,17 +104,10 @@ export default function DashboardProtection({ children, allowedRoles, requiredRo
             return;
         }
 
-        // Additional check: Field Officer must have department assigned
-        if ((user.role === 'department' || user.role === 'FIELD_OFFICER') && !user.departmentId) {
-            toast.error('Department not assigned. Contact administrator.');
-            router.replace('/login');
-            return;
-        }
-
-    }, [user, loading, isInitialized, router, pathname]);
+    }, [user, loading, router, pathname, effectiveAllowedRoles]);
 
     /* ── Loading state ── */
-    if (loading || !isInitialized) {
+    if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-page">
                 <div className="flex flex-col items-center gap-3">

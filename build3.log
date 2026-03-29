@@ -1,0 +1,195 @@
+
+> civic-issue-system@0.1.0 build
+> next build 
+
+  ▲ Next.js 14.2.15
+  - Environments: .env.local
+  - Experiments (use with caution):
+    · cpus
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+(node:21680) [MONGOOSE] Warning: Duplicate schema index on {"department":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(Use `node --trace-warnings ...` to show where the warning was created)
+   Generating static pages (0/51) ...
+   Generating static pages (12/51) 
+
+❌ MONGODB CONNECTION FAILED
+   The application cannot connect to the database at: mongodb://127.0.0.1:27017/civic-issues
+   Possible fixes:
+   1. Ensure your local MongoDB server is running (run "mongod" in a terminal).
+   2. Check if your connection string in .env.local is correct.
+   3. If using Docker, ensure the container is up.
+
+Nearby API error: MongooseServerSelectionError: connect ECONNREFUSED 127.0.0.1:27017
+    at _handleConnectionErrors (d:\Projects\node_modules\mongoose\lib\connection.js:1169:11)
+    at NativeConnection.openUri (d:\Projects\node_modules\mongoose\lib\connection.js:1100:11)
+    at async i (d:\Projects\.next\server\app\api\admin\users\route.js:1:4709)
+    at async d (d:\Projects\.next\server\app\api\issues\nearby\route.js:1:579)
+    at async d:\Projects\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:36957
+    at async eC.execute (d:\Projects\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:27552)
+    at async eC.handle (d:\Projects\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38291)
+    at async exportAppRoute (d:\Projects\node_modules\next\dist\export\routes\app-route.js:77:26)
+    at async exportPageImpl (d:\Projects\node_modules\next\dist\export\worker.js:175:20)
+    at async Span.traceAsyncFn (d:\Projects\node_modules\next\dist\trace\trace.js:154:20) {
+  errorLabelSet: Set(0) {},
+  reason: TopologyDescription {
+    type: 'Unknown',
+    servers: Map(1) { '127.0.0.1:27017' => [ServerDescription] },
+    stale: false,
+    compatible: true,
+    heartbeatFrequencyMS: 10000,
+    localThresholdMS: 15,
+    setName: null,
+    maxElectionId: null,
+    maxSetVersion: null,
+    commonWireVersion: 0,
+    logicalSessionTimeoutMinutes: null
+  },
+  code: undefined,
+  cause: TopologyDescription {
+    type: 'Unknown',
+    servers: Map(1) { '127.0.0.1:27017' => [ServerDescription] },
+    stale: false,
+    compatible: true,
+    heartbeatFrequencyMS: 10000,
+    localThresholdMS: 15,
+    setName: null,
+    maxElectionId: null,
+    maxSetVersion: null,
+    commonWireVersion: 0,
+    logicalSessionTimeoutMinutes: null
+  }
+}
+Track API error: B [Error]: Dynamic server usage: Route /api/issues/track couldn't be rendered statically because it used `request.url`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V (d:\Projects\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21777)
+    at Object.get (d:\Projects\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29137)
+    at l (d:\Projects\.next\server\app\api\issues\track\route.js:1:609)
+    at d:\Projects\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:36963
+    at d:\Projects\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with (d:\Projects\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with (d:\Projects\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan (d:\Projects\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093)
+    at ProxyTracer.startActiveSpan (d:\Projects\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18854)
+    at d:\Projects\node_modules\next\dist\server\lib\trace\tracer.js:122:103 {
+  description: "Route /api/issues/track couldn't be rendered statically because it used `request.url`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙
+   Generating static pages (25/51) 
+   Generating static pages (38/51) 
+ ✓ Generating static pages (51/51)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ○ /                                    4.21 kB         202 kB
+├ ○ /_not-found                          876 B          88.6 kB
+├ ○ /admin/analytics                     4.13 kB         128 kB
+├ ○ /admin/create-user                   3.56 kB         122 kB
+├ ○ /admin/dashboard                     3.33 kB         122 kB
+├ ○ /admin/departments                   2.62 kB         121 kB
+├ ○ /admin/issues                        3.9 kB          123 kB
+├ ○ /admin/users                         4.09 kB         123 kB
+├ ○ /admin/users/create                  2.81 kB        93.9 kB
+├ ƒ /api/admin/analytics/departments     0 B                0 B
+├ ƒ /api/admin/analytics/overview        0 B                0 B
+├ ƒ /api/admin/analytics/stuck           0 B                0 B
+├ ƒ /api/admin/analytics/trends          0 B                0 B
+├ ƒ /api/admin/analytics/workflow        0 B                0 B
+├ ƒ /api/admin/create-user               0 B                0 B
+├ ƒ /api/admin/users                     0 B                0 B
+├ ƒ /api/admin/users/stats               0 B                0 B
+├ ƒ /api/ai                              0 B                0 B
+├ ƒ /api/auth/auth/register              0 B                0 B
+├ ƒ /api/auth/forgot-password            0 B                0 B
+├ ƒ /api/auth/login                      0 B                0 B
+├ ƒ /api/auth/logout                     0 B                0 B
+├ ƒ /api/auth/me                         0 B                0 B
+├ ƒ /api/auth/otp/send                   0 B                0 B
+├ ƒ /api/auth/otp/verify                 0 B                0 B
+├ ƒ /api/auth/register                   0 B                0 B
+├ ƒ /api/auth/reset-password             0 B                0 B
+├ ƒ /api/auth/verify-otp                 0 B                0 B
+├ ƒ /api/citizen-engagement              0 B                0 B
+├ ƒ /api/commissioner/briefing           0 B                0 B
+├ ƒ /api/cron/reminders                  0 B                0 B
+├ ƒ /api/debug/cookies                   0 B                0 B
+├ ƒ /api/departments                     0 B                0 B
+├ ƒ /api/departments/[id]                0 B                0 B
+├ ƒ /api/health                          0 B                0 B
+├ ƒ /api/issues                          0 B                0 B
+├ ƒ /api/issues/[id]                     0 B                0 B
+├ ƒ /api/issues/[id]/assign              0 B                0 B
+├ ƒ /api/issues/[id]/confirm             0 B                0 B
+├ ƒ /api/issues/[id]/photos              0 B                0 B
+├ ƒ /api/issues/[id]/priority            0 B                0 B
+├ ƒ /api/issues/[id]/quick-action        0 B                0 B
+├ ƒ /api/issues/[id]/rate                0 B                0 B
+├ ƒ /api/issues/[id]/update-status       0 B                0 B
+├ ƒ /api/issues/[id]/upvote              0 B                0 B
+├ ƒ /api/issues/admin                    0 B                0 B
+├ ƒ /api/issues/check-duplicate          0 B                0 B
+├ ƒ /api/issues/department               0 B                0 B
+├ ƒ /api/issues/department/assigned      0 B                0 B
+├ ƒ /api/issues/department/resolved      0 B                0 B
+├ ƒ /api/issues/department/stats         0 B                0 B
+├ ƒ /api/issues/detect-image             0 B                0 B
+├ ƒ /api/issues/nearby                   0 B                0 B
+├ ƒ /api/issues/public                   0 B                0 B
+├ ƒ /api/issues/stats                    0 B                0 B
+├ ƒ /api/issues/track                    0 B                0 B
+├ ƒ /api/issues/ward-stats               0 B                0 B
+├ ƒ /api/middleware                      0 B                0 B
+├ ƒ /api/notifications                   0 B                0 B
+├ ƒ /api/performance                     0 B                0 B
+├ ƒ /api/placeholder-image               0 B                0 B
+├ ƒ /api/public-dashboard                0 B                0 B
+├ ƒ /api/reports                         0 B                0 B
+├ ƒ /api/reports/download                0 B                0 B
+├ ƒ /api/sla                             0 B                0 B
+├ ƒ /api/stats                           0 B                0 B
+├ ƒ /api/upload                          0 B                0 B
+├ ƒ /api/users/[id]                      0 B                0 B
+├ ƒ /api/users/admin                     0 B                0 B
+├ ƒ /api/users/create                    0 B                0 B
+├ ƒ /api/wards                           0 B                0 B
+├ ○ /citizen/dashboard                   5.15 kB         124 kB
+├ ○ /citizen/report                      30.5 kB         252 kB
+├ ○ /commissioner/create-staff           2.9 kB          122 kB
+├ ○ /commissioner/dashboard              4.11 kB         123 kB
+├ ○ /commissioner/issues                 2.65 kB         121 kB
+├ ○ /department/dashboard                3.39 kB         122 kB
+├ ○ /department/issues                   2.68 kB         121 kB
+├ ○ /department/profile                  1.58 kB         120 kB
+├ ○ /department/resolved                 2.29 kB         121 kB
+├ ○ /department/stats                    2.14 kB         121 kB
+├ ○ /field-officer/dashboard             3.35 kB         122 kB
+├ ○ /forgot-password                     2.06 kB         100 kB
+├ ƒ /issues/[id]                         10.8 kB         130 kB
+├ ƒ /issues/[id]/edit                    2.57 kB         121 kB
+├ ○ /know-your-district                  2.62 kB        97.2 kB
+├ ○ /login                               2.75 kB         101 kB
+├ ○ /map                                 3.85 kB         104 kB
+├ ○ /municipal/dashboard                 3.9 kB          123 kB
+├ ○ /municipal/departments               3.41 kB         122 kB
+├ ○ /municipal/sla-dashboard             3.01 kB         122 kB
+├ ○ /privacy-policy                      2.98 kB        97.6 kB
+├ ○ /public-dashboard                    4.2 kB          116 kB
+├ ○ /register                            2.82 kB         101 kB
+├ ○ /terms-of-service                    3.04 kB        97.6 kB
+└ ○ /track                               3.26 kB         119 kB
++ First Load JS shared by all            87.8 kB
+  ├ chunks/2117-8bc11a90b560d362.js      31.6 kB
+  ├ chunks/fd9d1056-c1ad21c78fd340fc.js  53.6 kB
+  └ other shared chunks (total)          2.53 kB
+
+
+ƒ Middleware                             32.9 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

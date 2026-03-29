@@ -1,52 +1,99 @@
-import connectDB from '@/lib/mongodb';
-import Issue from '@/models/Issue';
+// app/api/issues/admin/route.js
+// Admin endpoint for managing all issues
+import { connectDB } from '@/lib/mongodb';
 import { getTokenData } from '@/lib/auth';
-import { getRoleFilter } from '@/lib/roleFilter';
+import { normalizeRole } from '@/lib/auth';
+import Issue from '@/models/Issue';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-export async function GET(req) {
-  try {
-    await connectDB();
+/**
+ * GET /api/issues/admin
+ * Returns all issues for admin management
+ * Accessible by: admin, commissioner only
+ */
+export async function GET(request) {
+    try {
+        // Verify authentication
+        const userData = await getTokenData();
+        
+        if (!userData) {
+            return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+                status: 401,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
 
-    const userData = await getTokenData(req);
+        // Check role - allow admin and commissioner
+        const userRole = normalizeRole(userData.role);
+        if (userRole !== 'SYSTEM_ADMIN' && userRole !== 'MUNICIPAL_COMMISSIONER') {
+            return new Response(JSON.stringify({ 
+                error: 'Forbidden - Admin access required',
+                yourRole: userData.role
+            }), {
+                status: 403,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
 
-    if (!userData) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+        // Connect to database
+        await connectDB();
+
+        // Get query parameters
+        const { searchParams } = new URL(request.url);
+        const status = searchParams.get('status');
+        const priority = searchParams.get('priority');
+        const page = parseInt(searchParams.get('page') || '1');
+        const limit = parseInt(searchParams.get('limit') || '50');
+
+        // Build query - admin sees everything
+        const query = {};
+        
+        if (status && status !== 'all') {
+            query.status = status;
+        }
+        if (priority && priority !== 'all') {
+            query.priority = priority;
+        }
+
+        // Get total count
+        const total = await Issue.countDocuments(query);
+
+        // Get paginated issues with populated fields
+        const issues = await Issue.find(query)
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(limit)
+            .populate('reportedBy', 'name email')
+            .populate('assignedTo', 'name email')
+            .lean();
+
+        return new Response(JSON.stringify({
+            success: true,
+            issues,
+            pagination: {
+                page,
+                limit,
+                total,
+                pages: Math.ceil(total / limit)
+            }
+        }), {
+            status: 200,
+            headers: { 
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-store, must-revalidate'
+            }
+        });
+
+    } catch (error) {
+        console.error('[API /issues/admin] Error:', error);
+        return new Response(JSON.stringify({ 
+            error: 'Failed to fetch issues',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+        });
     }
-
-    const roleFilter = getRoleFilter(userData);
-
-    // Block SYSTEM_ADMIN
-    if (roleFilter === null) {
-      return Response.json(
-        { success: false, error: 'ACCESS_DENIED' },
-        { status: 403 }
-      );
-    }
-
-    // Fetch all issues based on role filter
-    const issues = await Issue.find(roleFilter)
-      .select('reportId title description category subcategory status priority location upvotes upvotedBy createdAt updatedAt images reportedBy assignedDepartment assignedDepartmentCode ward')
-      .populate('reportedBy', 'name email')
-      .populate('assignedDepartment', 'name')
-      .populate('upvotedBy', 'name')
-      .sort({ 'sla.deadline': 1 })
-      .lean();
-
-    // Return in consistent format
-    return Response.json({
-      success: true,
-      issues: issues,
-      count: issues.length
-    });
-
-  } catch (error) {
-    console.error('❌ Error fetching admin issues:', error);
-    return Response.json({
-      error: 'Failed to fetch issues',
-      details: error.message
-    }, { status: 500 });
-  }
 }

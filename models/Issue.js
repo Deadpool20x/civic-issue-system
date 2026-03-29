@@ -137,9 +137,14 @@ const issueSchema = new mongoose.Schema({
     // Location and Ward Classification
     ward: {
         type: String,
-        trim: true,
-        default: null
+        required: [true, 'Ward is required'],
+        // Must be one of: 'ward-1' through 'ward-16'
+        // This single field encodes zone + department
+        // Example: ward-1 = North + Roads
+        index: true
     },
+    // Zone and Department are now DERIVED from ward using WARD_MAP from lib/wards.js
+    // We keep these for backward compatibility but they shouldn't be the source of truth
     zone: {
         type: String,
         trim: true
@@ -218,6 +223,23 @@ const issueSchema = new mongoose.Schema({
         },
         verificationNotes: String
     },
+    // Response Approval System (for higher authorities)
+    approvedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    approvalDate: Date,
+    rejectedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    rejectionDate: Date,
+    editedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    editDate: Date,
+    editReason: String,
     comments: [{
         text: String,
         user: {
@@ -246,6 +268,10 @@ const issueSchema = new mongoose.Schema({
     updatedAt: {
         type: Date,
         default: Date.now
+    },
+    remindedAt: {
+        type: Date,
+        default: null
     }
 });
 

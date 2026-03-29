@@ -135,7 +135,7 @@ export const POST = strictRoleMiddleware(['admin'])(async (req) => {
 });
 
 // SECURE: Admin-only endpoint to get all users (for user management)
-export const GET = strictRoleMiddleware(['admin'])(async (req) => {
+export const GET = strictRoleMiddleware(['admin', 'SYSTEM_ADMIN', 'MUNICIPAL_COMMISSIONER'])(async (req) => {
     try {
         await connectDB();
 

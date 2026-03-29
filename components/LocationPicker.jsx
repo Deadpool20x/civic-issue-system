@@ -67,7 +67,7 @@ export default function LocationPicker({ onLocationSelect, initialLocation }) {
                 { headers: { 'User-Agent': 'CivicIssueSystem/1.0' } }
             );
             const data = await response.json();
-            
+
             if (data.display_name) {
                 const formattedAddress = data.display_name;
                 setAddress(formattedAddress);
@@ -109,7 +109,7 @@ export default function LocationPicker({ onLocationSelect, initialLocation }) {
                 setError('Location access denied. Please click on map manually.');
                 setLoading(false);
             },
-            { enableHighAccuracy: true, timeout: 5000 }
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     };
 

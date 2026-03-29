@@ -1,16 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, useMap, Marker, Popup } from 'react-leaflet';
+import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-import MarkerClusterGroup from 'react-leaflet-cluster';
 import IssuePopup from './IssuePopup';
 
+const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false });
+const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
+const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
+const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false });
+
 // Custom marker icons based on status and priority
-const createCustomIcon = (status, priority) => {
+const createCustomIcon = (leaflet, status, priority) => {
+    if (!leaflet) return null;
+
     const baseSize = priority === 'urgent' ? 40 : 30;
-    const shadowSize = baseSize + 10;
 
     const statusColors = {
         pending: '#FBBF24', // yellow
@@ -24,7 +28,7 @@ const createCustomIcon = (status, priority) => {
 
     const color = statusColors[status] || '#FBBF24';
 
-    return L.divIcon({
+    return leaflet.divIcon({
         html: `
             <div style="
                 width: ${baseSize}px;
@@ -50,22 +54,30 @@ const createCustomIcon = (status, priority) => {
 };
 
 const IssueMap = ({ issues = [], onMarkerClick }) => {
-    const [map, setMap] = useState(null);
+    const [leaflet, setLeaflet] = useState(null);
+
+    useEffect(() => {
+        let mounted = true;
+        import('leaflet').then((mod) => {
+            if (mounted) setLeaflet(mod.default);
+        });
+        return () => { mounted = false; };
+    }, []);
 
     // Center map on India
     const center = [22.7196, 75.8577];
     const zoom = 6;
 
-    // Handle map ready
-    const MapUpdater = () => {
-        const map = useMap();
-        useEffect(() => {
-            if (map) {
-                setMap(map);
-            }
-        }, [map]);
-        return null;
-    };
+    if (!leaflet) {
+        return (
+            <div className="w-full h-64 bg-[#1A1A1A] rounded-[20px] border border-[#333333] flex items-center justify-center">
+                <div className="text-center">
+                    <div className="w-8 h-8 border-2 border-[#F5A623] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-[#AAAAAA] text-sm">Loading map...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="w-full h-full">
@@ -76,39 +88,36 @@ const IssueMap = ({ issues = [], onMarkerClick }) => {
                 zoomControl={true}
                 scrollWheelZoom={true}
             >
-                <MapUpdater />
-
                 <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 />
 
-                <MarkerClusterGroup
-                    chunkedLoading
-                    maxClusterRadius={50}
-                    spiderfyOnMaxZoom={true}
-                    showCoverageOnHover={false}
-                >
+                <>
                     {issues.map((issue) => {
-                        if (!issue.location?.coordinates ||
-                            !Array.isArray(issue.location.coordinates) ||
-                            issue.location.coordinates.length < 2) {
+                        // Handle both nested and flat coordinate structures
+                        const coordinates = issue.location?.coordinates?.coordinates || issue.location?.coordinates;
+
+                        if (!coordinates ||
+                            !Array.isArray(coordinates) ||
+                            coordinates.length < 2) {
                             return null;
                         }
 
                         // MongoDB stores coordinates as [lng, lat], Leaflet expects [lat, lng]
-                        const lat = issue.location.coordinates[1];
-                        const lng = issue.location.coordinates[0];
+                        const lat = coordinates[1];
+                        const lng = coordinates[0];
 
-                        if (typeof lat !== 'number' || typeof lng !== 'number') {
+                        if (typeof lat !== 'number' || typeof lng !== 'number' ||
+                            isNaN(lat) || isNaN(lng)) {
                             return null;
                         }
 
                         return (
                             <Marker
-                                key={issue.reportId}
+                                key={issue.reportId || issue._id || Math.random()}
                                 position={[lat, lng]}
-                                icon={createCustomIcon(issue.status, issue.priority)}
+                                icon={createCustomIcon(leaflet, issue.status, issue.priority)}
                                 eventHandlers={{
                                     click: () => {
                                         if (onMarkerClick) {
@@ -123,7 +132,7 @@ const IssueMap = ({ issues = [], onMarkerClick }) => {
                             </Marker>
                         );
                     })}
-                </MarkerClusterGroup>
+                </>
             </MapContainer>
         </div>
     );

@@ -9,10 +9,11 @@ import toast from 'react-hot-toast';
 import { CATEGORIES } from '@/lib/categories';
 import ImageUploader from '@/components/ImageUploader';
 import DuplicateModal from '@/components/DuplicateModal';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@/lib/useStaticTranslation';
 import VoiceInput from '@/components/VoiceInput';
-import i18n from '@/lib/i18n';
 import DashboardLayout from '@/components/DashboardLayout';
+import LottiePlayer from '@/components/LottiePlayer';
+import DisclaimerModal from '@/components/DisclaimerModal';
 
 const LocationPicker = dynamic(() => import('@/components/LocationPicker'), {
     ssr: false,
@@ -25,7 +26,7 @@ const LocationPicker = dynamic(() => import('@/components/LocationPicker'), {
 
 export default function ReportIssuePage() {
     const router = useRouter();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const [formData, setFormData] = useState({
         title: '', description: '', category: '', subcategory: '', priority: 'medium', wardId: '',
     });
@@ -36,13 +37,11 @@ export default function ReportIssuePage() {
     const [imageUrls, setImageUrls] = useState([]);
     const [videoData, setVideoData] = useState([]);
 
-    // AI State
-    const [aiResult, setAiResult] = useState(null);
-    const [aiLoading, setAiLoading] = useState(false);
+    // Detection source tracking (AI preprocessing removed)
     const [detectionSource, setDetectionSource] = useState('manual');
-    const [cvModelResults, setCvModelResults] = useState(null);
 
     const [loading, setLoading] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
     const [showDuplicateModal, setShowDuplicateModal] = useState(false);
     const [duplicates, setDuplicates] = useState([]);
     const [pendingSubmission, setPendingSubmission] = useState(null);
@@ -65,45 +64,9 @@ export default function ReportIssuePage() {
         }
     };
 
-    const handleImagesChange = async (urls) => {
+    const handleImagesChange = (urls) => {
         setImageUrls(urls);
-
-        if (urls.length > 0 && detectionSource === 'manual' && !aiLoading && !aiResult) {
-            setAiLoading(true);
-            try {
-                const res = await fetch('/api/issues/detect-image', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ imageUrl: urls[0] })
-                });
-                const data = await res.json();
-
-                if (data.success && data.detection && data.detection.category && data.detection.category !== 'other') {
-                    setAiResult(data.detection);
-                    setCvModelResults(data.detection.raw);
-                }
-            } catch (err) {
-                console.error('AI detection error:', err);
-            } finally {
-                setAiLoading(false);
-            }
-        }
-    };
-
-    const confirmAi = () => {
-        setFormData(prev => ({
-            ...prev,
-            category: aiResult.category,
-            subcategory: aiResult.subcategory || ''
-        }));
-        setDetectionSource('AI_CONFIRMED');
-        setAiResult(null);
-        toast.success('AI classification applied');
-    };
-
-    const rejectAi = () => {
-        setDetectionSource('AI_OVERRIDDEN');
-        setAiResult(null);
+        // Images upload directly without AI preprocessing
     };
 
     const checkForDuplicates = async (issueData) => {
@@ -136,8 +99,11 @@ export default function ReportIssuePage() {
             const result = await res.json();
             if (!res.ok) throw new Error(result.error || 'Failed to submit');
 
-            toast.success(`Report ${result.reportId} submitted successfully!`);
-            router.push('/citizen/dashboard');
+            setShowSuccess(true);
+            setTimeout(() => {
+                toast.success(`Report ${result.reportId} submitted successfully!`);
+                router.push('/citizen/dashboard');
+            }, 3000);
         } catch (err) {
             toast.error(err.message);
         } finally {
@@ -147,11 +113,6 @@ export default function ReportIssuePage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        if (aiResult) {
-            toast.error('Please confirm or change the AI suggestion first.');
-            return;
-        }
 
         const issueData = {
             ...formData,
@@ -164,8 +125,7 @@ export default function ReportIssuePage() {
             },
             images: imageUrls,
             videos: videoData,
-            detectionSource,
-            cvModelResults
+            detectionSource
         };
 
         const hasDups = await checkForDuplicates(issueData);
@@ -194,8 +154,29 @@ export default function ReportIssuePage() {
             ...prev,
             description: prev.description ? `${prev.description} ${text}` : text
         }));
-        toast.success('Voice input received');
+        toast.success(t('report.voiceInputReceived'));
     };
+
+    if (showSuccess) {
+        return (
+            <div className="fixed inset-0 z-[100] bg-page flex flex-col items-center justify-center p-6 text-center">
+                <LottiePlayer
+                    src="https://lottie.host/df660b94-8798-468b-90f9-293674d89a62/n696wN809P.json"
+                    style={{ width: '300px', height: '300px' }}
+                    loop={false}
+                />
+                <h2 className="text-3xl font-black text-white mb-2 animate-fade-in mt-4">
+                    {t('report.submitSuccessTitle') || 'Submission Successful!'}
+                </h2>
+                <p className="text-text-secondary animate-fade-in delay-100">
+                    {t('report.submitSuccessText') || 'Your report has been received and will be processed shortly.'}
+                </p>
+                <div className="mt-8 text-gold font-bold flex items-center gap-2 animate-pulse">
+                    <span>{t('report.redirecting')}</span>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <DashboardLayout>
@@ -214,21 +195,6 @@ export default function ReportIssuePage() {
                             onVideosChange={handleVideosChange}
                             maxImages={3}
                         />
-                        {aiLoading && (
-                            <div className="mt-4 flex items-center gap-3 text-gold text-sm font-medium animate-pulse">
-                                <div className="w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
-                                {t('common.loading')}
-                            </div>
-                        )}
-                        {aiResult && (
-                            <div className="mt-4 p-4 rounded-xl bg-gold/10 border border-gold/30 animate-fade-in">
-                                <p className="text-gold font-bold text-sm mb-3">✨ {t('report.aiDetected')}: {CATEGORIES[aiResult.category]?.label} — {aiResult.subcategory}</p>
-                                <div className="flex gap-2">
-                                    <button type="button" onClick={confirmAi} className="btn-gold px-4 py-1.5 text-xs">{t('report.confirm')}</button>
-                                    <button type="button" onClick={rejectAi} className="btn-outline px-4 py-1.5 text-xs border-gold/20 text-gold hover:bg-gold/5">{t('report.change')}</button>
-                                </div>
-                            </div>
-                        )}
                     </div>
 
                     {/* ── DETAILS ── */}
@@ -239,17 +205,28 @@ export default function ReportIssuePage() {
                             <input name="title" required value={formData.title} onChange={handleChange} placeholder={t('report.titlePlaceholder')} />
                         </div>
                         <div>
-                            <div className="flex justify-between items-center mb-1">
-                                <label>{t('report.description')}</label>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[10px] text-text-muted uppercase tracking-wider font-bold">{t('report.voiceHint')}</span>
-                                    <VoiceInput
-                                        locale={i18n.language}
-                                        onTranscript={handleVoiceTranscript}
-                                    />
-                                </div>
+                            <label>{t('report.description')}</label>
+                            <div className="relative">
+                                <textarea
+                                    name="description"
+                                    required
+                                    rows={4}
+                                    value={formData.description}
+                                    onChange={handleChange}
+                                    placeholder={t('report.descriptionPlaceholder')}
+                                    className="bg-[#222222] border border-[#333333] rounded-[12px]
+                                               text-white placeholder:text-[#666666]
+                                               px-4 py-3 w-full min-h-[120px] resize-y
+                                               focus:border-[#F5A623] focus:outline-none pr-12"
+                                />
+                                <VoiceInput
+                                    language={i18n.language === 'en' ? 'en-IN' : i18n.language === 'hi' ? 'hi-IN' : 'gu-IN'}
+                                    onTranscript={handleVoiceTranscript}
+                                />
                             </div>
-                            <textarea name="description" required rows={4} value={formData.description} onChange={handleChange} placeholder={t('report.descriptionPlaceholder')} />
+                            <p className="text-[#666666] text-xs mt-1">
+                                🎤 {t('report.voiceInstruction', 'Tap mic to describe by voice in English or Hindi')}
+                            </p>
                         </div>
                         <div className="grid md:grid-cols-2 gap-6">
                             <div>
@@ -257,7 +234,7 @@ export default function ReportIssuePage() {
                                 <select name="category" required value={formData.category} onChange={handleChange}>
                                     <option value="">{t('report.selectCategory')}</option>
                                     {Object.entries(CATEGORIES).map(([k, v]) => (
-                                        <option key={k} value={k}>{v.label}</option>
+                                        <option key={k} value={k}>{t(`report.categories.${k}.label`)}</option>
                                     ))}
                                 </select>
                             </div>
@@ -266,7 +243,7 @@ export default function ReportIssuePage() {
                                 <select name="subcategory" required value={formData.subcategory} onChange={handleChange} disabled={!formData.category}>
                                     <option value="">{t('report.selectSubcategory')}</option>
                                     {formData.category && CATEGORIES[formData.category].subcategories.map(s => (
-                                        <option key={s} value={s}>{s}</option>
+                                        <option key={s} value={s}>{t(`report.categories.${formData.category}.subcategories.${s}`, s)}</option>
                                     ))}
                                 </select>
                             </div>
@@ -305,7 +282,7 @@ export default function ReportIssuePage() {
                             <input
                                 value={manualAddress || locationData.address}
                                 onChange={(e) => setManualAddress(e.target.value)}
-                                placeholder="Enter specific landmark or street name"
+                                placeholder={t('report.locationPlaceholder')}
                             />
                         </div>
                     </div>
@@ -326,6 +303,7 @@ export default function ReportIssuePage() {
                         onClose={() => setShowDuplicateModal(false)}
                     />
                 )}
+                <DisclaimerModal />
             </div>
         </DashboardLayout>
     );

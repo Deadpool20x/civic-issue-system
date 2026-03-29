@@ -1,0 +1,32 @@
+
+> civic-issue-system@0.1.0 build
+> next build 
+
+  ▲ Next.js 14.2.15
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+Failed to compile.
+
+./app/citizen/dashboard/page.js
+Error: 
+  [31mx[0m Expected ',', got '}'
+     ,-[[36;1;4md:\Projects\app\citizen\dashboard\page.js[0m:192:1]
+ [2m192[0m |                   </div>
+ [2m193[0m |                 )}
+ [2m194[0m |               </div>
+ [2m195[0m |             )}
+     : [31;1m             ^[0m
+ [2m196[0m |           </div>
+ [2m197[0m |         ) : (
+ [2m197[0m |           <EmptyState
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./app/citizen/dashboard/page.js
+
+
+> Build failed because of webpack errors

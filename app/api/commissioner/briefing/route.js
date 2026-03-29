@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { authMiddleware } from '@/lib/auth';
+import { getTokenData } from '@/lib/auth';
 import Issue from '@/models/Issue';
 import User from '@/models/User';
 import { connectDB } from '@/lib/mongodb';
@@ -8,9 +8,22 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
     try {
-        const user = await authMiddleware(request);
-        if (!user || user.role !== 'MUNICIPAL_COMMISSIONER') {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        // Get user from token - works without request parameter
+        const userData = await getTokenData();
+        
+        if (!userData) {
+            return NextResponse.json({ error: 'Unauthorized - No authentication token' }, { status: 401 });
+        }
+
+        // Normalize role for comparison
+        const userRole = (userData.role || '').toUpperCase();
+        
+        // Check for commissioner role (supports both 'commissioner' and 'MUNICIPAL_COMMISSIONER')
+        if (userRole !== 'COMMISSIONER' && userRole !== 'MUNICIPAL_COMMISSIONER' && userRole !== 'ADMIN') {
+            return NextResponse.json({ 
+                error: 'Unauthorized - Municipal Commissioner access required',
+                yourRole: userData.role 
+            }, { status: 403 });
         }
 
         await connectDB();
@@ -40,7 +53,7 @@ export async function GET(request) {
             generatedAt: new Date()
         };
 
-        return NextResponse.json({ briefing });
+        return NextResponse.json({ success: true, briefing });
     } catch (error) {
         console.error('Briefing error:', error);
         return NextResponse.json({ error: 'Failed to generate briefing' }, { status: 500 });

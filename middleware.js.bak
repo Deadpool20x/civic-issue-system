@@ -1,0 +1,85 @@
+import { NextResponse } from 'next/server'
+import { jwtVerify } from 'jose'
+
+const ROLE_ROUTES = {
+    'CITIZEN': '/citizen/dashboard',
+    'FIELD_OFFICER': '/field-officer/dashboard',
+    'DEPARTMENT_MANAGER': '/department/dashboard',
+    'MUNICIPAL_COMMISSIONER': '/commissioner/dashboard',
+    'SYSTEM_ADMIN': '/admin/dashboard',
+}
+
+const ROUTE_PERMISSIONS = {
+    '/citizen': ['CITIZEN'],
+    '/field-officer': ['FIELD_OFFICER'],
+    '/department': ['DEPARTMENT_MANAGER'],
+    '/commissioner': ['MUNICIPAL_COMMISSIONER'],
+    '/admin': ['SYSTEM_ADMIN'],
+}
+
+const PUBLIC_PATHS = [
+    '/', '/login', '/register',
+    '/forgot-password', '/reset-password',
+    '/track', '/map', '/privacy-policy',
+    '/terms-of-service', '/know-your-district',
+]
+
+export async function middleware(request) {
+    const { pathname } = request.nextUrl
+
+    // Allow public paths
+    if (
+        PUBLIC_PATHS.includes(pathname) ||
+        pathname.startsWith('/api/auth') ||
+        pathname.startsWith('/_next') ||
+        pathname.startsWith('/images') ||
+        pathname.startsWith('/icons') ||
+        pathname.startsWith('/api/issues/public') ||
+        pathname.startsWith('/api/issues/track')
+    ) {
+        return NextResponse.next()
+    }
+
+    // Get token from cookie
+    const token = request.cookies.get('token')?.value
+
+    if (!token) {
+        return NextResponse.redirect(new URL('/login', request.url))
+    }
+
+    try {
+        const secret = new TextEncoder().encode(process.env.JWT_SECRET)
+        const { payload } = await jwtVerify(token, secret)
+        const role = payload.role
+
+        // Check route permissions
+        for (const [routePrefix, allowedRoles] of
+            Object.entries(ROUTE_PERMISSIONS)) {
+            if (pathname.startsWith(routePrefix)) {
+                if (!allowedRoles.includes(role)) {
+                    const correctRoute = ROLE_ROUTES[role] || '/login'
+                    return NextResponse.redirect(
+                        new URL(correctRoute, request.url)
+                    )
+                }
+            }
+        }
+
+        return NextResponse.next()
+    } catch {
+        return NextResponse.redirect(new URL('/login', request.url))
+    }
+}
+
+export const config = {
+    matcher: [
+        '/citizen/:path*',
+        '/field-officer/:path*',
+        '/department/:path*',
+        '/commissioner/:path*',
+        '/admin/:path*',
+        '/api/issues/:path*',
+        '/api/admin/:path*',
+        '/api/commissioner/:path*',
+    ]
+}

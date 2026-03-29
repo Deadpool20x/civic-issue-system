@@ -1,0 +1,23 @@
+ ⚠ Port 3000 is in use, trying 3001 instead.
+RangeError: Array buffer allocation failed
+    at createUnsafeBuffer (node:internal/buffer:1063:25)
+    at allocate (node:buffer:441:10)
+    at Function.allocUnsafe (node:buffer:406:10)
+    at Gunzip.ZlibBase (node:zlib:256:28)
+    at Gunzip.Zlib (node:zlib:670:3)
+    at new Gunzip (node:zlib:734:3)
+    at value (node:zlib:848:14)
+    at D:\Projects\node_modules\next\dist\compiled\webpack\bundle5.js:28:1217192
+    at callback (D:\Projects\node_modules\next\dist\compiled\webpack\bundle5.js:1:278942)
+    at FSReqCallback.oncomplete (node:fs:198:5)
+RangeError: Array buffer allocation failed
+    at createUnsafeBuffer (node:internal/buffer:1063:25)
+    at allocate (node:buffer:441:10)
+    at Function.allocUnsafe (node:buffer:406:10)
+    at Gunzip.ZlibBase (node:zlib:256:28)
+    at Gunzip.Zlib (node:zlib:670:3)
+    at new Gunzip (node:zlib:734:3)
+    at value (node:zlib:848:14)
+    at D:\Projects\node_modules\next\dist\compiled\webpack\bundle5.js:28:1217192
+    at callback (D:\Projects\node_modules\next\dist\compiled\webpack\bundle5.js:1:278942)
+    at FSReqCallback.oncomplete (node:fs:198:5)

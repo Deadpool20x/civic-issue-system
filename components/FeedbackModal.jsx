@@ -1,7 +1,9 @@
 'use client'
 import { useState } from 'react'
+import { useTranslation } from '@/lib/useStaticTranslation'
 
 export default function FeedbackModal({ isOpen, onClose, onSubmit, title, placeholder }) {
+    const { t } = useTranslation()
     const [text, setText] = useState('')
 
     if (!isOpen) return null
@@ -22,13 +24,13 @@ export default function FeedbackModal({ isOpen, onClose, onSubmit, title, placeh
                         onClick={onClose}
                         className="flex-1 py-3 px-6 rounded-pill border border-border text-white font-bold hover:bg-white/5 transition-all"
                     >
-                        Cancel
+                        {t('common.cancel')}
                     </button>
                     <button
                         onClick={() => onSubmit(text)}
                         className="flex-1 py-3 px-6 rounded-pill bg-gold text-page-bg font-bold hover:scale-105 transition-all shadow-lg shadow-gold/20"
                     >
-                        Submit
+                        {t('common.save')}
                     </button>
                 </div>
             </div>

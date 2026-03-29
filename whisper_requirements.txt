@@ -1,0 +1,6 @@
+# Whisper Server Dependencies
+# Install with: pip install -r whisper_requirements.txt
+
+flask>=2.0.0
+flask-cors>=3.0.0
+openai-whisper>=20231117

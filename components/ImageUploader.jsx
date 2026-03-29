@@ -1,6 +1,5 @@
 'use client';
 import { useState } from 'react';
-import imageCompression from 'browser-image-compression';
 export default function ImageUploader({ onImagesChange, onVideosChange, maxImages = 3 }) {
     const [mode, setMode] = useState('photo'); // 'photo' or 'video'
     const [images, setImages] = useState([]);
@@ -22,15 +21,7 @@ export default function ImageUploader({ onImagesChange, onVideosChange, maxImage
         setErrors([]);
     };
 
-    const compressImage = async (file) => {
-        const options = {
-            maxSizeMB: 0.5,
-            maxWidthOrHeight: 1920,
-            useWebWorker: true,
-            fileType: 'image/jpeg',
-        };
-        return await imageCompression(file, options);
-    };
+    const compressImage = async (file) => file;
 
     const uploadToCloudinary = async (file, index) => {
         const formData = new FormData();

@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongodb';
+import { connectDB } from '@/lib/mongodb';
 import Issue from '@/models/Issue';
 
 export async function GET(req) {
     try {
-        await dbConnect();
+        await connectDB();
         const { searchParams } = new URL(req.url);
         const lat = parseFloat(searchParams.get('lat'));
         const lng = parseFloat(searchParams.get('lng'));

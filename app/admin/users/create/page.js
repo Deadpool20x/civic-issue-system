@@ -1,31 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/PageHeader';
 import { toast } from 'react-hot-toast';
+import { DEPARTMENTS, ZONES, WARD_MAP, getDepartmentWards, getWardLabel } from '@/lib/wards';
 
+// Role options matching backend schema
 const ROLES = [
     { value: 'CITIZEN', label: 'Citizen' },
     { value: 'FIELD_OFFICER', label: 'Field Officer' },
     { value: 'DEPARTMENT_MANAGER', label: 'Department Manager' },
-    { value: 'MUNICIPAL_COMMISSIONER', label: 'Municipal Commissioner' }
+    { value: 'MUNICIPAL_COMMISSIONER', label: 'Municipal Commissioner' },
+    { value: 'SYSTEM_ADMIN', label: 'System Admin' },
 ];
 
-const DEPARTMENTS = [
-    { value: 'roads', label: 'Roads & Infrastructure' },
-    { value: 'water', label: 'Water & Drainage' },
-    { value: 'waste', label: 'Waste Management' },
-    { value: 'lighting', label: 'Street Lighting' },
-    { value: 'parks', label: 'Parks & Public Spaces' },
-    { value: 'traffic', label: 'Traffic & Signage' },
-    { value: 'health', label: 'Public Health & Safety' }
-];
+// Convert DEPARTMENTS object to array for dropdown
+const DEPARTMENT_OPTIONS = Object.entries(DEPARTMENTS).map(([key, value]) => ({
+    value: key,
+    label: value.name
+}));
 
 export default function CreateUserPage() {
     const router = useRouter();
-    const [wards, setWards] = useState([]);
-    const [loadingWards, setLoadingWards] = useState(true);
     const [submitting, setSubmitting] = useState(false);
 
     const [formData, setFormData] = useState({
@@ -38,22 +35,48 @@ export default function CreateUserPage() {
         departmentId: '',
     });
 
-    useEffect(() => {
-        const fetchWards = async () => {
-            try {
-                const res = await fetch('/api/wards');
-                if (res.ok) {
-                    const data = await res.json();
-                    setWards(data.all || []);
-                }
-            } catch (err) {
-                console.error('Failed to fetch wards:', err);
-            } finally {
-                setLoadingWards(false);
+    // Create grouped ward options for dropdown
+    const groupedWardOptions = useMemo(() => {
+        const northWards = [];
+        const southWards = [];
+        
+        Object.entries(WARD_MAP).forEach(([wardId, ward]) => {
+            const deptName = DEPARTMENTS[ward.departmentId]?.name || 'Other / General';
+            const option = {
+                value: wardId,
+                label: `Ward ${ward.wardNumber} — ${deptName}`
+            };
+            
+            if (ward.zone === 'north') {
+                northWards.push(option);
+            } else {
+                southWards.push(option);
             }
-        };
-        fetchWards();
+        });
+        
+        return [
+            { label: 'NORTH ZONE', options: northWards },
+            { label: 'SOUTH ZONE', options: southWards }
+        ];
     }, []);
+
+    // Get wards managed by selected department (for DEPARTMENT_MANAGER)
+    const managedWards = useMemo(() => {
+        if (formData.role === 'DEPARTMENT_MANAGER' && formData.departmentId) {
+            return getDepartmentWards(formData.departmentId);
+        }
+        return [];
+    }, [formData.role, formData.departmentId]);
+
+    // Get ward label for display (for FIELD_OFFICER)
+    const selectedWardInfo = formData.wardId && formData.role === 'FIELD_OFFICER' 
+        ? getWardLabel(formData.wardId) 
+        : null;
+
+    // Get department name for display (for DEPARTMENT_MANAGER)
+    const selectedDepartmentInfo = formData.departmentId && formData.role === 'DEPARTMENT_MANAGER'
+        ? DEPARTMENTS[formData.departmentId]?.name || formData.departmentId
+        : null;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -83,6 +106,7 @@ export default function CreateUserPage() {
 
     const isOfficer = formData.role === 'FIELD_OFFICER';
     const isManager = formData.role === 'DEPARTMENT_MANAGER';
+    const showConditionalFields = isOfficer || isManager;
 
     return (
         <div className="max-w-2xl mx-auto animate-fade-in">
@@ -144,7 +168,7 @@ export default function CreateUserPage() {
                 </div>
 
                 {/* ── CONDITIONAL FIELDS ── */}
-                <div className={`space-y-6 overflow-hidden transition-all duration-300 ${(isOfficer || isManager) ? 'max-h-96 opacity-100 mt-4' : 'max-h-0 opacity-0'}`}>
+                <div className={`space-y-6 overflow-hidden transition-all duration-300 ${showConditionalFields ? 'max-h-96 opacity-100 mt-4' : 'max-h-0 opacity-0'}`}>
                     <div className="h-px bg-border my-6" />
 
                     <div className="grid md:grid-cols-2 gap-6">
@@ -158,10 +182,21 @@ export default function CreateUserPage() {
                                     onChange={(e) => setFormData({ ...formData, wardId: e.target.value })}
                                 >
                                     <option value="">Select Ward</option>
-                                    {wards.map(w => (
-                                        <option key={w.wardId} value={w.wardId}>{w.wardName} ({w.zone})</option>
+                                    {groupedWardOptions.map(group => (
+                                        <optgroup key={group.label} label={group.label}>
+                                            {group.options.map(opt => (
+                                                <option key={opt.value} value={opt.value}>
+                                                    {opt.label}
+                                                </option>
+                                            ))}
+                                        </optgroup>
                                     ))}
                                 </select>
+                                {selectedWardInfo && (
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        {selectedWardInfo}
+                                    </p>
+                                )}
                             </div>
                         )}
 
@@ -175,10 +210,15 @@ export default function CreateUserPage() {
                                     onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
                                 >
                                     <option value="">Select Department</option>
-                                    {DEPARTMENTS.map(d => (
+                                    {DEPARTMENT_OPTIONS.map(d => (
                                         <option key={d.value} value={d.value}>{d.label}</option>
                                     ))}
                                 </select>
+                                {isManager && selectedDepartmentInfo && managedWards.length > 0 && (
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        Manages Ward {managedWards.map(w => WARD_MAP[w]?.wardNumber).join(' + Ward ')}
+                                    </p>
+                                )}
                             </div>
                         )}
                     </div>

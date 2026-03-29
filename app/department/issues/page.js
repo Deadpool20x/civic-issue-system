@@ -162,7 +162,14 @@ function FOIssuesContent() {
                                         <td><span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[issue.status] || ''}`}>{issue.status}</span></td>
                                         <td><span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${PRIORITY_STYLES[issue.priority] || ''}`}>{issue.priority}</span></td>
                                         <td className="text-text-muted text-xs whitespace-nowrap">{timeAgo(issue.createdAt)}</td>
-                                        <td><Link href={`/issues/${issue._id}`} className="text-gold hover:underline text-xs font-medium">View →</Link></td>
+                                        <td>
+                                            <Link
+                                                href={`/issues/${issue._id}`}
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-gold/10 hover:bg-gold/20 text-gold rounded-full text-xs font-bold transition-colors"
+                                            >
+                                                View & Update →
+                                            </Link>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>

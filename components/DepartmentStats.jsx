@@ -1,9 +1,10 @@
 'use client';
-
 import { useState, useEffect } from 'react';
 import Card from './ui/Card';
+import { useTranslation } from '@/lib/useStaticTranslation';
 
 export default function DepartmentStats({ issues, departmentName }) {
+    const { t } = useTranslation();
     const [stats, setStats] = useState({
         total: 0,
         pending: 0,
@@ -71,54 +72,54 @@ export default function DepartmentStats({ issues, departmentName }) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <Card className="bg-neutral-surface">
-                <h3 className="text-lg font-medium text-contrast-primary">Total Issues</h3>
+                <h3 className="text-lg font-medium text-contrast-primary">{t('stats.totalIssues')}</h3>
                 <p className="mt-2 text-3xl font-semibold text-brand-primary">{stats.total}</p>
             </Card>
 
             <Card className="bg-status-info/10">
-                <h3 className="text-lg font-medium text-contrast-primary">Pending</h3>
+                <h3 className="text-lg font-medium text-contrast-primary">{t('stats.pending')}</h3>
                 <p className="mt-2 text-3xl font-semibold text-status-info">{stats.pending}</p>
             </Card>
 
             <Card className="bg-status-warning/10">
-                <h3 className="text-lg font-medium text-contrast-primary">In Progress</h3>
+                <h3 className="text-lg font-medium text-contrast-primary">{t('stats.inProgress')}</h3>
                 <p className="mt-2 text-3xl font-semibold text-status-warning">{stats.inProgress}</p>
             </Card>
 
             <Card className="bg-status-success/10">
-                <h3 className="text-lg font-medium text-contrast-primary">Resolved</h3>
+                <h3 className="text-lg font-medium text-contrast-primary">{t('stats.resolved')}</h3>
                 <p className="mt-2 text-3xl font-semibold text-status-success">{stats.resolved}</p>
             </Card>
 
             <Card className="bg-status-error/10">
-                <h3 className="text-lg font-medium text-contrast-primary">Urgent</h3>
+                <h3 className="text-lg font-medium text-contrast-primary">{t('stats.urgent')}</h3>
                 <p className="mt-2 text-3xl font-semibold text-status-error">{stats.urgent}</p>
             </Card>
 
             <Card className="bg-brand-soft/10">
-                <h3 className="text-lg font-medium text-contrast-primary">Avg Resolution Time</h3>
+                <h3 className="text-lg font-medium text-contrast-primary">{t('stats.avgResolutionTime')}</h3>
                 <p className="mt-2 text-3xl font-semibold text-brand-primary">
-                    {stats.avgResolutionTime} {stats.avgResolutionTime === 1 ? 'hour' : 'hours'}
+                    {stats.avgResolutionTime} {stats.avgResolutionTime === 1 ? t('stats.hour') : t('stats.hours')}
                 </p>
             </Card>
 
             <Card className="bg-status-success/10">
-                <h3 className="text-lg font-medium text-contrast-primary">Resolved This Week</h3>
+                <h3 className="text-lg font-medium text-contrast-primary">{t('stats.resolvedThisWeek')}</h3>
                 <p className="mt-2 text-3xl font-semibold text-status-success">{stats.resolvedThisWeek}</p>
             </Card>
 
             <Card className="bg-status-warning/10">
-                <h3 className="text-lg font-medium text-contrast-primary">High Priority</h3>
+                <h3 className="text-lg font-medium text-contrast-primary">{t('stats.highPriority')}</h3>
                 <p className="mt-2 text-3xl font-semibold text-status-warning">{stats.high}</p>
             </Card>
 
             <Card className="bg-status-info/10">
-                <h3 className="text-lg font-medium text-contrast-primary">Medium Priority</h3>
+                <h3 className="text-lg font-medium text-contrast-primary">{t('stats.mediumPriority')}</h3>
                 <p className="mt-2 text-3xl font-semibold text-status-info">{stats.medium}</p>
             </Card>
 
             <Card className="bg-status-success/10">
-                <h3 className="text-lg font-medium text-contrast-primary">Low Priority</h3>
+                <h3 className="text-lg font-medium text-contrast-primary">{t('stats.lowPriority')}</h3>
                 <p className="mt-2 text-3xl font-semibold text-status-success">{stats.low}</p>
             </Card>
         </div>

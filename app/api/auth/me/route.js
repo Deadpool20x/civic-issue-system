@@ -1,50 +1,8 @@
-import { getTokenData } from '@/lib/auth';
-import { connectDB } from '@/lib/mongodb';
-import User from '@/models/User';
+import { NextResponse } from 'next/server'
+import { getUser } from '@/lib/auth'
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
-
-export async function GET(req) {
-    try {
-        const userData = await getTokenData();
-
-        if (!userData) {
-            return new Response(
-                JSON.stringify({ error: 'Not authenticated' }),
-                { status: 401, headers: { 'Content-Type': 'application/json' } }
-            );
-        }
-
-        await connectDB();
-        const user = await User.findById(userData.userId)
-            .populate('department', 'name description contactEmail')
-            .select('-password');
-
-        if (!user) {
-            return new Response(
-                JSON.stringify({ error: 'User not found' }),
-                { status: 404, headers: { 'Content-Type': 'application/json' } }
-            );
-        }
-
-        return new Response(JSON.stringify(user), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-        });
-    } catch (error) {
-        console.error('Error fetching user:', error);
-        
-        if (error.name === 'MongooseServerSelectionError' || error.name === 'MongoNetworkError') {
-             return new Response(
-                JSON.stringify({ error: 'Database service unavailable' }),
-                { status: 503, headers: { 'Content-Type': 'application/json' } }
-            );
-        }
-
-        return new Response(
-            JSON.stringify({ error: 'Internal server error' }),
-            { status: 500, headers: { 'Content-Type': 'application/json' } }
-        );
-    }
-}
+export async function GET(request) {
+    const user = await getUser(request)
+    // Return 200 with user: null instead of 401 to keep logs clean for unauthenticated users
+    return NextResponse.json({ success: true, user: user || null })
+}

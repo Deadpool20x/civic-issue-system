@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import { strictRoleMiddleware } from '@/lib/middleware';
 import Issue from '@/models/Issue';
@@ -50,7 +49,7 @@ export const GET = strictRoleMiddleware(['admin'])(async (request) => {
                     .lean();
                 break;
 
-            case 'performance':
+            case 'performance': {
                 const issueStats = await Issue.aggregate([
                     {
                         $match: {
@@ -80,6 +79,7 @@ export const GET = strictRoleMiddleware(['admin'])(async (request) => {
                 ]);
                 reportData = issueStats;
                 break;
+            }
 
             default:
                 return new Response(

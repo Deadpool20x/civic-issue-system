@@ -4,16 +4,124 @@
         "viewMap": "View Issues Map",
         "signIn": "Sign In",
         "signUp": "Sign Up",
-        "logout": "Logout"
+        "logout": "Logout",
+        "trackComplaint": "Track Complaint",
+        "knowDistrict": "Know Your District",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Service",
+        "title": "Civic System",
+        "publicSubtitle": "Real-time transparency into city-wide civic issues",
+        "sidebar": {
+            "dashboard": "Dashboard",
+            "report": "Report Issue",
+            "issues": "Issues",
+            "resolved": "Resolved",
+            "performance": "Performance",
+            "profile": "Profile",
+            "map": "Map",
+            "public": "Public",
+            "myOfficers": "My Officers",
+            "sla": "SLA Monitoring",
+            "citymap": "City Map",
+            "allIssues": "All Issues",
+            "departments": "Departments",
+            "reports": "Reports",
+            "users": "Users",
+            "analytics": "Analytics",
+            "create": "Create New",
+            "publicDashboard": "Public Dashboard"
+        }
+    },
+    "common": {
+        "loading": "Loading...",
+        "user": "User",
+        "justNow": "just now",
+        "hAgo": "h ago",
+        "dAgo": "d ago",
+        "loadingPublicData": "Loading public data...",
+        "allWards": "All Wards",
+        "live": "Live",
+        "autoRefresh": "Auto-refreshing every 30s",
+        "noDeptData": "No department data",
+        "noTrendingIssues": "No trending issues",
+        "upvotes": "Upvotes",
+        "noWardData": "No ward data",
+        "lastUpdated": "Last updated",
+        "now": "Now",
+        "transparencyDesc": "Providing transparency in civic issue resolution. Data is updated in real-time.",
+        "error": "Something went wrong",
+        "noData": "No data found",
+        "viewDetails": "View Details",
+        "back": "Back",
+        "save": "Save",
+        "cancel": "Cancel",
+        "search": "Search"
+    },
+    "auth": {
+        "pleaseLogIn": "Please log in to access this page.",
+        "roleNotFound": "User role not found. Please contact administrator."
+    },
+    "status": {
+        "assigned": "Assigned",
+        "in-progress": "In Progress",
+        "resolved": "Resolved",
+        "pending": "Pending",
+        "rejected": "Rejected",
+        "escalated": "Escalated",
+        "reopened": "Reopened"
+    },
+    "priority": {
+        "urgent": "Urgent",
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+    },
+    "map": {
+        "liveMap": "Live Map Engine"
+    },
+    "stats": {
+        "totalIssues": "Total Issues",
+        "pending": "Pending",
+        "inProgress": "In Progress",
+        "resolved": "Resolved",
+        "urgent": "Urgent",
+        "avgResolutionTime": "Avg Resolution Time",
+        "hour": "hour",
+        "hours": "hours",
+        "resolvedThisWeek": "Resolved This Week",
+        "highPriority": "High Priority",
+        "mediumPriority": "Medium Priority",
+        "lowPriority": "Low Priority",
+        "score": "Score",
+        "avgResShort": "Avg res",
+        "resolutionRate": "Resolution Rate"
+    },
+    "roles": {
+        "citizen": "Citizen",
+        "department": "Field Officer",
+        "municipal": "Dept. Manager",
+        "commissioner": "Commissioner",
+        "admin": "System Admin"
     },
     "landing": {
         "hero": "Empowering Citizens. Enabling Smarter Cities.",
         "subtext": "Report civic issues instantly and track their resolution.",
         "reportButton": "Report Issue",
+        "mostUpvotedIssues": "Most Upvoted Issues",
         "howItWorks": "How It Works",
+        "howItWorksSubtitle": "Simple steps to report and resolve civic issues",
         "step1": "Report Issue",
         "step2": "Authorities Resolve",
-        "step3": "Track Progress"
+        "step3": "Track Progress",
+        "aiProcessing": "AI Processing",
+        "aiProcessingDesc": "AI automatically categorizes issues, assigns priority levels, and routes to appropriate departments.",
+        "reportSubmitDesc": "Citizens can easily report civic issues with photos, location, and detailed descriptions.",
+        "trackProgress": "Track Progress",
+        "trackProgressDesc": "Real-time tracking of issue status with notifications and updates throughout the resolution process.",
+        "faq": "Frequently Asked Questions",
+        "faqSubtitle": "Everything you need to know about the platform",
+        "supportingRoles": "Supporting Roles",
+        "rolesSubtitle": "A complete ecosystem for civic governance"
     },
     "report": {
         "title": "Report a New Issue",
@@ -40,22 +148,105 @@
         "confirm": "Confirm",
         "change": "Change Category",
         "upvoteSuccess": "Issue upvoted successfully!",
-        "upvoteError": "Failed to upvote issue"
-    },
-    "status": {
-        "pending": "Pending",
-        "assigned": "Assigned",
-        "inProgress": "In Progress",
-        "resolved": "Resolved",
-        "rejected": "Rejected",
-        "escalated": "Escalated",
-        "reopened": "Reopened"
-    },
-    "priority": {
-        "urgent": "Urgent",
-        "high": "High",
-        "medium": "Medium",
-        "low": "Low"
+        "upvoteError": "Failed to upvote issue",
+        "allDepartments": "All Departments",
+        "water": "Water",
+        "electricity": "Electricity",
+        "roads": "Roads",
+        "garbage": "Garbage",
+        "parks": "Parks",
+        "other": "Other",
+        "submitSuccessTitle": "Submission Successful!",
+        "submitSuccessText": "Your report has been received and will be processed shortly.",
+        "redirecting": "Redirecting to your dashboard...",
+        "analyzing": "Analyzing image...",
+        "validationFailed": "Image validation failed. Please upload a genuine civic issue photo.",
+        "validationFailedTitle": "Image Validation Failed",
+        "possibleIssues": "Possible issues:",
+        "genuinePhotoHint": "Please upload a genuine photo of the civic issue.",
+        "aiDetectedTitle": "AI Detected",
+        "departmentLabel": "Department",
+        "aiApplied": "AI classification applied",
+        "confirmAiHint": "Please confirm or change the AI suggestion first.",
+        "voiceInputReceived": "Voice input received",
+        "locationPlaceholder": "Enter specific landmark or street name",
+        "voiceInstruction": "Tap mic to describe by voice in English, Hindi or Gujarati",
+        "voiceDescriptionHint": "Voice transcribed successfully!",
+        "categories": {
+            "roads-infrastructure": {
+                "label": "Roads & Infrastructure",
+                "subcategories": {
+                    "Pothole": "Pothole",
+                    "Road Crack": "Road Crack",
+                    "Road Flooding": "Road Flooding",
+                    "Bridge Damage": "Bridge Damage",
+                    "Footpath Damage": "Footpath Damage"
+                }
+            },
+            "street-lighting": {
+                "label": "Street Lighting",
+                "subcategories": {
+                    "Broken Streetlight": "Broken Streetlight",
+                    "Flickering Light": "Flickering Light",
+                    "No Light in Area": "No Light in Area",
+                    "Damaged Pole": "Damaged Pole"
+                }
+            },
+            "waste-management": {
+                "label": "Waste Management",
+                "subcategories": {
+                    "Overflowing Bin": "Overflowing Bin",
+                    "Garbage Not Collected": "Garbage Not Collected",
+                    "Illegal Dumping": "Illegal Dumping",
+                    "Drain Blockage": "Drain Blockage"
+                }
+            },
+            "water-drainage": {
+                "label": "Water & Drainage",
+                "subcategories": {
+                    "Water Leakage": "Water Leakage",
+                    "No Water Supply": "No Water Supply",
+                    "Flooded Drain": "Flooded Drain",
+                    "Sewage Overflow": "Sewage Overflow"
+                }
+            },
+            "parks-public-spaces": {
+                "label": "Parks & Public Spaces",
+                "subcategories": {
+                    "Broken Equipment": "Broken Equipment",
+                    "Overgrown Grass": "Overgrown Grass",
+                    "Fallen Tree": "Fallen Tree",
+                    "Damaged Bench": "Damaged Bench"
+                }
+            },
+            "traffic-signage": {
+                "label": "Traffic & Signage",
+                "subcategories": {
+                    "Missing Sign": "Missing Sign",
+                    "Damaged Signal": "Damaged Signal",
+                    "Faded Road Markings": "Faded Road Markings",
+                    "Blocked Sign": "Blocked Sign"
+                }
+            },
+            "public-health-safety": {
+                "label": "Public Health & Safety",
+                "subcategories": {
+                    "Stray Animals": "Stray Animals",
+                    "Mosquito Breeding": "Mosquito Breeding",
+                    "Open Manhole": "Open Manhole",
+                    "Hazardous Material": "Hazardous Material"
+                }
+            },
+            "other": {
+                "label": "Other",
+                "subcategories": {
+                    "General Complaint": "General Complaint",
+                    "Noise Pollution": "Noise Pollution",
+                    "Encroachment": "Encroachment",
+                    "Other": "Other"
+                }
+            }
+        }
     },
     "citizen": {
         "dashboard": "My Dashboard",
@@ -70,16 +261,131 @@
         "requestReopen": "Request Reopen",
         "nearbyIssues": "Nearby Issues",
         "noIssuesDesc": "You haven't reported any issues yet. Help improve the city by reporting your first issue.",
-        "noIssuesFilteredDesc": "No issues found with status: {{status}}"
+        "noIssuesFilteredDesc": "No issues found with status: {{status}}",
+        "verifiedFixed": "Verified Fixed by You",
+        "reopenPlaceholder": "Why is the issue still not resolved? Please provide details...",
+        "closeSuccess": "Case closed successfully!",
+        "reopenSuccess": "Issue has been reopened.",
+        "dashboardDesc": "Report and track civic issues in your neighborhood"
     },
-    "common": {
-        "loading": "Loading...",
-        "error": "Something went wrong",
-        "noData": "No data found",
-        "viewDetails": "View Details",
-        "back": "Back",
-        "save": "Save",
-        "cancel": "Cancel",
-        "search": "Search"
+    "department": {
+        "managerDesc": "Manage departments and monitor SLA compliance",
+        "fieldDesc": "Field officers resolve issues ward by ward"
+    },
+    "admin": {
+        "systemDesc": "System configuration and user management"
+    },
+    "track": {
+        "title": "Track Your Complaint",
+        "subtitle": "Enter your Report ID to see the latest status of your complaint",
+        "placeholder": "Enter Report ID (e.g. R00042)",
+        "button": "Track",
+        "notFound": "No Complaint Found",
+        "notFoundDesc": "We couldn't find a complaint with that Report ID. Please check and try again.",
+        "tips": "Tips",
+        "tipsList": [
+            "Make sure the Report ID is correct (e.g., R00042)",
+            "Report IDs are case-insensitive",
+            "Contact support if you need help"
+        ],
+        "isThisYours": "Is this your complaint?",
+        "signInForDetails": "Sign in for full details and updates.",
+        "category": "Category",
+        "department": "Department",
+        "ward": "Ward",
+        "reported": "Reported",
+        "priority": "Priority",
+        "slaStatus": "SLA Status",
+        "timeline": "Resolution Timeline",
+        "overdue": "OVERDUE",
+        "hoursLeft": "{{hours}} hours left",
+        "daysLeft": "{{days}} days left"
+    },
+    "district": {
+        "title": "Know Your District",
+        "subtitle": "Anand District, Gujarat",
+        "totalWards": "Total Wards",
+        "totalDepartments": "Departments",
+        "zones": "Zones",
+        "district": "District",
+        "wardDirectory": "Ward Directory",
+        "northZone": "North Zone",
+        "southZone": "South Zone",
+        "viewIssues": "View issues →",
+        "departments": "Municipal Departments",
+        "howToReport": "How to Report an Issue",
+        "step1Title": "Register",
+        "step1Desc": "Create a free account on CivicPulse",
+        "step2Title": "Report",
+        "step2Desc": "Submit your civic issue with photo & location",
+        "step3Title": "Track",
+        "step3Desc": "Monitor status and get resolution updates",
+        "getStarted": "Get Started",
+        "wardOverview": "Ward-wise Overview"
+    },
+    "faq": {
+        "q1": "How do I report a civic issue?",
+        "a1": "Register for a free account, log in, and click Report Issue. Fill in the title, description, select your ward, pin your location on the map, and upload a photo or video. Our AI will automatically detect the issue category.",
+        "q2": "How does AI detection work?",
+        "a2": "When you upload a photo, our AI analyzes it using computer vision to identify the type of issue — pothole, garbage, broken streetlight, water leakage, and more. It then automatically routes your complaint to the correct department. You can confirm or change the AI's suggestion before submitting.",
+        "q3": "Can I track my complaint without logging in?",
+        "a3": "Yes. Visit the Track Complaint page and enter your Report ID (e.g. R00042). You can see the current status, assigned department, and resolution timeline without needing to log in.",
+        "q4": "How long does it take to resolve an issue?",
+        "a4": "Resolution time depends on the issue type and priority: Urgent issues: 24 hours SLA, High priority: 48 hours SLA, Medium priority: 72 hours SLA, Low priority: 7 days SLA. You receive email notifications at every status change.",
+        "q5": "What if my issue is not resolved after the deadline?",
+        "a5": "Issues that exceed their SLA deadline are automatically escalated to senior authorities. The Department Manager is notified at L1, and the Municipal Commissioner is notified at L2 and L3 escalations.",
+        "q6": "Can I report the same issue that someone else already reported?",
+        "a6": "Instead of creating a duplicate, you can upvote an existing issue. More upvotes increase the issue's visibility and priority. Our system checks for nearby issues automatically when you submit.",
+        "q7": "In which languages is the platform available?",
+        "a7": "The platform is available in English, Hindi (हिंदी), and Gujarati (ગુજરાતી). Use the language selector in the navbar to switch at any time.",
+        "q8": "Is my personal information safe?",
+        "a8": "Yes. Your personal details are never shown publicly. Only your report content and location are visible on the public map. All data is encrypted and stored securely. Read our Privacy Policy for full details."
+    },
+    "footer": {
+        "quickLinks": "Quick Links",
+        "issueMap": "Issue Map",
+        "trackComplaint": "Track Complaint",
+        "knowDistrict": "Know Your District",
+        "legal": "Legal",
+        "privacyPolicy": "Privacy Policy",
+        "termsOfService": "Terms of Service",
+        "contact": "Contact",
+        "copyright": "© {{year}} Civic Issue System. All rights reserved.",
+        "tagline": "Empowering citizens to report and track civic issues for a better community."
+    },
+    "login": {
+        "title": "Sign In",
+        "mobileTitle": "Mobile Login",
+        "emailLabel": "Email",
+        "passwordLabel": "Password",
+        "phoneLabel": "Mobile Number",
+        "otpLabel": "Enter 6-Digit Code",
+        "sendOtp": "Send Verification Code",
+        "verifyLogin": "Verify & Login",
+        "modeEmail": "EMAIL",
+        "modePhone": "PHONE OTP",
+        "forgot": "Forgot Password?",
+        "noAccount": "Don't have an account?",
+        "create": "Create account",
+        "google": "Continue with Google",
+        "googleHint": "Google sign-in is for citizens only"
+    },
+    "disclaimer": {
+        "title": "Before You Report",
+        "subtitle": "Please read carefully",
+        "excludedTitle": "The following CANNOT be reported:",
+        "excludedTopics": [
+            "Court cases or subjudice matters",
+            "RTI (Right to Information) requests",
+            "Government employee service disputes",
+            "Issues outside Anand District, Gujarat",
+            "Personal disputes between individuals",
+            "Central Government department issues"
+        ],
+        "allowedTitle": "✓ You CAN report:",
+        "allowedDesc": "Potholes, broken streetlights, garbage overflow, water leakage, drainage blockage, park damage, and other civic infrastructure problems in Anand District.",
+        "confirmation": "I confirm that my complaint is a genuine civic issue and does not fall in any of the excluded categories above.",
+        "proceed": "Proceed to Report",
+        "cancel": "Cancel"
     }
 }

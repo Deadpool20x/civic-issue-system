@@ -1,212 +1,369 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+'use client'
+import { useUser } from '@/lib/contexts/UserContext'
+import { useRouter } from 'next/navigation'
+import { useState, useEffect, useCallback } from 'react';
 import PageHeader from '@/components/PageHeader';
 import StatCard from '@/components/StatCard';
-import { useUser } from '@/lib/contexts/UserContext';
-
+import toast from 'react-hot-toast';
 import DashboardLayout from '@/components/DashboardLayout';
+import Link from 'next/link';
+import { DEPARTMENTS } from '@/lib/wards';
 
 export default function CommissionerDashboard() {
-    const { user } = useUser();
+  const { user, loading } = useUser()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login')
+    }
+  }, [user, loading, router])
+
+  // Show nothing while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-10 h-10 border-2 border-[#F5A623] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-[#AAAAAA] text-sm">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Not logged in — useEffect will redirect
+  if (!user) return null
+
+  // Wrong role — redirect
+  const roleUpper = user.role?.toUpperCase();
+  if (roleUpper !== 'MUNICIPAL_COMMISSIONER') {
+    router.push('/login')
+    return null
+  }
+
+  // RENDER DASHBOARD HERE
+  function CommissionerDashboardContent() {
     const [briefing, setBriefing] = useState(null);
-    const [stats, setStats] = useState({
-        total: 0,
-        resolved: 0,
-        pending: 0,
-        urgent: 0,
-        rate: 0
-    });
+    const [statsData, setStatsData] = useState(null);
+    const [wardStats, setWardStats] = useState([]);
     const [escalations, setEscalations] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loadingState, setLoadingState] = useState(true);
 
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                // Fetch briefing
-                const briefRes = await fetch('/api/commissioner/briefing');
-                if (briefRes.ok) {
-                    const data = await briefRes.json();
-                    setBriefing(data.briefing);
-                }
+    const fetchDashboardData = useCallback(async () => {
+      try {
+        setLoadingState(true);
+        const [briefRes, statsRes, wardStatsRes, issuesRes] = await Promise.all([
+          fetch('/api/commissioner/briefing'),
+          fetch('/api/issues/stats'),
+          fetch('/api/issues/ward-stats'),
+          fetch('/api/issues?priority=urgent&limit=10')
+        ]);
 
-                // Fetch issues and calculate stats city-wide
-                const issuesRes = await fetch('/api/issues');
-                if (issuesRes.ok) {
-                    const data = await issuesRes.json();
-                    const allIssues = data.issues || [];
+        console.log('[DEBUG CommissionerDashboard] API responses:', {
+          brief: briefRes.status,
+          stats: statsRes.status,
+          wardStats: wardStatsRes.status,
+          issues: issuesRes.status
+        });
 
-                    const resolved = allIssues.filter(i => i.status === 'resolved').length;
-                    const pending = allIssues.filter(i => ['pending', 'assigned', 'in-progress'].includes(i.status)).length;
-                    const urgent = allIssues.filter(i => i.priority === 'urgent' && i.status !== 'resolved').length;
+        const [briefJson, statsJson, wardStatsJson, issuesJson] = await Promise.all([
+          briefRes.json(),
+          statsRes.json(),
+          wardStatsRes.json(),
+          issuesRes.json()
+        ]);
 
-                    setStats({
-                        total: allIssues.length,
-                        resolved,
-                        pending,
-                        urgent,
-                        rate: allIssues.length > 0 ? Math.round((resolved / allIssues.length) * 100) : 0
-                    });
+        if (briefJson.success) { setBriefing(briefJson.briefing); }
+        if (statsJson.success) { setStatsData(statsJson.data); }
+        if (wardStatsJson.success) { setWardStats(wardStatsJson.data || []); }
+        if (issuesJson.success) { setEscalations(issuesJson.data || []); }
 
-                    setEscalations(allIssues.filter(i => i.status === 'escalated' || i.priority === 'urgent').slice(0, 5));
-                }
-            } catch (error) {
-                console.error('Error fetching commissioner data:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchDashboardData();
+      } catch (err) {
+        console.error('[DEBUG CommissionerDashboard] Error loading dashboard:', err);
+        toast.error('Failed to load dashboard data');
+      } finally {
+        setLoadingState(false);
+      }
     }, []);
 
-    if (loading) return (
-        <DashboardLayout>
-            <div className="flex items-center justify-center min-h-[60vh]">
-                <div className="w-10 h-10 border-4 border-gold/20 border-t-gold rounded-full animate-spin"></div>
-            </div>
-        </DashboardLayout>
+    useEffect(() => {
+      fetchDashboardData();
+    }, [fetchDashboardData]);
+
+    if (loadingState) return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="w-10 h-10 border-4 border-gold/20 border-t-gold rounded-full animate-spin"></div>
+        </div>
+      </DashboardLayout>
     );
+
+    // Group ward stats by department
+    const departmentGroups = Object.keys(DEPARTMENTS).map(deptId => {
+      const dept = DEPARTMENTS[deptId];
+      const deptWards = wardStats.filter(w => w.departmentId === deptId);
+
+      // Find North and South zone wards
+      const northWard = deptWards.find(w => w.zone === 'north');
+      const southWard = deptWards.find(w => w.zone === 'south');
+
+      // Calculate totals
+      const total = (northWard?.total || 0) + (southWard?.total || 0);
+      const resolved = (northWard?.resolved || 0) + (southWard?.resolved || 0);
+      const active = (northWard?.active || 0) + (southWard?.active || 0);
+      const resolvedRate = total > 0 ? Math.round((resolved / total) * 100) : 0;
+
+      // Calculate average SLA health
+      const slaHealthValues = [northWard?.slaHealth, southWard?.slaHealth].filter(v => v !== null && v !== undefined);
+      const avgSlaHealth = slaHealthValues.length > 0
+          ? Math.round(slaHealthValues.reduce((a, b) => a + b, 0) / slaHealthValues.length)
+          : 0;
+
+      return {
+        id: deptId,
+        ...dept,
+        north: northWard,
+        south: southWard,
+        total,
+        resolved,
+        active,
+        resolvedRate,
+        avgSlaHealth
+      };
+    });
+
+    // Calculate city-wide stats
+    const totalCityIssues = statsData?.total || 0;
+    const resolvedToday = statsData?.resolved || 0; // Using total resolved as proxy
+    const criticalEscalations = escalations.filter(i => i.priority === 'urgent').length;
+    const citySlaHealth = statsData?.slaHealth || 0;
 
     return (
-        <DashboardLayout>
-            <div className="space-y-8 animate-fade-in">
-                <PageHeader
-                    title="City Panorama"
-                    subtitle={`Welcome, Commissioner. Here is your city-wide overview for ${new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}.`}
-                >
-                    <button className="btn-gold">Generate Report</button>
-                </PageHeader>
+      <DashboardLayout>
+        <div className="space-y-8 animate-fade-in">
+          <PageHeader
+            title="Municipal Commissioner — City Operations Center"
+            subtitle="Anand District, Gujarat"
+          >
+            <button className="btn-gold text-xs">Generate Report</button>
+          </PageHeader>
 
-                {/* ── AI BRIEFING CARD ── */}
-                {briefing && (
-                    <div className="card border-gold/40 bg-gradient-to-br from-card to-gold/5 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <span className="text-6xl">🤖</span>
-                        </div>
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-2 mb-4">
-                                <span className="px-2 py-0.5 bg-gold text-black text-[10px] font-bold rounded uppercase tracking-wider">AI Insight</span>
-                                <span className="text-text-secondary text-xs">{briefing.date}</span>
-                            </div>
-                            <h2 className="text-xl font-bold text-white mb-3">{briefing.title}</h2>
-                            <p className="text-text-secondary mb-6 leading-relaxed max-w-2xl">{briefing.summary}</p>
-
-                            <div className="grid md:grid-cols-2 gap-6">
-                                <div className="space-y-3">
-                                    <h3 className="section-header">Key Indicators</h3>
-                                    {briefing.keyPoints.map((point, idx) => (
-                                        <div key={idx} className="flex gap-3 text-sm text-text-primary">
-                                            <span className="text-gold">•</span>
-                                            <span>{point}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="space-y-3">
-                                    <h3 className="section-header">Critical Alerts</h3>
-                                    {briefing.criticalAlerts.map((alert, idx) => (
-                                        <div key={idx} className="flex gap-3 text-sm text-red-400">
-                                            <span>⚠️</span>
-                                            <span>{alert}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* ── STATS GRID ── */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <StatCard
-                        label="Total Issues"
-                        value={stats.total}
-                        icon="📋"
-                    />
-                    <StatCard
-                        label="Resolved"
-                        value={stats.resolved}
-                        icon="✅"
-                        trend={{ value: 12, positive: true }}
-                    />
-                    <StatCard
-                        label="Waitlist"
-                        value={stats.pending}
-                        icon="⏰"
-                    />
-                    <StatCard
-                        label="Resolution Rate"
-                        value={`${stats.rate}%`}
-                        icon="📊"
-                    />
+          {/* ── AI BRIEFING CARD ── */}
+          {briefing && (
+            <div className="card border-gold/40 bg-gradient-to-br from-card to-gold/5 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <span className="text-6xl">🤖</span>
+              </div>
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="px-2 py-0.5 bg-gold text-black text-[10px] font-bold rounded tracking-wider">AI Insight</span>
+                  <span className="text-text-secondary text-xs">{briefing.date}</span>
                 </div>
+                <h2 className="text-xl font-bold text-white mb-3">{briefing.title}</h2>
+                <p className="text-text-secondary mb-6 leading-relaxed max-w-2xl">{briefing.summary}</p>
 
-                {/* ── MAIN CONTENT GRID ── */}
-                <div className="grid lg:grid-cols-3 gap-8">
-                    {/* Department Performance */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="card">
-                            <h3 className="section-header mb-6">Department Efficiency</h3>
-                            <div className="overflow-x-auto">
-                                <table className="table-dark">
-                                    <thead>
-                                        <tr>
-                                            <th>Department</th>
-                                            <th>Active</th>
-                                            <th>Resolved</th>
-                                            <th>SLA Compliance</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr className="hover:bg-gold/5 transition-colors">
-                                            <td className="font-medium">Roads & Infrastructure</td>
-                                            <td>{Math.floor(stats.pending * 0.3)}</td>
-                                            <td>{Math.floor(stats.resolved * 0.4)}</td>
-                                            <td><span className="text-green-400">92%</span></td>
-                                        </tr>
-                                        <tr className="hover:bg-gold/5 transition-colors">
-                                            <td className="font-medium">Waste Management</td>
-                                            <td>{Math.floor(stats.pending * 0.4)}</td>
-                                            <td>{Math.floor(stats.resolved * 0.3)}</td>
-                                            <td><span className="text-amber-400">78%</span></td>
-                                        </tr>
-                                        <tr className="hover:bg-gold/5 transition-colors">
-                                            <td className="font-medium">Water & Drainage</td>
-                                            <td>{Math.floor(stats.pending * 0.2)}</td>
-                                            <td>{Math.floor(stats.resolved * 0.2)}</td>
-                                            <td><span className="text-green-400">88%</span></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Critical Escalations */}
-                    <div className="space-y-6">
-                        <div className="card border-red-500/20">
-                            <h3 className="section-header text-red-400 mb-6">Critical Escalations</h3>
-                            <div className="space-y-4">
-                                {escalations.length > 0 ? escalations.map(issue => (
-                                    <div key={issue.reportId} className="p-3 rounded-xl bg-red-500/5 border border-red-500/10 group cursor-pointer hover:border-red-500/40 transition-all">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <span className="report-id">{issue.reportId}</span>
-                                            <span className="badge-urgent badge">URGENT</span>
-                                        </div>
-                                        <p className="text-sm font-medium text-white mb-1 group-hover:text-gold transition-colors">{issue.title}</p>
-                                        <div className="flex justify-between items-center text-[10px] text-text-muted">
-                                            <span>{issue.ward}</span>
-                                            <span>{new Date(issue.createdAt).toLocaleDateString()}</span>
-                                        </div>
-                                    </div>
-                                )) : (
-                                    <p className="text-sm text-text-muted">No high-priority escalations found.</p>
-                                )}
-                            </div>
-                        </div>
-                    </div>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <h3 className="section-header">Key Indicators</h3>
+                    {briefing.keyPoints?.map((point, idx) => (
+                      <div key={idx} className="flex gap-3 text-sm text-text-primary">
+                        <span className="text-gold">•</span>
+                        <span>{point}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-3">
+                    <h3 className="section-header">Critical Alerts</h3>
+                    {briefing.criticalAlerts?.map((alert, idx) => (
+                      <div key={idx} className="flex gap-3 text-sm text-red-400">
+                        <span>⚠️</span>
+                        <span>{alert}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
+              </div>
             </div>
-        </DashboardLayout>
+          )}
+
+          {/* ── STATS GRID ── */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatCard
+              label="Total City Issues"
+              value={totalCityIssues}
+              icon="🏙️"
+            />
+            <StatCard
+              label="Resolved Today"
+              value={resolvedToday}
+              icon="✅"
+            />
+            <StatCard
+              label="Critical Escalations"
+              value={criticalEscalations}
+              icon="🚨"
+              trend={criticalEscalations > 5 ? 'down' : 'up'}
+            />
+            <StatCard
+              label="City SLA Health"
+              value={`${citySlaHealth}%`}
+              icon="💚"
+              trend={citySlaHealth > 80 ? 'up' : 'down'}
+            />
+          </div>
+
+          {/* ── DEPARTMENT CARDS GRID ── */}
+          <div>
+            <h3 className="section-header mb-6">Department Overview</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {departmentGroups.map(dept => (
+                <div
+                  key={dept.id}
+                  className="card !p-4 hover:border-gold/40 transition-all group"
+                >
+                  {/* Department Header */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xl">{dept.icon}</span>
+                    <h4 className="font-bold text-white text-sm">{dept.name}</h4>
+                  </div>
+
+                  {/* North Zone Row */}
+                  <div className="flex items-center justify-between py-1.5 px-2 rounded bg-blue-500/10 border border-blue-500/20 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                      <span className="text-xs text-blue-400 font-medium">
+                        North (Ward {dept.north?.wardNumber || '-'})
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs">
+                      <span className="text-text-secondary">
+                        {dept.north?.active || 0} issues
+                      </span>
+                      <span className={`font-bold ${(dept.north?.slaHealth || 0) > 80 ? 'text-green-400' :
+                                                  (dept.north?.slaHealth || 0) > 50 ? 'text-amber-400' : 'text-red-400'
+                                                }`}>
+                      {dept.north?.slaHealth || 0}%
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* South Zone Row */}
+                  <div className="flex items-center justify-between py-1.5 px-2 rounded bg-purple-500/10 border border-purple-500/20 mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                      <span className="text-xs text-purple-400 font-medium">
+                        South (Ward {dept.south?.wardNumber || '-'})
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs">
+                      <span className="text-text-secondary">
+                        {dept.south?.active || 0} issues
+                      </span>
+                      <span className={`font-bold ${(dept.south?.slaHealth || 0) > 80 ? 'text-green-400' :
+                                                  (dept.south?.slaHealth || 0) > 50 ? 'text-amber-400' : 'text-red-400'
+                                                }`}>
+                      {dept.south?.slaHealth || 0}%
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Totals Row */}
+                  <div className="border-t border-border/50 pt-3 mb-3">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-text-secondary">
+                        Total: <span className="text-white font-medium">{dept.total} issues</span>
+                      </span>
+                      <span className={`font-bold ${dept.resolvedRate > 80 ? 'text-green-400' :
+                                                  dept.resolvedRate > 50 ? 'text-amber-400' : 'text-red-400'
+                                                }`}>
+                      Resolved: {dept.resolvedRate}%
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* View All Button */}
+                  <Link
+                    href={`/department/dashboard?dept=${dept.id}`}
+                    className="block text-center py-1.5 text-xs text-gold hover:text-white border border-gold/30 hover:border-gold rounded transition-colors"
+                  >
+                    View All →
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── MAIN CONTENT GRID ── */}
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Escalations */}
+            <div className="lg:col-span-2 space-y-6">
+              <div className="card">
+                <h3 className="section-header mb-6">Critical Escalations</h3>
+                {escalations.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="table-dark">
+                      <thead>
+                        <tr>
+                          <th>Issue</th>
+                          <th>Ward</th>
+                          <th>Department</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {escalations.slice(0, 5).map(issue => (
+                          <tr key={issue._id}>
+                            <td className="font-medium truncate max-w-[200px]">{issue.title}</td>
+                            <td className="text-xs text-text-secondary">
+                              {issue.ward?.replace('ward-', 'Ward ')}
+                            </td>
+                            <td>
+                              <span className="text-[10px] px-1.5 py-0.5 bg-white/5 rounded text-text-muted">
+                                {issue.ward ? DEPARTMENTS[issue.ward.split('-').pop()]?.name : issue.category}
+                              </span>
+                            </td>
+                            <td>
+                              <span className={`badge badge-${issue.status} text-[10px]`}>
+                                {issue.status?.toUpperCase()}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-text-secondary text-sm">No critical escalations at this time.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Stats Summary */}
+            <div className="space-y-6">
+              <div className="card border-gold/20">
+                <h3 className="section-header mb-6">Staffing Overview</h3>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-text-secondary">Field Officers</span>
+                    <span className="text-white font-bold">16 active</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-text-secondary">Dept Managers</span>
+                    <span className="text-white font-bold">8 active</span>
+                  </div>
+                  <div className="pt-4 border-t border-border/50">
+                    <Link href="/admin/users" className="btn-outline w-full text-center py-2 text-xs">Manage Workforce</Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
     );
+  }
+
+  return (
+    <CommissionerDashboardContent />
+  );
 }

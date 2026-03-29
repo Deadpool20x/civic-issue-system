@@ -1,0 +1,885 @@
+# CivicPulse — Comprehensive System Documentation
+## Part 2 of 3: Features, APIs & Core Logic
+
+---
+
+## Chapter 7: The Issue Lifecycle
+
+### 7.1 Phase 1 — Citizen Creates a Report
+
+The citizen report flow at `/citizen/report` is a multi-step wizard. Here is every step:
+
+**Step 1: Photo Upload**
+- Citizen uploads up to 3 photos via `<ImageUploader />`
+- `browser-image-compression` compresses images in the browser before upload
+- Each image is sent to `POST /api/upload` which stores it on Cloudinary
+- Cloudinary returns a URL and `publicId` — both are stored on the issue
+
+**AI Detection happens here (optional, automatic):**
+When the first image is uploaded, the system immediately calls `POST /api/ai` with the image URL. The AI detection pipeline (explained in Chapter 8) runs and:
+- If the image is authentic and a civic issue is detected → the category, subcategory, and priority fields in the form are **auto-populated**
+- If the image is not authentic (stock photo, manipulated) → the citizen is shown a warning and must use a real photo
+- Citizens can override any AI-suggested values
+
+**Step 2: Basic Details**
+- Title (10–200 characters)
+- Description (30–2000 characters)
+- Voice input is available (via browser Web Speech API, wrapped in `<VoiceInput />`) — citizens can dictate their description
+
+**Step 3: Category & Subcategory**
+The 8 categories and their subcategories:
+
+```
+roads-infrastructure   → Pothole, Broken Pavement, Damaged Manhole Cover, Road Surface Damage
+street-lighting        → Light Not Working, Flickering Light, Broken Light Pole
+waste-management       → Overflowing Bin, Missed Collection, Illegal Dumping, Broken Container
+water-drainage         → Water Leakage, Blocked Drain, Street Flooding, Sewage Overflow
+parks-public-spaces    → Damaged Furniture, Overgrown Vegetation, Graffiti, Broken Equipment
+traffic-signage        → Damaged Sign, Faded Markings, Malfunctioning Signal, Missing Sign
+public-health-safety   → Stray Animals, Dead Animal, Pest Infestation, Unsafe Structure
+other                  → Other (please describe)
+```
+
+**Step 4: Location**
+- Citizen uses `<LocationPicker />` which shows an interactive Leaflet map
+- They can drop a pin on the map or type their address
+- GPS coordinates (`[lng, lat]`) are captured and stored
+- The ward field is selected (which determines routing to the correct department)
+
+**Step 5: Priority (optional override)**
+- Citizen sees the AI-suggested priority
+- Can override to [low](file:///d:/Projects/lib/ai.js#6-41), `medium`, `high`, or `urgent`
+- The system recalculates using the Priority Engine (Chapter 9)
+
+**Step 6: Duplicate Check**
+Before final submission, `POST /api/issues/check-duplicate` is called. The system looks for issues with:
+- Same category
+- Within a radius of the reported location
+- Created recently (configurable window)
+
+If a likely duplicate is found, the `<DuplicateModal />` is shown, giving the citizen the option to:
+- Upvote the existing issue (joining their concern to the existing one)
+- Submit anyway as a new report
+
+**Step 7: Submission**
+`POST /api/issues` is called with the full form data. The server:
+1. Validates with Zod `createIssueSchema`
+2. Generates `reportId` (e.g., `R00142`) via pre-save hook
+3. Calculates SLA deadline from priority
+4. Sets `dueTime` to `createdAt + 7 days`
+5. Sets `detectionSource` based on how the category was determined
+6. Saves to MongoDB
+7. Sends confirmation email to citizen via [sendReportConfirmation()](file:///d:/Projects/lib/mailer.js#8-26)
+8. Creates a notification for relevant department staff
+9. Returns the created issue
+
+### 7.2 Phase 2 — Department Assignment
+
+After creation, status is `pending`. Department staff (FIELD_OFFICER or DEPARTMENT_MANAGER) see the issue in their dashboard.
+
+The system determines which staff sees the issue based on the `ward` field in the issue:
+- Ward-3 issue → shown to staff with `wardId: 'ward-3'`
+- Department manager for `waste` → sees all issues from ward-3 AND ward-11
+
+Assignment uses `PATCH /api/issues/[id]/assign`:
+- Assigns to a specific staff member (`assignedTo`)
+- Optionally assigns to a department (`assignedDepartment`)
+- Changes status from `pending` to `assigned`
+- Sends notification to assigned staff
+- Records the state change in `StateHistory`
+
+### 7.3 Phase 3 — In Progress & Resolution
+
+**Status updates** via `PATCH /api/issues/[id]/update-status`:
+- Staff can add comments when changing status
+- Each status change triggers a notification to the citizen
+- If status changes to `in-progress`, citizen receives email
+- If status changes to `resolved`, citizen receives a **rating request email**
+- Resolution time is auto-calculated and stored
+
+**Quick actions** via `PATCH /api/issues/[id]/quick-action`:
+- Approve, reject, or close issues quickly
+- Rejection requires a `rejectionReason`
+- If rejected, `status = 'rejected'` and citizen receives email with the reason
+
+### 7.4 Phase 4 — Citizen Feedback
+
+After resolution, the citizen receives an email with a rating request link. They can:
+1. Click on the link to open `<RatingModal />`
+2. Rate 1–5 stars
+3. Write a comment
+4. Confirm if the issue was actually resolved
+
+**If the citizen says it's NOT resolved** (`isResolved: false`), the status automatically changes to `reopened`, and the issue re-enters the workflow.
+
+**Feedback data** is stored in `issue.feedback` and aggregated in `DepartmentPerformance.citizenSatisfactionScore`.
+
+### 7.5 The Full Status Flow
+
+```
+pending ──────────┬──────────────────────────────────────→ rejected
+                  │
+                  ↓
+               assigned ──→ in-progress ──→ resolved ──→ (feedback)
+                  │              │              │              │
+                  │         escalated ←─────────              │
+                  │              │                             │
+                  └──────────────┘              ──────────────→ reopened
+                                                              (back to assigned)
+```
+
+---
+
+## Chapter 8: AI Integration
+
+### 8.1 The AI Detection Pipeline
+
+When a citizen uploads an image, the system runs a **cascade of AI services** until one succeeds:
+
+```
+Image URL
+   │
+   ▼
+[1] Roboflow (3 sec timeout)
+   ├── Success → return category + confidence
+   └── Fail/No result ↓
+   
+[2] Gemini 1.5-flash (15 sec timeout)
+   ├── Success + isAuthentic: true → return full analysis
+   ├── Success + isAuthentic: false → BLOCK submission, show warning
+   └── Fail ↓
+   
+[3] OpenAI gpt-4o-mini (5 sec timeout)
+   ├── Success → return category + confidence
+   └── Fail ↓
+   
+[4] Keyword fallback (no network, instant)
+   └── Always succeeds, returns best-guess from title/description
+```
+
+Each service has an `AbortController` with a timeout. If Roboflow responds in time but finds no civic issue, Gemini is tried next.
+
+### 8.2 Roboflow Detection
+
+**Purpose:** Specialized object detection model, excellent for potholes and road damage.
+
+**How it works:**
+```javascript
+// Calls the Roboflow inference API
+GET https://detect.roboflow.com/{model}/{version}
+    ?api_key={ROBOFLOW_API_KEY}
+    &image={imageUrl}
+```
+
+The model analyzes the image and returns `predictions[]`. The highest-confidence prediction is used. Returns:
+```javascript
+{
+  source: 'roboflow',
+  category: 'pothole',      // class name from model
+  confidence: 87,           // 0-100
+  raw: { ... }              // Full Roboflow response
+}
+```
+
+**Why Roboflow first?** It's the fastest and most specialized for structural civic issues (potholes, cracks, infrastructure damage). Computer vision models are more accurate than general LLMs for visual detection tasks.
+
+### 8.3 Gemini Vision Analysis
+
+**Purpose:** General-purpose civic issue detection + **image authenticity verification**.
+
+Gemini 1.5-flash is given the image plus a detailed prompt that asks for two things simultaneously:
+
+**1. Authenticity Check:**
+- Is this a real photo or a stock image?
+- Does it show signs of manipulation?
+- Is it genuinely a civic issue?
+- Returns `isAuthentic: true/false` + `authenticityScore: 0-100` + `suspicionReasons[]`
+
+**2. Issue Detection:**
+- Category (must be one of the 8 exact enum values)
+- Subcategory
+- Department mapping
+- Priority estimate
+- Confidence score
+- Description of what it sees
+
+The Gemini prompt maps categories to departments:
+```
+roads-infrastructure → roads
+street-lighting → lighting
+waste-management → waste
+water-drainage → water
+parks-public-spaces → parks
+traffic-signage → traffic
+public-health-safety → health
+other → general
+```
+
+**If `isAuthentic: false`:** The API returns an error response, and the frontend shows the citizen a warning message explaining that their image appears to be manipulated or a stock photo, asking them to upload a genuine photo of the issue.
+
+**Image processing:**
+Gemini requires the image as a base64-encoded inline data part. The server:
+1. Fetches the image from the Cloudinary URL
+2. Converts to base64
+3. Sends as `inlineData` with MIME type
+
+### 8.4 OpenAI Fallback
+
+**Purpose:** Lightweight fallback if Gemini fails. Uses `gpt-4o-mini` with vision capability.
+
+Unlike Gemini, this fallback does NOT perform authenticity checking. It returns only:
+```javascript
+{
+  source: 'openai',
+  category: 'waste-management',
+  subcategory: 'Overflowing Bin',
+  confidence: 75,
+}
+```
+
+### 8.5 Text Analysis (GPT-3.5-turbo)
+
+`AIAnalyzer.analyzeIssue()` performs text-based analysis using the issue title and description (no image needed). Returns:
+
+```javascript
+{
+  category: 'waste',     // From LLM classification
+  priority: 'high',      // From LLM assessment
+  sentiment: 'negative', // positive/neutral/negative
+  keywords: ['garbage', 'overflowing', 'smell']
+}
+```
+
+This data is stored in `issue.aiAnalysis` and can be used for search, filtering, and analytics.
+
+**Fallback keyword detection** (no API required): If OpenAI is unavailable, [determineCategoryByKeywords()](file:///d:/Projects/lib/ai.js#323-341) scans the text for keywords:
+```javascript
+const keywords = {
+  water: ['water', 'pipe', 'leak', 'flood', 'drainage'],
+  electricity: ['electricity', 'power', 'light', 'electric'],
+  roads: ['road', 'street', 'pothole', 'traffic', 'signal'],
+  garbage: ['garbage', 'waste', 'trash', 'dump', 'clean'],
+  parks: ['park', 'garden', 'playground', 'tree', 'grass']
+};
+```
+
+### 8.6 Response Generation (GPT-3.5-turbo)
+
+`AIAnalyzer.generateResponse()` creates an initial department response message for an issue. This is used to help staff draft replies:
+
+The LLM is given the issue title, description, and category, and asked to write a professional, helpful initial response as a municipal officer. Hardcoded fallback responses exist for when the API is unavailable:
+```
+water: "Thank you for reporting the water-related issue. Our water department will investigate..."
+roads: "Thank you for bringing this road issue to our attention. Our roads department will review..."
+```
+
+### 8.7 Detection Source Tracking
+
+Every issue stores how its category was determined:
+
+| `detectionSource` | Meaning |
+|------------------|---------|
+| `roboflow` | Roboflow CV model detected it |
+| `gemini` | Gemini vision detected it |
+| `openai` | OpenAI fallback detected it |
+| `keyword` | Fallback keyword analysis |
+| `manual` | Citizen selected manually |
+| `AI_CONFIRMED` | AI detected + citizen confirmed |
+| `AI_OVERRIDDEN` | AI detected + citizen changed it |
+
+This data helps the team analyze AI accuracy over time.
+
+---
+
+## Chapter 9: Priority Engine
+
+### 9.1 How Priority is Calculated
+
+Priority is determined by a **scoring algorithm** in [lib/priority-calculator.js](file:///d:/Projects/lib/priority-calculator.js). The algorithm produces a score from 0–100+ and maps it to one of 4 priority levels.
+
+**Starting score: 50** (medium baseline)
+
+**Factor 1 — Category Priority:**
+```
+water-drainage        → +20  (water issues are critical)
+public-health-safety  → +25  (health/safety is critical)
+street-lighting       → +15  (safety-related)
+traffic-signage       → +15  (safety-related)
+roads-infrastructure  → +10
+waste-management      → +10
+parks-public-spaces   → +5
+other                 → +0
+```
+
+**Factor 2 — Subcategory Boost (+20):**
+Certain subcategories that are inherently urgent trigger an extra 20 points:
+- Water Leakage, Street Flooding, Sewage Overflow
+- Stray Animals, Dead Animal, Pest Infestation
+- Unsafe Structure, Damaged Manhole Cover, Malfunctioning Signal
+
+**Factor 3 — Keyword Detection (+10 per keyword):**
+If the title or description contains urgent words:
+```
+urgent, emergency, immediate, critical, danger, dangerous,
+accident, injury, injured, fire, flood, leaking, broken, severe, major
+```
+Each matching keyword adds 10 points (uncapped).
+
+**Factor 4 — Upvote Escalation:**
+```
+≥10 upvotes  → +30 (very high community concern)
+≥5 upvotes   → +20 (high community concern)
+≥3 upvotes   → +10 (moderate community concern)
+```
+
+**Factor 5 — Description Length (+5):**
+If description > 300 characters, +5 points (detailed descriptions often indicate serious issues).
+
+**Score → Priority Level:**
+```
+≥80    → urgent
+60–79  → high
+40–59  → medium
+0–39   → low
+```
+
+### 9.2 Priority Override
+
+Municipal Commissioners and Admins can override the AI-calculated priority. When they do:
+- `priorityOverriddenBy: userId` is set on the issue
+- `priorityOverriddenAt: Date` records when
+- `detectionSource` is updated to `AI_OVERRIDDEN`
+
+This creates an audit trail for all priority changes.
+
+### 9.3 Priority Impact
+
+Priority affects:
+1. **SLA deadline** — Urgent gets 24h, Low gets 120h
+2. **Visual display** — Color-coded badges (red/orange/yellow/green)
+3. **Sort order** — Higher priority issues appear first in dashboards
+4. **Escalation trigger** — When SLA is breached, the escalation urgency matches the original priority
+
+---
+
+## Chapter 10: Department Mapping
+
+### 10.1 Automatic Department Assignment
+
+[lib/department-mapper.js](file:///d:/Projects/lib/department-mapper.js) provides the logic for mapping issue categories to departments:
+
+```javascript
+const DEPARTMENT_MAPPING = {
+  'roads-infrastructure': {
+    department: 'roads-infrastructure',
+    subcategories: {
+      'potholes': 'roads-infrastructure',
+      'road-damage': 'roads-infrastructure',
+      ...
+    }
+  },
+  'water-drainage': { department: 'water-drainage', ... },
+  // ... all 8 categories
+};
+```
+
+[getDepartmentForCategory(category, subcategory)](file:///d:/Projects/lib/department-mapper.js#81-104) returns the department ID. If the subcategory has a special override, that takes precedence over the category default. Fallback is `general-administration`.
+
+### 10.2 Department Code Mapping
+
+For the new role system that uses short codes (`roads`, `water`, `waste`, etc.):
+
+```javascript
+getDepartmentCodeForCategory('roads-infrastructure') → 'roads'
+getDepartmentCodeForCategory('water-drainage')       → 'water'
+getDepartmentCodeForCategory('waste-management')     → 'waste'
+getDepartmentCodeForCategory('street-lighting')      → 'lighting'
+getDepartmentCodeForCategory('parks-public-spaces')  → 'parks'
+getDepartmentCodeForCategory('traffic-signage')      → 'traffic'
+getDepartmentCodeForCategory('public-health-safety') → 'health'
+```
+
+### 10.3 Display Names
+
+```javascript
+getDepartmentDisplayName('roads-infrastructure')  
+// → 'Roads & Infrastructure Department'
+
+getDepartmentDisplayName('water-drainage')         
+// → 'Water & Drainage Department'
+```
+
+---
+
+## Chapter 11: SLA & Escalation System
+
+### 11.1 What Is SLA?
+
+SLA (Service Level Agreement) defines how quickly an issue must be resolved. Every issue gets a `sla.deadline` set automatically at creation time based on priority.
+
+### 11.2 SLA Monitoring
+
+Every time an issue is saved, the pre-save hook recalculates:
+
+```javascript
+// lib/models/Issue.js pre-save hook
+const timeDiff = this.sla.deadline.getTime() - now.getTime();
+this.sla.hoursRemaining = Math.max(0, Math.ceil(timeDiff / (1000 * 60 * 60)));
+this.sla.isOverdue = timeDiff < 0;
+```
+
+The `/api/sla` endpoint serves SLA monitoring data to the Commissioner dashboard, showing:
+- Total overdue issues by department
+- Average resolution time vs. SLA deadline
+- Compliance percentage
+
+### 11.3 Automatic Escalation
+
+The `node-cron` scheduler runs periodic jobs that:
+1. Find all issues where `sla.isOverdue = true` and status is not `resolved` or `rejected`
+2. Call `issue.escalate(reason)` on each qualifying issue
+
+**The 3-Level Escalation Hierarchy:**
+```
+Level 1 escalation → 'Department Staff'
+                     (notifies the assigned field officer)
+
+Level 2 escalation → 'Department Head'
+                     (notifies the department manager)
+
+Level 3 escalation → 'Commissioner/Mayor'
+                     (notifies the municipal commissioner — highest alert)
+```
+
+Each escalation:
+- Increments `sla.escalationLevel` (capped at 3)
+- Sets `status` to `escalated`
+- Adds an entry to `sla.escalationHistory[]`
+- Adds penalty points: `escalationLevel × 10`
+  - Level 1: +10 penalty points
+  - Level 2: +20 penalty points
+  - Level 3: +30 penalty points
+
+### 11.4 Penalty Points
+
+Penalty points accumulate on an issue and affect the assigned department/staff's performance score in `DepartmentPerformance` and `StaffPerformance` collections. This creates accountability.
+
+A department with high penalty points will have a lower performance score visible to the Commissioner and Admin.
+
+---
+
+## Chapter 12: Complete API Reference
+
+### 12.1 Authentication APIs
+
+#### `POST /api/auth/login`
+
+**Auth required:** No  
+**Request body:**
+```json
+{
+  "email": "john@example.com",
+  "password": "password123"
+}
+```
+**Process:**
+1. Validates email + password are present
+2. Finds user by lowercase email
+3. Checks [isActive](file:///d:/Projects/components/DashboardLayout.js#179-184)
+4. Compares password with bcrypt
+5. Generates JWT, sets HTTP-only cookie
+
+**Success (200):**
+```json
+{
+  "success": true,
+  "user": {
+    "userId": "507f...",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "role": "CITIZEN",
+    "wardId": null,
+    "departmentId": null
+  }
+}
+```
+**Error responses:** 400 (missing fields), 401 (invalid credentials), 403 (deactivated), 500 (server error)
+
+---
+
+#### `POST /api/auth/logout`
+
+**Auth required:** No (just clears the cookie)  
+Calls [removeTokenCookie()](file:///d:/Projects/lib/auth.js#29-36) which sets the cookie to empty with `maxAge: 0`.
+
+---
+
+#### `GET /api/auth/me`
+
+**Auth required:** Cookie  
+Decodes the JWT from the cookie and returns the user payload. Used by `UserContext` on every page load to restore session.
+
+**Success (200):**
+```json
+{
+  "success": true,
+  "user": {
+    "userId": "...",
+    "name": "John",
+    "email": "john@example.com",
+    "role": "CITIZEN"
+  }
+}
+```
+**Unauthenticated (401):** `{ "success": false, "user": null }`
+
+---
+
+#### `POST /api/auth/register`
+
+**Auth required:** No  
+Self-registration for citizens only. Always creates a user with role `CITIZEN`.
+
+---
+
+### 12.2 Issue APIs
+
+#### `GET /api/issues`
+
+**Auth required:** Yes (any role)  
+Returns issues based on the caller's role and permissions:
+- **CITIZEN:** Returns only their own issues
+- **FIELD_OFFICER:** Returns issues in their ward
+- **DEPARTMENT_MANAGER:** Returns issues in all their department's wards
+- **MUNICIPAL_COMMISSIONER / SYSTEM_ADMIN:** Returns all issues
+
+Supports query params: `status`, `priority`, `category`, `page`, `limit`
+
+---
+
+#### `POST /api/issues`
+
+**Auth required:** Yes (CITIZEN)  
+Creates a new civic issue. Full Zod validation against `createIssueSchema`.
+
+**Request body:**
+```json
+{
+  "title": "Large pothole on MG Road",
+  "description": "There is a dangerous pothole approximately 2 feet wide...",
+  "category": "roads-infrastructure",
+  "subcategory": "Pothole",
+  "location": {
+    "address": "MG Road, Ward 1, North Zone",
+    "coordinates": { "lat": 12.9716, "lng": 77.5946 },
+    "city": "Cityname",
+    "state": "State",
+    "pincode": "560001"
+  },
+  "images": [
+    { "url": "https://res.cloudinary.com/...", "publicId": "civic-issues/..." }
+  ],
+  "priority": "high",
+  "ward": "ward-1",
+  "detectionSource": "gemini"
+}
+```
+
+---
+
+#### `GET /api/issues/[id]`
+
+**Auth required:** Yes  
+Returns full issue details including populated fields: `reportedBy`, `assignedTo`, `assignedDepartment`, `comments.user`
+
+---
+
+#### `PATCH /api/issues/[id]/update-status`
+
+**Auth required:** FIELD_OFFICER, DEPARTMENT_MANAGER, MUNICIPAL_COMMISSIONER, SYSTEM_ADMIN  
+Updates issue status with an optional comment. Triggers appropriate email notification.
+
+---
+
+#### `PATCH /api/issues/[id]/assign`
+
+**Auth required:** DEPARTMENT_MANAGER, MUNICIPAL_COMMISSIONER, SYSTEM_ADMIN  
+Assigns issue to a staff member. Sets `status: 'assigned'`.
+
+---
+
+#### `PATCH /api/issues/[id]/priority`
+
+**Auth required:** MUNICIPAL_COMMISSIONER, SYSTEM_ADMIN  
+Overrides the AI-calculated priority. Sets `priorityOverriddenBy` and `priorityOverriddenAt`.
+
+---
+
+#### `POST /api/issues/[id]/upvote`
+
+**Auth required:** Yes  
+Toggles upvote. If user hasn't upvoted: adds upvote atomically. If already upvoted: removes upvote.
+
+---
+
+#### `POST /api/issues/[id]/rate`
+
+**Auth required:** CITIZEN (must be the reporter)  
+Submits post-resolution feedback. Body: `{ rating: 4, comment: "...", isResolved: true }`
+
+---
+
+#### `GET /api/issues/public`
+
+**Auth required:** No  
+Returns a paginated list of all issues for the public map. Only returns `category`, `status`, `priority`, `location.coordinates`, `upvotes`, `createdAt`. No sensitive data.
+
+---
+
+#### `POST /api/issues/check-duplicate`
+
+**Auth required:** Yes  
+Finds potentially duplicate issues near the same location and category.
+
+---
+
+#### `GET /api/issues/department`
+
+**Auth required:** FIELD_OFFICER, DEPARTMENT_MANAGER  
+Returns issues scoped to the caller's ward/department. Reads `wardId` and `departmentId` from the JWT payload.
+
+---
+
+### 12.3 Upload API
+
+#### `POST /api/upload`
+
+**Auth required:** Any authenticated user  
+Accepts a `multipart/form-data` request with an image file. Uploads to Cloudinary under the `civic-issues/` folder. Returns:
+```json
+{
+  "url": "https://res.cloudinary.com/yourcloud/image/upload/v1234/civic-issues/abc.jpg",
+  "publicId": "civic-issues/abc"
+}
+```
+
+### 12.4 AI API
+
+#### `POST /api/ai`
+
+**Auth required:** Any authenticated user  
+Runs the AI detection pipeline on a given image URL. Body: `{ "imageUrl": "https://..." }`
+
+Returns the best result from the Roboflow → Gemini → OpenAI cascade.
+
+---
+
+### 12.5 Admin Analytics APIs
+
+#### `GET /api/admin/analytics/overview`
+
+**Auth required:** SYSTEM_ADMIN, MUNICIPAL_COMMISSIONER  
+Returns:
+```json
+{
+  "totalIssues": 1284,
+  "resolvedIssues": 987,
+  "pendingIssues": 156,
+  "overdueIssues": 41,
+  "averageResolutionTime": 38.5,
+  "slaComplianceRate": 0.847,
+  "citizenSatisfactionScore": 4.2
+}
+```
+
+---
+
+#### `GET /api/admin/analytics/departments`
+
+Per-department breakdown: issue count, resolution rate, SLA compliance, satisfaction score.
+
+---
+
+#### `GET /api/admin/analytics/trends`
+
+Issue counts grouped by day/week/month for trend visualization in Recharts.
+
+---
+
+#### `GET /api/admin/analytics/stuck`
+
+Issues that have been `in-progress` for an unusually long time. Used to identify bottlenecks.
+
+---
+
+#### `GET /api/admin/analytics/workflow`
+
+Workflow efficiency: average time between status transitions (pending → assigned → in-progress → resolved).
+
+---
+
+### 12.6 Reports APIs
+
+#### `GET /api/reports`
+
+**Auth required:** SYSTEM_ADMIN, MUNICIPAL_COMMISSIONER  
+Returns filtered report data. Query params: `startDate`, `endDate`, `department`, `status`, `format`
+
+#### `GET /api/reports/download`
+
+Downloads the report as CSV or JSON.
+
+---
+
+### 12.7 Department APIs
+
+#### `GET /api/departments`
+Returns all departments. Used to populate department dropdowns in admin UI.
+
+#### `POST /api/departments`
+**Auth required:** SYSTEM_ADMIN  
+Creates a new department record.
+
+#### `GET /api/departments/[id]` / `PUT /api/departments/[id]`
+Get or update a specific department.
+
+---
+
+### 12.8 Admin User Management
+
+#### `POST /api/admin/create-user`
+
+**Auth required:** SYSTEM_ADMIN, MUNICIPAL_COMMISSIONER  
+Creates any user type. Validated against `userAdminCreateSchema`.
+
+**Body:**
+```json
+{
+  "name": "Jane Smith",
+  "email": "jane@municipality.gov",
+  "password": "secure123",
+  "role": "FIELD_OFFICER",
+  "wardId": "ward-5",
+  "departmentId": "parks"
+}
+```
+
+---
+
+#### `GET /api/users/admin`
+
+**Auth required:** SYSTEM_ADMIN  
+Returns all users with pagination and filtering.
+
+#### `PUT /api/users/[id]`
+Update user details (activate/deactivate, change role, etc.)
+
+---
+
+### 12.9 Other APIs
+
+#### `GET /api/stats`
+High-level stats: total issues, resolved, pending, this month's count.
+
+#### `GET /api/public-dashboard`
+Public statistics for the public dashboard page (no auth required).
+
+#### `GET /api/notifications`
+User's unread notifications.
+
+#### `GET /api/performance`
+Performance metrics for the current user (department staff only).
+
+#### `GET /api/sla`
+SLA compliance data (Commissioner/Admin only).
+
+#### `GET /api/health`
+Health check endpoint — returns `{ status: 'ok', database: 'connected' }`. Used by deployment platforms to verify the service is up.
+
+---
+
+## Chapter 13: Email System
+
+### 13.1 Email Architecture
+
+Emails flow through 2 layers:
+1. **[lib/mailer.js](file:///d:/Projects/lib/mailer.js)** — High-level functions for specific events ([sendReportConfirmation](file:///d:/Projects/lib/mailer.js#8-26), [sendStatusUpdate](file:///d:/Projects/lib/mailer.js#27-46), etc.)
+2. **[lib/email.js](file:///d:/Projects/lib/email.js)** — Low-level [sendEmail(to, subject, html)](file:///d:/Projects/lib/email.js#3-52) function using Resend SDK
+
+### 13.2 The 5 Email Types
+
+#### Email 1: Report Submitted (`email-templates/report-submitted.js`)
+**Trigger:** When a citizen successfully submits an issue  
+**To:** Reporter's email  
+**Contains:** Report ID, title, category, priority, expected SLA deadline, tracking link
+
+#### Email 2: Status Update (`email-templates/status-update.js`)
+**Trigger:** When issue status changes (assigned, in-progress, resolved)  
+**To:** Reporter's email  
+**Contains:** New status, status description, assigned department name, tracking link
+
+#### Email 3: Report Rejected (`email-templates/report-rejected.js`)
+**Trigger:** When an officer rejects (closes) an issue  
+**To:** Reporter's email  
+**Contains:** Rejection reason, option to appeal/re-report
+
+#### Email 4: New Report Alert (`email-templates/new-report-alert.js`)
+**Trigger:** When a new issue is created in a department's jurisdiction  
+**To:** Department staff emails  
+**Contains:** Issue title, category, priority, location, citizen description, link to issue
+
+#### Email 5: Rating Request (`email-templates/rating-request.js`)
+**Trigger:** When issue is marked as resolved  
+**To:** Reporter's email  
+**Contains:** 5-star rating UI, option to confirm resolution or reopen, before/after photos (if available)
+
+### 13.3 OTP Email
+
+**Trigger:** Citizen requests password reset  
+**Style:** Dark theme (matches app), amber OTP display, security warning
+
+```
+Background: #0A0A0A (app page color)
+OTP display: #F5A623 (gold accent)
+Security warning: #F87171 (red)
+```
+
+### 13.4 Email Delivery
+
+All emails use Resend with sender `noreply@civicpulse.in`. If `RESEND_API_KEY` is not configured, all email functions return `{ success: false, error: 'RESEND_API_KEY not configured' }` — they fail gracefully without crashing the application.
+
+### 13.5 Zod Validation Schemas ([lib/schemas.js](file:///d:/Projects/lib/schemas.js))
+
+Every API endpoint that accepts POST/PATCH data validates against a Zod schema:
+
+**`createIssueSchema`** — New issue submission:
+- title: string, min 10, max 200
+- description: string, min 30, max 2000
+- category: one of 8 exact enum values
+- subcategory: string, min 1
+- location.address: string, min 10, max 500
+- location.coordinates: optional `{ lat, lng }` numbers
+- images: array of URL strings, max 3, optional
+- priority: optional enum
+- ward: optional string
+
+**`userRegisterSchema`** — Citizen self-registration:
+- name: string, min 2
+- email: valid email
+- password: string, min 6
+- phone: optional, regex `+?[0-9\s-]{10,}`
+- address: optional nested object
+
+**`loginSchema`** — Login:
+- email: valid email
+- password: non-empty string
+
+**`userAdminCreateSchema`** — Admin creates user:
+- All fields from registration
+- role: enum of all 10 role names (legacy + current)
+- departmentId: optional string
+- wardId: optional string
+
+---
+
+*End of Part 2. Continue to Part 3 for Frontend Components, Role Dashboards, Maps, i18n, Design System, and Deployment.*

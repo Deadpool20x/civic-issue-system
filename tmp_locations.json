@@ -1,0 +1,84 @@
+[
+  {
+    "location": {
+      "coordinates": {
+        "type": "Point",
+        "coordinates": [
+          72.9516415,
+          22.5474303
+        ]
+      },
+      "address": "Anand, आणंद, Anand City Taluka, Anand, Gujarat, 388001, India"
+    },
+    "_id": "695799c616e5959ff3629abe",
+    "id": "695799c616e5959ff3629abe"
+  },
+  {
+    "location": {
+      "coordinates": {
+        "type": "Point",
+        "coordinates": [
+          72.952096,
+          22.547929
+        ]
+      },
+      "address": "Anand, आणंद, Anand City Taluka, Anand, Gujarat, 388001, India",
+      "city": "आणंद",
+      "state": "Gujarat",
+      "pincode": "388001"
+    },
+    "_id": "696c7eca83c4544b73183119",
+    "id": "696c7eca83c4544b73183119"
+  },
+  {
+    "location": {
+      "coordinates": {
+        "type": "Point",
+        "coordinates": [
+          72.952096,
+          22.547929
+        ]
+      },
+      "address": "Anand, आणंद, Anand City Taluka, Anand, Gujarat, 388001, India",
+      "city": "आणंद",
+      "state": "Gujarat",
+      "pincode": "388001"
+    },
+    "_id": "696c7f4dd5999ae10cfd49f5",
+    "id": "696c7f4dd5999ae10cfd49f5"
+  },
+  {
+    "location": {
+      "coordinates": {
+        "type": "Point",
+        "coordinates": [
+          126.9977,
+          37.5682
+        ]
+      },
+      "address": "Sejin Building, 67, Changgyeonggung-ro, Jugyo-dong, Euljiro-dong, Jung-gu, Seoul, 04345, South Korea",
+      "city": "Seoul",
+      "state": "",
+      "pincode": "04345"
+    },
+    "_id": "69aa88e949a87cb618eef910",
+    "id": "69aa88e949a87cb618eef910"
+  },
+  {
+    "location": {
+      "coordinates": {
+        "type": "Point",
+        "coordinates": [
+          72.91647810045662,
+          22.521234192922375
+        ]
+      },
+      "address": "Gana, Anand Rural Taluka, Anand, Gujarat, 388121, India",
+      "city": "",
+      "state": "Gujarat",
+      "pincode": "388121"
+    },
+    "_id": "69ab7acb1f34f6a6e5b60694",
+    "id": "69ab7acb1f34f6a6e5b60694"
+  }
+]

@@ -4,6 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUser } from '@/lib/contexts/UserContext';
+// import LanguageSelector from '@/components/LanguageSelector';
+import { useTranslation } from '@/lib/useStaticTranslation';
 
 /* ============================================================
    NAVIGATION CONFIG — Per role, per SYSTEM_FEATURES_MASTER.md
@@ -52,6 +54,15 @@ const navigation = {
         { name: 'Profile', href: '/department/profile', icon: 'profile' },
     ],
 
+    /* ── DEPARTMENT MANAGER (for /department routes) ── */
+    dept_manager: [
+        { name: 'Dashboard', href: '/department/dashboard', icon: 'dashboard' },
+        { name: 'Issues', href: '/department/issues', icon: 'issues' },
+        { name: 'My Officers', href: '/municipal/departments', icon: 'departments' },
+        { name: 'SLA Monitor', href: '/municipal/sla-dashboard', icon: 'sla' },
+        { name: 'Profile', href: '/department/profile', icon: 'profile' },
+    ],
+
     /* ── DEPARTMENT MANAGER (Section D) ── */
     municipal: [
         { name: 'Dashboard', href: '/municipal/dashboard', icon: 'dashboard' },
@@ -65,15 +76,17 @@ const navigation = {
         { name: 'City Map', href: '/map', icon: 'citymap' },
         { name: 'All Issues', href: '/commissioner/issues', icon: 'issues' },
         { name: 'Departments', href: '/municipal/departments', icon: 'departments' },
-        { name: 'Reports', href: '/admin/reports', icon: 'reports' },
+        { name: 'Issues Master', href: '/admin/issues', icon: 'reports' },
+        { name: 'Create Staff', href: '/commissioner/create-staff', icon: 'create' },
     ],
 
     /* ── SYSTEM ADMIN (Section F) ── */
     admin: [
         { name: 'Dashboard', href: '/admin/dashboard', icon: 'dashboard' },
         { name: 'Users', href: '/admin/users', icon: 'users' },
+        { name: 'Create User', href: '/admin/create-user', icon: 'create' },
         { name: 'Departments', href: '/admin/departments', icon: 'departments' },
-        { name: 'Reports', href: '/admin/reports', icon: 'reports' },
+        { name: 'All Issues', href: '/admin/issues', icon: 'reports' },
         { name: 'Analytics', href: '/admin/analytics', icon: 'analytics' },
     ],
 };
@@ -98,7 +111,12 @@ const ROLE_LABELS = {
    ROLE → NAV KEY MAPPING
    The DB stores roles in different formats, normalize here
    ============================================================ */
-function getNavKey(role) {
+function getNavKey(role, pathname) {
+    // Check if pathname starts with /department - use dept_manager nav
+    if (pathname && pathname.startsWith('/department')) {
+        return 'dept_manager';
+    }
+
     const map = {
         'citizen': 'citizen',
         'CITIZEN': 'citizen',
@@ -121,6 +139,7 @@ export default function DashboardLayout({ children }) {
     const { user, loading, logout } = useUser();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const pathname = usePathname();
+    const { t } = useTranslation();
 
     /* ── Loading state ── */
     if (loading) {
@@ -128,7 +147,7 @@ export default function DashboardLayout({ children }) {
             <div className="min-h-screen flex items-center justify-center bg-page">
                 <div className="flex flex-col items-center gap-3">
                     <div className="w-8 h-8 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
-                    <span className="text-sm text-text-secondary">Loading...</span>
+                    <span className="text-sm text-text-secondary">{t('common.loading')}</span>
                 </div>
             </div>
         );
@@ -138,7 +157,7 @@ export default function DashboardLayout({ children }) {
     if (!user) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-page">
-                <div className="text-text-secondary">Please log in to access this page.</div>
+                <div className="text-text-secondary">{t('auth.pleaseLogIn', 'Please log in to access this page.')}</div>
             </div>
         );
     }
@@ -147,14 +166,14 @@ export default function DashboardLayout({ children }) {
     if (!user.role) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-page">
-                <div className="text-red-400">User role not found. Please contact administrator.</div>
+                <div className="text-red-400">{t('auth.roleNotFound', 'User role not found. Please contact administrator.')}</div>
             </div>
         );
     }
 
-    const navKey = getNavKey(user.role);
+    const navKey = getNavKey(user.role, pathname);
     const navItems = navigation[navKey] || [];
-    const roleLabel = ROLE_LABELS[user.role] || user.role;
+    const roleLabel = t(`roles.${user.role.toLowerCase()}`) || ROLE_LABELS[user.role] || user.role;
     const userInitial = (user?.name || 'U').charAt(0).toUpperCase();
 
     /* ── Check if a nav item is active ── */
@@ -187,7 +206,7 @@ export default function DashboardLayout({ children }) {
                             </svg>
                         </div>
                         <div>
-                            <h1 className="text-sm font-bold text-white tracking-wide">Civic System</h1>
+                            <h1 className="text-sm font-bold text-white tracking-wide">{t('nav.title', 'Civic System')}</h1>
                             <p className="text-[10px] text-text-muted uppercase tracking-widest">{roleLabel}</p>
                         </div>
                     </div>
@@ -202,15 +221,15 @@ export default function DashboardLayout({ children }) {
                                 key={item.name}
                                 href={item.href}
                                 className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${active
-                                        ? 'bg-gold/10 text-gold border border-gold/20'
-                                        : 'text-text-secondary hover:text-white hover:bg-white/5'
+                                    ? 'bg-gold/10 text-gold border border-gold/20'
+                                    : 'text-text-secondary hover:text-white hover:bg-white/5'
                                     }`}
                                 onClick={() => setIsSidebarOpen(false)}
                             >
                                 <span className="text-base leading-none w-5 text-center">
                                     {NAV_ICONS[item.icon] || '📄'}
                                 </span>
-                                <span>{item.name}</span>
+                                <span>{t(`nav.sidebar.${item.icon}`, item.name)}</span>
                                 {active && (
                                     <span className="ml-auto w-1.5 h-1.5 rounded-full bg-gold" />
                                 )}
@@ -227,7 +246,7 @@ export default function DashboardLayout({ children }) {
                             <span className="text-black font-bold text-sm">{userInitial}</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-white truncate">{user?.name || 'User'}</p>
+                            <p className="text-sm font-semibold text-white truncate">{user?.name || t('common.user', 'User')}</p>
                             <p className="text-xs text-text-muted truncate">{roleLabel}</p>
                         </div>
                         <button
@@ -261,6 +280,9 @@ export default function DashboardLayout({ children }) {
 
                     {/* Spacer — pages can add their own header content */}
                     <div className="flex-1" />
+
+                    {/* Language Selector */}
+                    {/* <LanguageSelector /> */}
 
                     {/* Notification bell placeholder */}
                     <button className="p-2 rounded-lg text-text-secondary hover:text-gold hover:bg-gold/10 transition-colors relative">

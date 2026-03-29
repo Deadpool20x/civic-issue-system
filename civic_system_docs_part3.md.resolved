@@ -1,0 +1,919 @@
+# CivicPulse — Comprehensive System Documentation
+## Part 3 of 3: Frontend, Design System, Deployment & Operations
+
+---
+
+## Chapter 14: Frontend Components
+
+### 14.1 Global Layout & State
+
+#### [app/layout.js](file:///d:/Projects/app/layout.js) — Root Layout
+The root layout wraps every page. It:
+- Imports global CSS ([app/globals.css](file:///d:/Projects/app/globals.css))
+- Wraps children in `<UserProvider>` (React Context for authentication state)
+- Wraps in `<I18nProvider>` (internationalization)
+- Sets default metadata (title, description)
+
+#### [lib/contexts/UserContext.js](file:///d:/Projects/lib/contexts/UserContext.js) — Authentication State
+The most critical piece of client-side state. [UserProvider](file:///d:/Projects/lib/contexts/UserContext.js#6-33) wraps the app and exposes `{ user, setUser, loading, logout }`.
+
+**Initialization:** On mount, it calls `GET /api/auth/me`. If the JWT cookie is valid, `user` is populated. If not, `user` is `null`. During this check, `loading` is `true` — all pages show a spinner while the check happens.
+
+**Usage in any component:**
+```javascript
+const { user, loading, logout } = useUser();
+// user.role, user.name, user.email, user.wardId, user.departmentId
+```
+
+**Logout:** Calls `POST /api/auth/logout` (clears cookie) then redirects to `/login`.
+
+---
+
+### 14.2 DashboardLayout ([components/DashboardLayout.js](file:///d:/Projects/components/DashboardLayout.js))
+
+The shared sidebar + header wrapper used by all authenticated dashboards. Not a server component — it's a Client Component (`'use client'`).
+
+**Structure:**
+```
+┌─────────────────────────────────────────┐
+│              HEADER (sticky)            │
+│  [hamburger]  [spacer]  [lang] [bell]  │
+├──────────┬──────────────────────────────┤
+│          │                              │
+│ SIDEBAR  │       PAGE CONTENT           │
+│  (fixed) │       (scrollable)           │
+│          │                              │
+│ [ Logo ] │                              │
+│ [ Nav  ] │                              │
+│ [ User ] │                              │
+│ [Logout] │                              │
+└──────────┴──────────────────────────────┘
+```
+
+**Navigation is role-specific.** The [getNavKey(role, pathname)](file:///d:/Projects/components/DashboardLayout.js#110-134) function maps the user's role to the correct navigation set:
+
+| Role | Nav Set | Items |
+|------|---------|-------|
+| CITIZEN | `citizen` | Dashboard, Report Issue, My Issues, Map, Public |
+| FIELD_OFFICER | `department` | Dashboard, My Issues, Resolved, Performance, Profile |
+| DEPARTMENT_MANAGER | `municipal` | Dashboard, My Officers, SLA Monitoring |
+| MUNICIPAL_COMMISSIONER | `commissioner` | Dashboard, City Map, All Issues, Departments, Issues Master, Create Staff |
+| SYSTEM_ADMIN | `admin` | Dashboard, Users, Create User, Departments, All Issues, Analytics |
+
+**Responsive behavior:**
+- On mobile (`< lg breakpoint`): Sidebar is hidden. Hamburger button toggles it with a slide-in animation. Black overlay (`bg-black/60`) covers the content behind the open sidebar.
+- On desktop (`>= lg`): Sidebar is always visible as a fixed column.
+
+**Active state:** A nav item is "active" if `pathname === item.href` or `pathname.startsWith(item.href + '/')`. Active items have a gold left border indicator (`bg-gold/10 text-gold border border-gold/20`).
+
+---
+
+### 14.3 DashboardProtection ([components/DashboardProtection.js](file:///d:/Projects/components/DashboardProtection.js))
+
+A client component that wraps dashboard pages with an additional client-side role check. Even though the Edge Middleware handles routing, this provides a UI-level safety net:
+
+```javascript
+// Usage:
+<DashboardProtection allowedRoles={['CITIZEN', 'citizen']}>
+  <CitizenDashboard />
+</DashboardProtection>
+```
+
+If the user's role is not in `allowedRoles`, they see an "Access Denied" message instead of the page content.
+
+---
+
+### 14.4 ImageUploader ([components/ImageUploader.jsx](file:///d:/Projects/components/ImageUploader.jsx))
+
+Handles the image upload flow for the report form.
+
+**Features:**
+- Drag-and-drop or click to select files
+- Accepts up to 3 images
+- Shows a preview grid
+- Each image can be removed individually
+- **Client-side compression** before upload using `browser-image-compression`
+- Upload progress indicator during Cloudinary upload
+- On upload, calls `POST /api/upload` and stores `{ url, publicId }`
+
+**Compression settings:**
+```javascript
+{
+  maxSizeMB: 1,          // Max 1MB per image
+  maxWidthOrHeight: 1920, // Max dimension 1920px
+  useWebWorker: true     // Non-blocking compression
+}
+```
+
+---
+
+### 14.5 LocationPicker ([components/LocationPicker.jsx](file:///d:/Projects/components/LocationPicker.jsx))
+
+Interactive Leaflet map for selecting the issue location.
+
+**Features:**
+- Click anywhere on the map to drop a pin
+- Pin is draggable for fine-tuning
+- Shows the resulting coordinates and address
+- Reverse geocoding: converts clicked coordinates to a human-readable address
+- Ward selector dropdown — citizen picks which ward the issue is in
+- Coordinates are stored as `[lng, lat]` for MongoDB GeoJSON compatibility
+
+**Libraries:** `react-leaflet`, `leaflet`
+
+---
+
+### 14.6 IssueMap ([components/IssueMap.jsx](file:///d:/Projects/components/IssueMap.jsx))
+
+A read-only map showing all issues as markers. Used on the public map page and in dashboards.
+
+**Features:**
+- Loads issues from `GET /api/issues/public`
+- Color-coded markers by status (green=resolved, yellow=in-progress, blue=assigned, gray=pending)
+- Cluster nearby markers using `react-leaflet-cluster` to prevent UI overload
+- Clicking a marker opens a popup via `<IssuePopup />`
+
+---
+
+### 14.7 IssuePopup ([components/IssuePopup.jsx](file:///d:/Projects/components/IssuePopup.jsx))
+
+Renders inside a Leaflet popup when a map marker is clicked. Shows:
+- Issue title
+- Category badge
+- Priority badge
+- Status badge
+- Report ID
+- "View Details" link to `/issues/[id]`
+
+---
+
+### 14.8 NearbyIssuesMap ([components/NearbyIssuesMap.jsx](file:///d:/Projects/components/NearbyIssuesMap.jsx))
+
+Shown on the issue detail page. Displays other issues near the same location using MongoDB's `$near` geospatial query.
+
+---
+
+### 14.9 IssueCard & IssueCardRefactored ([components/IssueCard.js](file:///d:/Projects/components/IssueCard.js), [IssueCardRefactored.js](file:///d:/Projects/components/IssueCardRefactored.js))
+
+Card components for displaying an issue summary in a list. [IssueCardRefactored.js](file:///d:/Projects/components/IssueCardRefactored.js) is the more complete version with:
+- Status badge (color-coded)
+- Priority badge
+- Category with emoji icon
+- Location snippet
+- Report ID
+- Upvote button (toggles with optimistic UI)
+- Comment count
+- Relative timestamp ("2 hours ago")
+- "View Details" button
+
+---
+
+### 14.10 IssueActionButtons ([components/IssueActionButtons.jsx](file:///d:/Projects/components/IssueActionButtons.jsx))
+
+Conditional action buttons shown on issue detail pages based on the current user's role and issue status. Examples:
+- **FIELD_OFFICER:** "Mark In Progress", "Mark as Resolved", "Add Comment"
+- **DEPARTMENT_MANAGER:** "Assign to Officer", "Approve Response", "Reject"
+- **MUNICIPAL_COMMISSIONER:** "Override Priority", "Escalate", "Assign Department"
+- **CITIZEN:** "Upvote", "Report as Duplicate" (if pending), "Rate Resolution" (if resolved)
+
+---
+
+### 14.11 IssueManagementPanel ([components/IssueManagementPanel.jsx](file:///d:/Projects/components/IssueManagementPanel.jsx))
+
+The most complex component (27KB). A full-featured side panel for administrators and commissioners to manage an issue. Includes:
+- Status updater with reason field
+- Priority override dropdown
+- Department assignment
+- Staff assignment within department
+- Comment thread
+- Escalation controls
+- Issue rejection with reason
+- Verification toggle
+- All state changes sent to appropriate API endpoints
+
+---
+
+### 14.12 StatusTimeline ([components/StatusTimeline.jsx](file:///d:/Projects/components/StatusTimeline.jsx))
+
+Visual timeline component showing the full history of an issue's status changes. Reads from the `StateHistory` collection. Shows:
+- Each status change with icon
+- Who made the change
+- When it happened
+- Any comment/reason attached to the change
+
+---
+
+### 14.13 RatingModal ([components/RatingModal.jsx](file:///d:/Projects/components/RatingModal.jsx))
+
+Post-resolution feedback modal. Triggered when a resolved issue is opened.
+
+**Features:**
+- 5-star interactive rating (click stars)
+- "Was your issue resolved?" Yes/No (if No → triggers issue reopen)
+- Comment textarea
+- Submit button (calls `POST /api/issues/[id]/rate`)
+- Animated star hover effects
+
+---
+
+### 14.14 DuplicateModal ([components/DuplicateModal.jsx](file:///d:/Projects/components/DuplicateModal.jsx))
+
+Shown when the system detects a potential duplicate issue before submission.
+
+**Displays:**
+- The existing similar issue (title, location, status, upvote count)
+- Two options:
+  1. "Upvote existing issue" — adds their upvote and cancels submission
+  2. "Submit anyway" — closes modal and proceeds with the new report
+
+---
+
+### 14.15 VoiceInput ([components/VoiceInput.jsx](file:///d:/Projects/components/VoiceInput.jsx))
+
+Microphone button for voice-to-text description input.
+
+**How it works:**
+1. Uses browser's native `SpeechRecognition` / `webkitSpeechRecognition` API
+2. On click: starts recording, shows animated indicator
+3. On speech end: transcribed text is appended to the description field
+4. Graceful error handling: if browser doesn't support it or microphone is denied, shows appropriate message
+5. Supports multiple languages (configured with the i18n locale)
+
+**Known limitation:** Only works over HTTPS or localhost. The Web Speech API is blocked on insecure origins.
+
+---
+
+### 14.16 PriorityBadge ([components/PriorityBadge.jsx](file:///d:/Projects/components/PriorityBadge.jsx))
+
+Reusable badge rendering priority with the correct color:
+
+| Priority | Color | Display |
+|----------|-------|---------|
+| urgent | red | 🔴 Urgent |
+| high | orange | 🟠 High |
+| medium | yellow | 🟡 Medium |
+| low | green | 🟢 Low |
+
+---
+
+### 14.17 IssueComments ([components/IssueComments.jsx](file:///d:/Projects/components/IssueComments.jsx))
+
+Threaded comment section on the issue detail page. Supports:
+- Viewing all comments with user name and timestamp
+- Adding a new comment (authenticated users)
+- Comments are stored in `issue.comments[]`
+
+---
+
+### 14.18 IssueResponseEditor ([components/IssueResponseEditor.jsx](file:///d:/Projects/components/IssueResponseEditor.jsx))
+
+Rich text area for department staff to write formal responses to issues. Features:
+- AI-generated draft button (calls `AIAnalyzer.generateResponse()`)
+- Character count
+- Preview mode
+- Submit sends response to the issue as an official department reply
+
+---
+
+### 14.19 IssueStatusUpdater ([components/IssueStatusUpdater.jsx](file:///d:/Projects/components/IssueStatusUpdater.jsx))
+
+Form for updating issue status with dropdown, comment, and confirmation. Used by department staff on the issue detail page.
+
+---
+
+### 14.20 DisclaimerModal ([components/DisclaimerModal.jsx](file:///d:/Projects/components/DisclaimerModal.jsx))
+
+A legal disclaimer modal shown to users on first login, requiring acknowledgment before they can use certain features (report submission). Includes privacy policy and data usage notices.
+
+---
+
+### 14.21 Other Components
+
+| Component | Purpose |
+|-----------|---------|
+| [DepartmentStats.jsx](file:///d:/Projects/components/DepartmentStats.jsx) | Bar chart + stats for department performance |
+| [EmptyState.js](file:///d:/Projects/components/EmptyState.js) | "No issues found" placeholder with illustration |
+| [ErrorBoundary.js](file:///d:/Projects/components/ErrorBoundary.js) | React error boundary for graceful crash handling |
+| [FeedbackModal.jsx](file:///d:/Projects/components/FeedbackModal.jsx) | Simplified feedback form variant |
+| [GoogleTranslate.jsx](file:///d:/Projects/components/GoogleTranslate.jsx) | Google Translate widget integration |
+| [I18nProvider.jsx](file:///d:/Projects/components/I18nProvider.jsx) | Wraps app with i18next context |
+| [LanguageSelector.jsx](file:///d:/Projects/components/LanguageSelector.jsx) | Dropdown to switch UI language |
+| [LottiePlayer.jsx](file:///d:/Projects/components/LottiePlayer.jsx) | Wrapper around `@lottiefiles/react-lottie-player` |
+| [PageHeader.js](file:///d:/Projects/components/PageHeader.js) | Consistent page title + subtitle header |
+| [PrivacyNotice.js](file:///d:/Projects/components/PrivacyNotice.js) | GDPR-style privacy notice for issue reporting |
+| [StatCard.js](file:///d:/Projects/components/StatCard.js) | Number + label card for dashboard statistics |
+
+---
+
+## Chapter 15: Role-Based Dashboards
+
+### 15.1 Citizen Dashboard (`/citizen/dashboard`)
+
+**What citizens see:**
+- Summary statistics: Total reported, In Progress, Resolved, Pending
+- List of their reported issues with status badges
+- Filter by status (All, Pending, In Progress, Resolved)
+- Quick "Report New Issue" button
+- Nearby issues map
+
+**Key interactions:**
+- Click any issue → goes to `/issues/[id]` for full details
+- Click "Upvote" on nearby issues
+- "Report Issue" → `/citizen/report`
+
+---
+
+### 15.2 Issue Reporting Wizard (`/citizen/report`)
+
+Multi-step form (described in detail in Chapter 7.1).
+
+**The step flow:**
+```
+Step 1: Photo Upload + AI Detection
+Step 2: Title & Description (+ Voice Input)
+Step 3: Category & Subcategory
+Step 4: Location (Map + Address + Ward)
+Step 5: Priority (optional override)
+Step 6: Review → Submit
+```
+
+**Form state:** All form fields are managed with `useState`. On each step transition, the current step's data is validated before proceeding. The Back button works correctly at each step.
+
+---
+
+### 15.3 Field Officer Dashboard (`/department/dashboard`)
+
+**What field officers see:**
+- Issues assigned to their specific ward (`wardId` from JWT)
+- Filter by status
+- Issue count: Assigned to them, Resolved today, Overdue
+- List sorted by priority (urgent first)
+
+**Key interactions:**
+- Click issue → detail page with action buttons
+- Mark as In Progress → Status changes, citizen notified
+- Mark as Resolved → Status changes, citizen gets rating email
+- Add comment to issue
+
+---
+
+### 15.4 Department Manager Dashboard (`/municipal/dashboard`)
+
+**What department managers see:**
+- All issues in their department's wards (e.g., Roads manager sees ward-1 + ward-9)
+- Department-level stats: Total, Resolved this month, SLA compliance %
+- Field officer performance comparison
+- SLA monitoring (`/municipal/sla-dashboard`)
+- List of their field officers (`/municipal/departments`)
+
+---
+
+### 15.5 Municipal Commissioner Dashboard (`/commissioner/dashboard`)
+
+**What commissioners see:**
+- City-wide overview: Total issues, Resolved, Overdue, By department
+- Department performance leaderboard
+- Interactive city map with all active issues
+- Issues filtered by any criteria
+- Can override any issue priority or assignment
+- Create staff accounts (`/commissioner/create-staff`)
+
+---
+
+### 15.6 System Admin Dashboard (`/admin/dashboard`)
+
+**The most powerful dashboard. What admins see:**
+
+1. **User Management (`/admin/users`):**
+   - Table of all users with search
+   - Activate/Deactivate users
+   - View user details
+
+2. **Create User (`/admin/create-user`):**
+   - Select any role
+   - For FIELD_OFFICER: select ward
+   - For DEPARTMENT_MANAGER: select department
+   - Password field + confirmation
+
+3. **Department Management (`/admin/departments`):**
+   - List of all departments
+   - Edit department details
+   - View performance metrics
+
+4. **All Issues (`/admin/issues`):**
+   - Full issue table with all filter options
+   - Bulk actions
+   - Export to CSV/JSON
+
+5. **Analytics (`/admin/analytics`):**
+   - Overview metrics
+   - Trend charts (Recharts line/bar charts)
+   - Department comparison
+   - SLA compliance over time
+   - Geographic heat map of issues
+
+6. **Reports (`/admin/reports`):**
+   - Date range picker
+   - Filter by department/status/priority
+   - Download as CSV or JSON
+
+---
+
+### 15.7 Public Pages (No Login Required)
+
+#### Landing Page (`/`)
+- Hero section with animated Lottie player
+- "How it works" 3-step explanation
+- 8 FAQ items (accordion-style)
+- 4 roles cards (Citizen, Municipal, Department, Admin)
+- Footer with: quick links, legal links, contact info
+- Language selector in nav
+- Auto-redirects logged-in users to their dashboard
+
+#### Public Dashboard (`/public-dashboard`)
+- Total issues reported (count)
+- % resolved
+- Department-wise breakdown
+- No login required — true transparency
+
+#### Track Complaint (`/track`)
+- Simple search box: enter Report ID (e.g., `R00142`)
+- Returns full status timeline for that issue
+- No login required — citizens can share a tracking link
+
+#### Know Your District (`/know-your-district`)
+- Explains the ward system
+- Shows all 16 wards in a table with zone and department
+- Educational page for citizens who don't know their ward number
+
+---
+
+## Chapter 16: Maps & Geospatial Features
+
+### 16.1 Leaflet Setup
+
+Leaflet requires CSS to be imported. In Next.js, this is handled in the component that imports Leaflet, with a `dynamic()` import to prevent SSR errors (Leaflet touches `window` which doesn't exist server-side):
+
+```javascript
+// Dynamic import prevents SSR
+const IssueMap = dynamic(() => import('@/components/IssueMap'), {
+  ssr: false,
+  loading: () => <MapSkeleton />
+});
+```
+
+### 16.2 Marker Clustering
+
+`react-leaflet-cluster` groups markers that are close together into cluster bubbles. The cluster shows a number (e.g., "12") indicating how many issues are in that area. Clicking a cluster zooms in to reveal individual markers.
+
+### 16.3 Geospatial Queries
+
+MongoDB supports geospatial queries with the `2dsphere` index on `location.coordinates`:
+
+```javascript
+// Find issues near a point (used by NearbyIssuesMap)
+Issue.find({
+  'location.coordinates': {
+    $near: {
+      $geometry: { type: 'Point', coordinates: [lng, lat] },
+      $maxDistance: 1000  // 1km radius
+    }
+  }
+})
+```
+
+> ⚠️ **Coordinate Order Reminder:** MongoDB stores as `[longitude, latitude]`. Leaflet renders as `[latitude, longitude]`. Always convert when interfacing between the two.
+
+---
+
+## Chapter 17: Internationalization (i18n)
+
+### 17.1 Setup
+
+[lib/i18n.js](file:///d:/Projects/lib/i18n.js) initializes i18next with:
+- `i18next-browser-languagedetector` — auto-detects browser language
+- Default namespace: `translation`
+- Default language: [en](file:///d:/Projects/lib/email.js#3-52)
+- Fallback: English for missing translations
+
+### 17.2 Available Languages
+
+The system is structured to support multiple languages. Translation files are in the public directory.
+
+### 17.3 Usage in Components
+
+```javascript
+import { useTranslation } from 'react-i18next';
+
+function MyComponent() {
+  const { t } = useTranslation();
+  return <h1>{t('nav.title')}</h1>;
+}
+```
+
+### 17.4 Language Selector ([components/LanguageSelector.jsx](file:///d:/Projects/components/LanguageSelector.jsx))
+
+A dropdown in both the nav bar and dashboard header. Lists available languages. On selection, calls `i18n.changeLanguage(code)` which re-renders all translated strings. Also available is `<GoogleTranslate />` as an alternative.
+
+### 17.5 Translation Keys (Examples)
+
+```
+nav.title           → "Civic System"
+nav.signIn          → "Sign In"
+nav.signUp          → "Get Started"
+nav.sidebar.dashboard → "Dashboard"
+landing.hero        → "Report Issues. Track Progress. Build Better Cities."
+landing.aiProcessing  → "AI Processing"
+report.submit       → "Submit Report"
+status.pending      → "Pending"
+status.resolved     → "Resolved"
+roles.citizen       → "Citizen"
+roles.admin         → "Administrator"
+faq.q1              → "How do I track my complaint?"
+footer.copyright    → "© {year} CivicPulse. All rights reserved."
+```
+
+---
+
+## Chapter 18: Design System
+
+### 18.1 Visual Theme
+
+CivicPulse uses a **premium dark theme** with a **gold accent**. The design philosophy is "government meets modern tech" — authoritative but accessible, dark but not harsh, gold for civic prestige.
+
+### 18.2 Color Palette (Tailwind Custom Colors)
+
+**Backgrounds:**
+```
+page:   #0A0A0A   — Main page background (near black)
+navbar: #080808   — Navbar, footer, sidebar
+card:   #1A1A1A   — Cards, panels, modals
+input:  #222222   — Form inputs, search bars
+border: #333333   — All borders and dividers
+```
+
+**Gold Accent System:**
+```
+gold:           #F5A623   — Primary: CTAs, active nav, headings
+gold-hover:     #E09010   — Button hover state
+gold-light:     rgba(245,166,35,0.10)  — Tinted card backgrounds
+gold-border:    rgba(245,166,35,0.40)  — Gold-tinted borders
+gold-muted:     rgba(245,166,35,0.60)  — Muted gold text
+```
+
+**Text Hierarchy:**
+```
+text-primary:   #FFFFFF   — Main headings, primary content
+text-secondary: #AAAAAA   — Labels, metadata, secondary text
+text-muted:     #666666   — Placeholders, disabled, footer text
+```
+
+**Status Colors:**
+```
+status-pending:   #6B7280  — gray-500
+status-assigned:  #3B82F6  — blue-500
+status-progress:  #F59E0B  — amber-500
+status-resolved:  #22C55E  — green-500
+status-rejected:  #EF4444  — red-500
+status-escalated: #DC2626  — red-600
+status-reopened:  #A855F7  — purple-500
+```
+
+**Priority Colors:**
+```
+priority-urgent: #EF4444   — red-500
+priority-high:   #F97316   — orange-500
+priority-medium: #EAB308   — yellow-500
+priority-low:    #22C55E   — green-500
+```
+
+### 18.3 Typography
+
+**Primary font:** Inter (loaded from system fonts, or via `@import`)
+**Mono font:** SF Mono, Fira Code
+
+The font stack prioritizes system fonts for performance:
+```
+Inter > Segoe UI > system-ui > -apple-system > sans-serif
+```
+
+### 18.4 Border Radius System
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `rounded-card` | 20px | Cards, panels, modals |
+| `rounded-input` | 12px | Input fields, dropdowns |
+| `rounded-pill` | 9999px | Buttons, badges, tags |
+
+### 18.5 Animations
+
+Three custom animations defined in [tailwind.config.mjs](file:///d:/Projects/tailwind.config.mjs):
+
+**`animate-fade-in`:** Elements fade in and slide up 8px. Used for dashboard cards and content areas.
+```css
+from: { opacity: 0, transform: translateY(8px) }
+to:   { opacity: 1, transform: translateY(0) }
+duration: 0.4s ease-out
+```
+
+**`animate-slide-in`:** Elements slide in from left 12px. Used for sidebar items and notifications.
+```css
+from: { opacity: 0, transform: translateX(-12px) }
+to:   { opacity: 1, transform: translateX(0) }
+duration: 0.3s ease-out
+```
+
+**`animate-pulse-gold`:** Gold pulsing ring effect. Used on key CTAs and active status indicators.
+```css
+0%, 100%: box-shadow: 0 0 0 0 rgba(245,166,35,0.4)
+50%:       box-shadow: 0 0 0 8px rgba(245,166,35,0)
+duration: 2s infinite
+```
+
+### 18.6 Button System
+
+**Primary (Gold) Button (`btn-gold`):**
+- Background: `#F5A623` (gold)
+- Text: `#000000` (black)
+- Hover: `#E09010` (gold-hover)
+- Border radius: pill
+- Font weight: bold
+
+**Secondary / Outline Button:**
+- Background: transparent
+- Border: `#333333` (border color)
+- Text: `#FFFFFF` (white)
+- Hover: `bg-white/5` (subtle white tint)
+
+**Danger Button:**
+- Background: `rgba(239,68,68,0.1)` (red glow)
+- Text: `#EF4444`
+- Border: `rgba(239,68,68,0.3)`
+
+### 18.7 Card Pattern
+
+All cards follow this pattern:
+```css
+background: #1A1A1A  (card color)
+border: 1px solid #333333
+border-radius: 20px  (card radius)
+padding: 24-32px
+```
+
+On hover: `border-gold/30` and `shadow-gold/5` transitions create a subtle gold glow. Transition duration: 300ms.
+
+---
+
+## Chapter 19: Deployment
+
+### 19.1 Vercel (Primary)
+
+CivicPulse is configured for Vercel deployment with [next.config.mjs](file:///d:/Projects/next.config.mjs) setting `output: 'standalone'`.
+
+**Deployment steps:**
+1. Push to GitHub
+2. Connect repo to Vercel
+3. Set environment variables in Vercel dashboard
+4. Vercel automatically builds and deploys on every push to `main`
+
+**Important Vercel settings:**
+- Framework preset: Next.js (auto-detected)
+- Node.js version: 18.x
+- Build command: `next build` (default)
+- Output directory: `.next` (default, Vercel handles standalone output)
+
+### 19.2 render.yaml (Alternative — Render.com)
+
+A [render.yaml](file:///d:/Projects/render.yaml) file is included for Render.com deployment:
+```yaml
+services:
+  - type: web
+    name: civic-issue-system
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+```
+
+### 19.3 Environment Variables
+
+All environment variables required for production:
+
+| Variable | Required | Purpose |
+|---------|----------|---------|
+| `MONGODB_URI` | ✅ | MongoDB connection string |
+| `JWT_SECRET` | ✅ | JWT signing key (64+ random chars) |
+| `NEXT_PUBLIC_APP_URL` | ✅ | Full URL (e.g., `https://civicpulse.in`) |
+| `NODE_ENV` | — | Set to `production` automatically by Vercel |
+| `CLOUDINARY_CLOUD_NAME` | ✅ | Cloudinary cloud name |
+| `CLOUDINARY_API_KEY` | ✅ | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | ✅ | Cloudinary API secret |
+| `GEMINI_API_KEY` | ✅ | Google AI Studio API key |
+| `OPENAI_API_KEY` | ⚠️ Optional | Fallback AI + text analysis |
+| `ROBOFLOW_API_KEY` | ⚠️ Optional | Pothole detection |
+| `ROBOFLOW_MODEL` | ⚠️ Optional | Default: `pothole-detection` |
+| `ROBOFLOW_VERSION` | ⚠️ Optional | Default: `1` |
+| `RESEND_API_KEY` | ⚠️ Optional | Email sending (graceful fail if missing) |
+| `NEXT_PUBLIC_MAPBOX_TOKEN` | ⚠️ Optional | Alternative map provider |
+
+**Generating a secure JWT secret:**
+```bash
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+```
+
+### 19.4 Next.js Configuration
+
+```javascript
+// next.config.mjs
+const nextConfig = {
+  output: 'standalone',   // Creates self-contained bundle for containers
+  images: {
+    remotePatterns: [{
+      protocol: 'https',
+      hostname: 'res.cloudinary.com',
+      pathname: '/**',
+    }]
+  }
+};
+```
+
+`output: 'standalone'` mode bundles all necessary Node.js files into `.next/standalone/`. This is ideal for Docker deployments.
+
+`images.remotePatterns` allows Next.js `<Image>` optimization for Cloudinary-hosted images. Without this, Next.js would refuse to optimize images from external domains.
+
+---
+
+## Chapter 20: Database Seeding & Scripts
+
+### 20.1 Seed Users ([scripts/seed-users.js](file:///d:/Projects/scripts/seed-users.js))
+
+Creates test users for all roles. Run with:
+```bash
+npm run db:seed-users
+```
+
+Creates:
+- 1 SYSTEM_ADMIN
+- 1 MUNICIPAL_COMMISSIONER
+- 1 DEPARTMENT_MANAGER (for Roads)
+- 2 FIELD_OFFICERs (ward-1, ward-9)
+- 2 CITIZENs
+
+### 20.2 Seed Departments ([scripts/seed-departments.js](file:///d:/Projects/scripts/seed-departments.js))
+
+```bash
+npm run db:seed
+```
+
+Creates the 8 department documents in MongoDB with names, IDs, and metadata.
+
+### 20.3 Create Admin ([scripts/create-test-admin.js](file:///d:/Projects/scripts/create-test-admin.js))
+
+```bash
+npm run db:admin
+```
+
+Creates a single SYSTEM_ADMIN account quickly for first-time setup.
+
+### 20.4 Other Utility Scripts
+
+| Script | Purpose |
+|--------|---------|
+| [scripts/verify-database.js](file:///d:/Projects/scripts/verify-database.js) | Checks database connectivity and document counts |
+| [scripts/fix-admin.js](file:///d:/Projects/scripts/fix-admin.js) | Fixes admin user configuration issues |
+| [scripts/migrate-department-refs.js](file:///d:/Projects/scripts/migrate-department-refs.js) | Migrates from old Department ObjectId refs to new string departmentId |
+| [scripts/add-report-ids.js](file:///d:/Projects/scripts/add-report-ids.js) | Backfills `reportId` on existing issues that don't have one |
+| [scripts/add-state-history.js](file:///d:/Projects/scripts/add-state-history.js) | Backfills StateHistory records from existing issues |
+| [scripts/clear-users.js](file:///d:/Projects/scripts/clear-users.js) | Danger: Clears all users (dev only) |
+| [scripts/test-all-roles.js](file:///d:/Projects/scripts/test-all-roles.js) | Integration test: logs in as each role and tests basic API calls |
+
+---
+
+## Chapter 21: Developer Quick-Start Guide
+
+### 21.1 Prerequisites
+
+- Node.js ≥18.17.0
+- MongoDB running locally (or MongoDB Atlas connection string)
+- Git
+
+### 21.2 First-Time Setup
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/yourorg/civic-issue-system.git
+cd civic-issue-system
+
+# 2. Install dependencies
+npm install
+
+# 3. Create local environment file
+cp .env.local.example .env.local
+# Edit .env.local with your values
+
+# 4. Seed the database
+npm run db:seed              # Creates departments
+npm run db:seed-users        # Creates test users
+
+# 5. Start development server
+npm run dev
+```
+
+### 21.3 Test Credentials (After Seeding)
+
+| Role | Email | Password |
+|------|-------|---------|
+| System Admin | admin@civicpulse.in | admin123 |
+| Commissioner | commissioner@civicpulse.in | comm123 |
+| Dept Manager (Roads) | roads.manager@civicpulse.in | dept123 |
+| Field Officer (Ward 1) | officer.ward1@civicpulse.in | officer123 |
+| Citizen | citizen@example.com | citizen123 |
+
+### 21.4 Available Scripts
+
+```bash
+npm run dev         # Start development server (localhost:3000)
+npm run build       # Production build
+npm run start       # Start production server
+npm run lint        # Run ESLint
+npm run check       # Run startup configuration check
+npm run test        # Run Jest test suite
+npm run test:watch  # Jest in watch mode
+npm run db:seed     # Seed departments
+npm run db:seed-users # Seed users
+npm run db:admin    # Create admin user only
+npm run clean       # Remove .next and node_modules
+npm run reset       # Clean + reinstall
+```
+
+### 21.5 Development Tips
+
+1. **Hot reload:** Next.js dev server hot-reloads on file changes. API routes reload automatically.
+
+2. **MongoDB connection:** The connection is cached in `global.mongoose` to prevent opening multiple connections in development (Next.js hot-reloads can re-run module code). If MongoDB is down, you get a descriptive error rather than a crash.
+
+3. **JWT in dev:** Sessions persist for 7 days. To force a fresh login, call `POST /api/auth/logout` or delete the `token` cookie in DevTools.
+
+4. **i18n hot-reload:** Translation changes require a page refresh (not just hot-reload) because i18next initializes once.
+
+5. **AI features without API keys:** If Gemini/OpenAI keys are missing, the system falls back to keyword detection. The report form will still work but without AI auto-fill.
+
+6. **Image uploads without Cloudinary:** If Cloudinary keys are missing, `POST /api/upload` will fail. Issues can still be submitted with empty `images: []`.
+
+7. **Email without Resend:** All email functions check for `RESEND_API_KEY` at runtime and return `{ success: false }` gracefully. The application never crashes because of missing email config.
+
+### 21.6 Testing
+
+Jest is configured with:
+- [jest.config.mjs](file:///d:/Projects/jest.config.mjs) — Test environment: `jsdom` (for React component tests)
+- [jest.setup.js](file:///d:/Projects/jest.setup.js) — Sets up `@testing-library/jest-dom` matchers
+- [babel.config.cjs.bak](file:///d:/Projects/babel.config.cjs.bak) — Babel preset for transpiling JSX/ESM in tests
+
+Test files are in `__tests__/` directory. Run individual test files:
+```bash
+npm test -- --testPathPattern="auth"
+```
+
+---
+
+## Appendix A: Glossary
+
+| Term | Definition |
+|------|-----------|
+| **SLA** | Service Level Agreement — the deadline by which an issue must be resolved |
+| **Ward** | A geographic subdivision of the municipality. 16 wards, grouped into 2 zones |
+| **Zone** | North or South — each contains 8 wards |
+| **Report ID** | Human-readable issue identifier (R00001, R00002, ...) |
+| **Upvote** | Citizen endorsement of an existing issue, increases community priority |
+| **Escalation** | Automatic promotion of an overdue issue to higher authority |
+| **Penalty Points** | Points accumulated on a department for SLA breaches |
+| **Detection Source** | How the issue category was determined (AI/manual) |
+| **JWT** | JSON Web Token — encodes user identity for authentication |
+| **ODM** | Object Document Mapper (Mongoose maps JavaScript objects to MongoDB documents) |
+| **Edge Middleware** | Code that runs at CDN edge nodes, before the main server |
+| **HTTP-only Cookie** | A cookie that JavaScript cannot read — protects against XSS attacks |
+| **bcrypt** | Password hashing algorithm with configurable cost factor |
+
+---
+
+## Appendix B: Architecture Decision Records
+
+### ADR 1: Custom JWT over NextAuth
+We replaced NextAuth with custom JWT to: (1) have full control over token payload (wardId, departmentId), (2) simplify the role normalization logic, (3) avoid NextAuth's complex configuration for custom role-based routing.
+
+### ADR 2: MongoDB over SQL
+MongoDB was chosen for: (1) flexible schema for issues with variable fields (varying image counts, escalation history depth), (2) built-in geospatial query support (`2dsphere`), (3) natural JSON alignment with Next.js API routes.
+
+### ADR 3: Gemini as Primary AI, OpenAI as Fallback
+Gemini Flash provides: (1) image authenticity verification (unique feature), (2) faster response times, (3) lower cost per token. OpenAI gpt-4o-mini is the fallback since it's a proven, stable alternative.
+
+### ADR 4: Ward System as Source of Truth
+The [lib/wards.js](file:///d:/Projects/lib/wards.js) module is the single source of truth. All ward → zone → department mappings live here. This prevents data inconsistencies and makes the geography system maintainable from one place.
+
+### ADR 5: Standalone Output for Deployment
+`output: 'standalone'` creates a self-contained deployment artifact that works on any Node.js server, Docker container, or serverless platform without needing the entire `node_modules` directory.
+
+---
+
+*End of Part 3 — Complete documentation for CivicPulse Civic Issue Management System.*
+*Parts 1, 2, and 3 together form the definitive technical reference.*

@@ -1,46 +1,12 @@
-import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server'
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export async function GET(request) {
+    const token = request.cookies.get('token')?.value
 
-export async function GET() {
-    try {
-        const cookieStore = cookies();
-        const allCookies = cookieStore.getAll();
-
-        return new Response(
-            JSON.stringify({
-                success: true,
-                cookies: allCookies.map(cookie => ({
-                    name: cookie.name,
-                    value: cookie.value,
-                    path: cookie.path,
-                    domain: cookie.domain,
-                    secure: cookie.secure,
-                    httpOnly: cookie.httpOnly,
-                    sameSite: cookie.sameSite,
-                    maxAge: cookie.maxAge
-                }))
-            }),
-            {
-                status: 200,
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
-    } catch (error) {
-        return new Response(
-            JSON.stringify({
-                success: false,
-                error: error.message
-            }),
-            {
-                status: 500,
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
-    }
+    return NextResponse.json({
+        hasToken: !!token,
+        tokenLength: token?.length || 0,
+        tokenStart: token ? token.substring(0, 20) + '...' : null,
+        message: token ? 'Token found!' : 'No token found',
+    })
 }

@@ -4,6 +4,7 @@ import User from '@/models/User';
 import Department from '@/lib/models/Department';
 import { userAdminCreateSchema } from '@/lib/schemas';
 import mongoose from 'mongoose';
+import { getWardDepartment } from '@/lib/wards';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,14 +15,14 @@ export const runtime = 'nodejs';
  * Admin-only endpoint to create staff accounts (department or municipal)
  * 
  * Requirements:
- * - User must be authenticated as admin
+ * - User must be authenticated as admin or SYSTEM_ADMIN
  * - Role can only be "department" or "municipal"
  * - Cannot create admin accounts
  * - Department is required for department staff
  * - Returns created user without password
  */
 
-export const POST = strictRoleMiddleware(['admin'])(async (req) => {
+export const POST = strictRoleMiddleware(['admin', 'SYSTEM_ADMIN'])(async (req) => {
     try {
         let body;
         try {
@@ -54,19 +55,31 @@ export const POST = strictRoleMiddleware(['admin'])(async (req) => {
             );
         }
 
-        // Role Validation based on Phase 2 requirements
-        if (role === 'FIELD_OFFICER' && (!wardId || !departmentId)) {
-            return new Response(
-                JSON.stringify({ error: 'FIELD_OFFICER requires both wardId and departmentId' }),
-                { status: 400, headers: { 'Content-Type': 'application/json' } }
-            );
+        // Role Validation based on new architecture
+        let effectiveWardId = wardId || null;
+        let effectiveDepartmentId = departmentId || null;
+
+        if (role === 'FIELD_OFFICER') {
+            if (!wardId) {
+                return new Response(
+                    JSON.stringify({ error: 'FIELD_OFFICER requires wardId' }),
+                    { status: 400, headers: { 'Content-Type': 'application/json' } }
+                );
+            }
+            // Derive departmentId from wardId
+            effectiveDepartmentId = getWardDepartment(wardId);
+            effectiveWardId = wardId;
         }
 
-        if (role === 'DEPARTMENT_MANAGER' && !departmentId) {
-            return new Response(
-                JSON.stringify({ error: 'DEPARTMENT_MANAGER requires departmentId' }),
-                { status: 400, headers: { 'Content-Type': 'application/json' } }
-            );
+        if (role === 'DEPARTMENT_MANAGER') {
+            if (!departmentId) {
+                return new Response(
+                    JSON.stringify({ error: 'DEPARTMENT_MANAGER requires departmentId' }),
+                    { status: 400, headers: { 'Content-Type': 'application/json' } }
+                );
+            }
+            effectiveWardId = null; // Managers handle all wards of their department
+            effectiveDepartmentId = departmentId;
         }
 
         // SECURITY: Validate department exists if provided (legacy)
@@ -106,8 +119,8 @@ export const POST = strictRoleMiddleware(['admin'])(async (req) => {
             phone: cleanPhone,
             role,
             department: departmentObjectId,
-            wardId: wardId || null,
-            departmentId: departmentId || null,
+            wardId: effectiveWardId,
+            departmentId: effectiveDepartmentId,
             address: address || {}
         });
 

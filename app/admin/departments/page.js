@@ -1,107 +1,132 @@
-'use client';
+'use client'
 
-import { useState, useEffect, useCallback } from 'react';
-import DashboardLayout from '@/components/DashboardLayout';
-import DashboardProtection from '@/components/DashboardProtection';
-import toast from 'react-hot-toast';
+import { useState, useEffect } from 'react'
+import DashboardLayout from '@/components/DashboardLayout'
+import DashboardProtection from '@/components/DashboardProtection'
+import { DEPARTMENTS, WARD_MAP, getDepartmentWards } from '@/lib/wards'
 
-/* PAGE F3: Admin — Department Management */
+const departmentList = Object.values(DEPARTMENTS)
 
-function DepartmentsContent() {
-    const [departments, setDepartments] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [newName, setNewName] = useState('');
-    const [creating, setCreating] = useState(false);
-    const inputCls = "bg-input border border-border rounded-input text-white placeholder:text-text-muted px-4 py-2.5 focus:border-gold focus:outline-none text-sm";
+function DepartmentRow({ dept }) {
+    const [northOfficer, setNorthOfficer] = useState(null)
+    const [southOfficer, setSouthOfficer] = useState(null)
+    const [loading, setLoading] = useState(true)
 
-    const fetchDepts = useCallback(async () => {
-        try {
-            const res = await fetch('/api/departments');
-            if (res.ok) setDepartments(await res.json());
-        } catch { toast.error('Failed to load'); }
-        finally { setLoading(false); }
-    }, []);
+    // Get the ward IDs for this department
+    const wardIds = getDepartmentWards(dept.id)
+    
+    // Get north and south ward data from WARD_MAP
+    const northWard = wardIds.find(id => WARD_MAP[id]?.zone === 'north')
+    const southWard = wardIds.find(id => WARD_MAP[id]?.zone === 'south')
 
-    useEffect(() => { fetchDepts(); }, [fetchDepts]);
+    // Get ward labels for display
+    const northWardLabel = northWard ? `Ward ${WARD_MAP[northWard].wardNumber} — North Zone` : '—'
+    const southWardLabel = southWard ? `Ward ${WARD_MAP[southWard].wardNumber} — South Zone` : '—'
 
-    const handleCreate = async (e) => {
-        e.preventDefault();
-        const name = newName.trim();
-        if (!name || name.length < 2) { toast.error('Name too short'); return; }
-        setCreating(true);
-        try {
-            const res = await fetch('/api/departments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
-            if (!res.ok) { const err = await res.json(); throw new Error(err.error || 'Failed'); }
-            toast.success('Department created'); setNewName(''); fetchDepts();
-        } catch (e) { toast.error(e.message); }
-        finally { setCreating(false); }
-    };
+    useEffect(() => {
+        async function loadOfficers() {
+            try {
+                const res = await fetch(`/api/admin/users?departmentId=${dept.id}`)
+                if (res.ok) {
+                    const { users } = await res.json()
+                    
+                    // Find north officer (wards 1-8)
+                    const north = users.find(u => 
+                        u.role === 'FIELD_OFFICER' && 
+                        u.wardId && 
+                        parseInt(u.wardId.replace('ward-', '')) <= 8
+                    )
+                    
+                    // Find south officer (wards 9-16)
+                    const south = users.find(u => 
+                        u.role === 'FIELD_OFFICER' && 
+                        u.wardId && 
+                        parseInt(u.wardId.replace('ward-', '')) > 8
+                    )
 
-    const handleDelete = async (id) => {
-        if (!confirm('Delete this department?')) return;
-        try {
-            const res = await fetch(`/api/departments/${id}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error();
-            toast.success('Deleted'); fetchDepts();
-        } catch { toast.error('Failed'); }
-    };
+                    if (north) setNorthOfficer(north)
+                    if (south) setSouthOfficer(south)
+                }
+            } catch (err) { }
+            finally { setLoading(false) }
+        }
+        loadOfficers()
+    }, [dept.id])
 
     if (loading) return (
-        <DashboardLayout><div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-gold/30 border-t-gold rounded-full animate-spin" /></div></DashboardLayout>
-    );
+        <tr>
+            <td colSpan="5" className="p-4 text-center">
+                <div className="w-5 h-5 border-2 border-gold/30 border-t-gold rounded-full animate-spin mx-auto" />
+            </td>
+        </tr>
+    )
 
+    return (
+        <tr className="hover:bg-white/5 transition-colors border-b border-white/5">
+            <td className="px-4 py-4 font-bold text-white whitespace-nowrap">
+                <span className="mr-2">{dept.icon}</span>
+                {dept.name}
+            </td>
+            <td className="px-4 py-4 text-sm text-text-muted">
+                {northWardLabel}
+            </td>
+            <td className="px-4 py-4 text-sm text-text-muted">
+                {southWardLabel}
+            </td>
+            <td className="px-4 py-4 text-sm">
+                {northOfficer ? (
+                    <span className="text-blue-400">{northOfficer.name}</span>
+                ) : (
+                    <span className="text-red-400">Vacant</span>
+                )}
+            </td>
+            <td className="px-4 py-4 text-sm">
+                {southOfficer ? (
+                    <span className="text-blue-400">{southOfficer.name}</span>
+                ) : (
+                    <span className="text-red-400">Vacant</span>
+                )}
+            </td>
+        </tr>
+    )
+}
+
+function DepartmentsContent() {
     return (
         <DashboardLayout>
             <div className="space-y-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">Department Management</h1>
-                    <p className="text-text-secondary text-sm mt-1">Create and manage system departments</p>
+                    <h1 className="text-2xl font-bold text-white">Department Structure</h1>
+                    <p className="text-text-secondary text-sm mt-1">Read-only view of 8 fixed departments and their assigned officers.</p>
                 </div>
 
-                {/* Create */}
-                <form onSubmit={handleCreate} className="bg-card rounded-card border border-border p-5">
-                    <h2 className="section-header">Create New Department</h2>
-                    <div className="flex gap-3 mt-3">
-                        <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="Department name..." className={`${inputCls} flex-1`} />
-                        <button type="submit" disabled={creating} className="btn-gold px-6 py-2.5 text-sm disabled:opacity-50">
-                            {creating ? '...' : '+ Create'}
-                        </button>
-                    </div>
-                </form>
-
-                {/* List */}
-                <div className="bg-card rounded-card border border-border overflow-hidden">
+                <div className="bg-card rounded-xl border border-border overflow-hidden">
                     <div className="overflow-x-auto">
-                        <table className="table-dark w-full">
-                            <thead><tr><th>Name</th><th>Staff</th><th>Created</th><th></th></tr></thead>
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-[#111] border-b border-border">
+                                    <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-text-muted">Department</th>
+                                    <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-text-muted">North Ward</th>
+                                    <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-text-muted">South Ward</th>
+                                    <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-text-muted">North Officer</th>
+                                    <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-text-muted">South Officer</th>
+                                </tr>
+                            </thead>
                             <tbody>
-                                {departments.length === 0 ? (
-                                    <tr><td colSpan={4} className="text-center py-8 text-text-secondary">No departments</td></tr>
-                                ) : departments.map(d => (
-                                    <tr key={d._id}>
-                                        <td className="text-white font-medium">{d.name}</td>
-                                        <td className="text-text-muted">{d.staffCount || 0}</td>
-                                        <td className="text-text-muted text-xs">{d.createdAt ? new Date(d.createdAt).toLocaleDateString() : '—'}</td>
-                                        <td>
-                                            <button onClick={() => handleDelete(d._id)} className="px-2 py-1 bg-red-500/20 text-red-400 border border-red-500/40 rounded-pill text-xs hover:bg-red-500/30">
-                                                Delete
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {departmentList.map(d => <DepartmentRow key={d.id} dept={d} />)}
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
         </DashboardLayout>
-    );
+    )
 }
 
-export default function AdminDepartments() {
+export default function AdminDepartmentsPage() {
     return (
         <DashboardProtection allowedRoles={['SYSTEM_ADMIN', 'admin']}>
             <DepartmentsContent />
         </DashboardProtection>
-    );
+    )
 }

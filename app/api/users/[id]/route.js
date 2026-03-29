@@ -3,25 +3,58 @@ import { roleMiddleware } from '@/lib/auth';
 import { strictRoleMiddleware } from '@/lib/middleware';
 import User from '@/models/User';
 import Department from '@/lib/models/Department';
-import { z } from 'zod';
 import mongoose from 'mongoose';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// Schema for updating user (admin-only fields)
-const updateUserSchema = z.object({
-    role: z.enum(['citizen', 'municipal', 'department']).optional(),
-    department: z.string().optional(), // Changed to string for ObjectId
-    isActive: z.boolean().optional(),
-    phone: z.string().regex(/^\+?[\d\s-]{10,}$/, 'Invalid phone number').optional().or(z.literal('')),
-    address: z.object({
-        street: z.string().optional(),
-        city: z.string().optional(),
-        state: z.string().optional(),
-        pincode: z.string().optional()
-    }).optional()
-});
+const updateUserSchema = {
+    safeParse(input) {
+        if (!input || typeof input !== 'object') {
+            return {
+                success: false,
+                error: { errors: [{ path: [], message: 'Invalid request body' }] }
+            };
+        }
+
+        if (input.role !== undefined && !['citizen', 'municipal', 'department'].includes(input.role)) {
+            return {
+                success: false,
+                error: { errors: [{ path: ['role'], message: 'Invalid role' }] }
+            };
+        }
+
+        if (input.department !== undefined && typeof input.department !== 'string') {
+            return {
+                success: false,
+                error: { errors: [{ path: ['department'], message: 'department must be a string' }] }
+            };
+        }
+
+        if (input.isActive !== undefined && typeof input.isActive !== 'boolean') {
+            return {
+                success: false,
+                error: { errors: [{ path: ['isActive'], message: 'isActive must be a boolean' }] }
+            };
+        }
+
+        if (input.phone !== undefined && input.phone !== '' && (typeof input.phone !== 'string' || !/^\+?[\d\s-]{10,}$/.test(input.phone))) {
+            return {
+                success: false,
+                error: { errors: [{ path: ['phone'], message: 'Invalid phone number' }] }
+            };
+        }
+
+        if (input.address !== undefined && (typeof input.address !== 'object' || Array.isArray(input.address))) {
+            return {
+                success: false,
+                error: { errors: [{ path: ['address'], message: 'address must be an object' }] }
+            };
+        }
+
+        return { success: true, data: input };
+    }
+};
 
 // SECURE: Admin-only endpoint to update user details
 export const PATCH = strictRoleMiddleware(['admin'])(async (req, { params }) => {

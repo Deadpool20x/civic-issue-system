@@ -1,0 +1,847 @@
+# CivicPulse — Comprehensive System Documentation
+## Part 1 of 3: Foundation, Architecture & Data Layer
+
+> **Audience:** Developers, architects, product managers, QA engineers, new team members.
+> **Purpose:** A complete, nothing-omitted reference explaining every feature, design decision, and technical detail of the CivicPulse civic issue management platform.
+
+---
+
+## Table of Contents (Full Document)
+
+- **Part 1** — Foundation, Architecture & Data Layer
+  - Chapter 1: What Is CivicPulse?
+  - Chapter 2: Technology Stack
+  - Chapter 3: System Architecture
+  - Chapter 4: Authentication & Security
+  - Chapter 5: Database Models
+  - Chapter 6: Geography — Wards & Zones
+
+- **Part 2** — Features, APIs & Core Logic
+  - Chapter 7: Issue Lifecycle
+  - Chapter 8: AI Integration
+  - Chapter 9: Priority Engine
+  - Chapter 10: Department Mapping
+  - Chapter 11: SLA & Escalation System
+  - Chapter 12: API Reference
+  - Chapter 13: Email System
+
+- **Part 3** — Frontend, Deployment & Operations
+  - Chapter 14: Frontend Components
+  - Chapter 15: Role-Based Dashboards
+  - Chapter 16: Maps & Geospatial
+  - Chapter 17: Internationalization (i18n)
+  - Chapter 18: Design System
+  - Chapter 19: Deployment
+  - Chapter 20: Environment & Configuration
+
+---
+
+# PART 1: FOUNDATION, ARCHITECTURE & DATA LAYER
+
+---
+
+## Chapter 1: What Is CivicPulse?
+
+### 1.1 The Problem Being Solved
+
+Citizens in urban municipalities face a chronic problem: **there is no reliable, transparent way to report and track civic issues**. Potholes go unrepaired for months. Street lights stay broken. Waste accumulates. When citizens do report issues verbally or via phone, there is no record, no accountability, and no feedback loop.
+
+On the government side, **departments work in silos**. There's no centralized intake, no way to measure which departments are performing well, no SLA (Service Level Agreement) enforcement, and no data-driven way to allocate resources.
+
+CivicPulse solves both sides of this equation.
+
+### 1.2 What CivicPulse Does
+
+CivicPulse is a **full-stack web application** that acts as a bridge between citizens and their municipal government. It provides:
+
+1. **A citizen-facing reporting tool** — Citizens photograph civic issues, describe them, pin the location on a map, and submit them with one tap.
+2. **AI-powered intake** — The system uses Google Gemini to analyze uploaded photos. It detects the type of issue (pothole, broken light, overflowing bin, etc.), verifies the image is authentic (not a stock photo or manipulated image), and auto-populates the category, subcategory, and priority. Citizens can override these suggestions.
+3. **Automatic department routing** — Based on issue category and the ward (geographic zone), the system routes the issue to the correct municipal department automatically.
+4. **Role-based dashboards** — Every type of user (citizen, field officer, department manager, commissioner, system admin) gets a tailored dashboard with the information and actions relevant to their role.
+5. **SLA enforcement** — Every issue has a deadline (24h for urgent, 48h for high, 72h for medium, 120h for low). The system tracks overdue issues, escalates them through a 3-level hierarchy, and penalizes departments for SLA breaches.
+6. **Transparency & engagement** — All issues are publicly visible on an interactive map. Citizens can upvote issues they care about (driving priority), comment, and rate the resolution quality.
+7. **Email notifications** — The Resend email service powers transactional emails: submission confirmation, status updates, department alerts, and post-resolution rating requests.
+8. **Analytics** — Administrators and commissioners see system-wide data: issue trends, department performance, SLA compliance rates, and geographic hotspots.
+
+### 1.3 Who Uses It
+
+| Role | Technical Name | What They Do |
+|------|---------------|--------------|
+| Citizen | `CITIZEN` | Report issues, track status, upvote, comment, rate |
+| Field Officer | `FIELD_OFFICER` | Assigned to a specific ward; resolves issues on the ground |
+| Department Manager | `DEPARTMENT_MANAGER` | Oversees a department (e.g., Roads); manages field officers |
+| Municipal Commissioner | `MUNICIPAL_COMMISSIONER` | Oversees all departments; can override priorities; views city-wide analytics |
+| System Administrator | `SYSTEM_ADMIN` | Full system access; user management; configuration |
+
+### 1.4 The Issue Lifecycle (30-Second Overview)
+
+```
+Citizen reports issue
+       ↓
+AI analyzes photo → detects category, priority (or citizen fills manually)
+       ↓
+System calculates SLA deadline based on priority
+       ↓
+Issue auto-routed → correct department based on category × ward
+       ↓
+Status: pending → assigned → in-progress
+       ↓ (if SLA breached → escalated)
+Status: resolved
+       ↓
+Citizen gets email → rates the service 1-5 stars
+       ↓
+Department performance metrics updated
+```
+
+---
+
+## Chapter 2: Technology Stack
+
+CivicPulse is built with a carefully chosen, production-grade stack. Here is every dependency explained:
+
+### 2.1 Frontend
+
+| Technology | Version | Why It Was Chosen |
+|-----------|---------|------------------|
+| **Next.js** | 14.2.15 | App Router architecture, built-in SSR/SSG, file-based routing, API routes in the same codebase, and Vercel deployment compatibility. The App Router (not Pages Router) is used throughout. |
+| **React** | 18.3.1 | Component model, hooks, context API for state. |
+| **TailwindCSS** | 3.4.19 | Utility-first CSS with a custom design system (dark theme, gold accent, status/priority colors). No runtime CSS. |
+| **react-hot-toast** | 2.4.1 | Lightweight toast notifications for success/error feedback. |
+| **Leaflet + react-leaflet** | 1.9.4 / 4.2.1 | Open-source interactive maps for issue location display. No paid API key required for basic use (unlike Google Maps). |
+| **react-leaflet-cluster** | 4.0.0 | Groups nearby map markers into clusters to prevent UI clutter when many issues are in the same area. |
+| **Recharts** | 3.7.0 | React charting library for analytics dashboards (bar charts, line graphs, pie charts). |
+| **browser-image-compression** | 2.0.2 | Compresses images in the browser before upload, reducing bandwidth and Cloudinary storage costs. |
+| **@lottiefiles/react-lottie-player** | 3.6.0 | Renders Lottie JSON animations (used in the hero section of the landing page). |
+| **i18next + react-i18next** | 25.x / 16.x | Full internationalization support. The UI can be switched between languages. |
+| **i18next-browser-languagedetector** | 8.x | Auto-detects the user's browser language on first visit. |
+
+### 2.2 Backend
+
+| Technology | Version | Why It Was Chosen |
+|-----------|---------|------------------|
+| **Next.js API Routes** | 14.2.15 | The backend lives in the same codebase (`app/api/`). No separate Express server needed. Each file in `app/api/` is a serverless function. |
+| **Node.js** | ≥18.17.0 | Required by Next.js 14. Provides the runtime for all server-side code. |
+
+### 2.3 Database
+
+| Technology | Version | Why It Was Chosen |
+|-----------|---------|------------------|
+| **MongoDB** | (Atlas or local) | Document database chosen for its flexibility with semi-structured civic data (issues have varying numbers of images, comments, escalation history). Geospatial queries (`$near`, `2dsphere`) are built-in. |
+| **Mongoose** | 8.1.0 | ODM (Object Document Mapper) that provides schema validation, middleware hooks (pre-save), instance methods, and static methods on top of MongoDB. |
+
+### 2.4 Authentication
+
+| Technology | Version | Why It Was Chosen |
+|-----------|---------|------------------|
+| **jsonwebtoken** | 9.0.3 | Signs and verifies JWT tokens on the server side (API routes). |
+| **jose** | 6.2.0 | Verifies JWT tokens in the **Edge Runtime** (middleware.js runs at the Edge, which cannot use Node.js-only modules like `jsonwebtoken`). `jose` is a Web Crypto API-based JWT library compatible with Edge. |
+| **bcryptjs** | 3.0.3 | Hashes user passwords with bcrypt (10 salt rounds) before storing in MongoDB. Pure JavaScript implementation, no native bindings needed. |
+
+> **Why two JWT libraries?** `jsonwebtoken` requires Node.js runtime and is used in regular API routes. `jose` is used only in `middleware.js` which runs in the Edge Runtime (Vercel's CDN edge nodes). This is a constraint of Next.js Edge Middleware.
+
+### 2.5 File Storage
+
+| Technology | Version | Why It Was Chosen |
+|-----------|---------|------------------|
+| **Cloudinary** | 2.7.0 | Cloud-based image hosting. Citizens upload up to 3 images per issue. Cloudinary handles storage, CDN delivery, and transformation (thumbnails, etc.). |
+| **next-cloudinary** | 6.3.0 | Next.js-specific Cloudinary integration with optimized `<CldImage>` component. |
+
+### 2.6 Email
+
+| Technology | Version | Why It Was Chosen |
+|-----------|---------|------------------|
+| **Resend** | 6.7.0 | Modern developer-friendly transactional email API. Used for all system emails: submission confirmations, status updates, department alerts, rating requests, and OTP emails. |
+
+### 2.7 AI & Computer Vision
+
+| Technology | Version/Model | Purpose |
+|-----------|-------------|---------|
+| **Google Gemini** (`@google/generative-ai`) | gemini-1.5-flash | Primary AI for image analysis. Analyzes uploaded photos, verifies authenticity, detects civic issue category, subcategory, and priority. |
+| **OpenAI GPT-4o-mini** | (via REST API) | Fallback AI for image analysis if Gemini fails. Also used for text analysis and response generation. |
+| **OpenAI GPT-3.5-turbo** | (via REST API) | Text-based analysis: classifies issues by title/description, extracts keywords, performs sentiment analysis. |
+| **Roboflow** | (via REST API) | Specialized computer vision for pothole detection. Provides high-confidence object detection on road images. Used as the first-pass detector before Gemini. |
+
+### 2.8 Validation
+
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **Zod** | 3.22.4 | Schema-based validation for all API request bodies. Every POST/PATCH endpoint validates its input against a Zod schema before touching the database. This prevents malformed data from ever reaching MongoDB. |
+
+### 2.9 Scheduling & Automation
+
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **node-cron** | 3.0.3 | Schedules automated background tasks: SLA deadline checks, reminder sending, and issue escalation. |
+
+### 2.10 Development & Testing
+
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **ESLint** | 8.57.1 | Code linting with Next.js-specific rules. |
+| **Jest** | 29.7.0 | Unit testing framework. |
+| **@testing-library/react** | 16.x | React component testing utilities. |
+| **PostCSS + Autoprefixer** | 8.x / 10.x | Processes TailwindCSS and adds vendor prefixes. |
+
+---
+
+## Chapter 3: System Architecture
+
+### 3.1 The Big Picture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        VERCEL / CDN EDGE                        │
+│  ┌─────────────────┐                                            │
+│  │  middleware.js   │ ← JWT verification at Edge (jose)         │
+│  │  (Edge Runtime)  │ ← Route-based access control              │
+│  └────────┬────────┘                                            │
+│           ↓                                                     │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │              NEXT.JS 14 APP ROUTER                      │    │
+│  │                                                         │    │
+│  │  ┌──────────────────┐    ┌──────────────────────────┐  │    │
+│  │  │  React Pages      │    │   API Routes (Node.js)   │  │    │
+│  │  │  (Client-side)    │    │   app/api/**             │  │    │
+│  │  │                  │    │                          │  │    │
+│  │  │  Landing Page    │    │  /api/auth/*             │  │    │
+│  │  │  Citizen UI      │    │  /api/issues/*           │  │    │
+│  │  │  Dept UI         │    │  /api/departments/*      │  │    │
+│  │  │  Comm. UI        │    │  /api/admin/*            │  │    │
+│  │  │  Admin UI        │    │  /api/ai/*               │  │    │
+│  │  │                  │    │  /api/upload/*           │  │    │
+│  │  └──────────────────┘    └────────────┬─────────────┘  │    │
+│  │                                       │                 │    │
+│  │  ┌──────────────────────────────────────────────────┐   │    │
+│  │  │                  LIB LAYER                       │   │    │
+│  │  │  auth.js | ai.js | email.js | mongodb.js        │   │    │
+│  │  │  priority-calculator.js | department-mapper.js  │   │    │
+│  │  │  schemas.js | middleware.js | wards.js           │   │    │
+│  │  └────────────────────┬─────────────────────────────┘   │    │
+│  └───────────────────────┼─────────────────────────────────┘    │
+│                          ↓                                      │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                   EXTERNAL SERVICES                       │  │
+│  │  MongoDB Atlas | Cloudinary | Resend | Gemini | OpenAI    │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 3.2 File Routing — Next.js App Router
+
+The `app/` directory uses file-based routing. Every `page.js` file becomes a URL. Every `route.js` file becomes an API endpoint. Here is the complete route map:
+
+#### Public Routes (no login required)
+| URL | File | Purpose |
+|-----|------|---------|
+| `/` | `app/page.js` | Landing page — hero, how it works, FAQ, roles |
+| `/login` | `app/(auth)/login/page.js` | Login form |
+| `/register` | `app/(auth)/register/page.js` | Self-registration for citizens |
+| `/public-dashboard` | `app/public-dashboard/page.js` | Public stats: total issues, resolution rate |
+| `/map` | `app/map/page.js` | Public interactive map of all issues |
+| `/track` | `app/track/page.js` | Track complaint by Report ID (no login needed) |
+| `/know-your-district` | `app/know-your-district/page.js` | Ward/zone information page |
+| `/privacy-policy` | `app/privacy-policy/page.js` | Privacy policy |
+| `/terms-of-service` | `app/terms-of-service/page.js` | Terms of service |
+| `/issues/[id]` | `app/issues/[id]/page.js` | Public issue detail view |
+
+#### Citizen Routes (role: CITIZEN)
+| URL | Purpose |
+|-----|---------|
+| `/citizen/dashboard` | My reported issues, stats, notifications |
+| `/citizen/report` | Report a new issue (full wizard with AI) |
+| `/citizen/secure-dashboard` | Additional secure view |
+
+#### Field Officer Routes (role: FIELD_OFFICER)
+| URL | Purpose |
+|-----|---------|
+| `/department/dashboard` | Issues assigned to this officer's ward |
+| `/department/issues` | All issues in their ward |
+| `/department/resolved` | Issues they've resolved |
+| `/department/stats` | Their personal performance stats |
+| `/department/profile` | Profile management |
+
+#### Department Manager Routes (role: DEPARTMENT_MANAGER)
+| URL | Purpose |
+|-----|---------|
+| `/municipal/dashboard` | Department-level overview |
+| `/municipal/departments` | View field officers in the department |
+| `/municipal/sla-dashboard` | SLA compliance monitoring |
+
+#### Commissioner Routes (role: MUNICIPAL_COMMISSIONER)
+| URL | Purpose |
+|-----|---------|
+| `/commissioner/dashboard` | City-wide overview |
+| `/commissioner/issues` | All issues across all departments |
+| `/commissioner/create-staff` | Create department manager or field officer accounts |
+
+#### Admin Routes (role: SYSTEM_ADMIN)
+| URL | Purpose |
+|-----|---------|
+| `/admin/dashboard` | System-wide overview |
+| `/admin/users` | User management (view, activate/deactivate) |
+| `/admin/create-user` | Create any type of user |
+| `/admin/departments` | Department management |
+| `/admin/issues` | Full issue management |
+| `/admin/analytics` | Advanced analytics |
+| `/admin/reports` | Report generation |
+
+### 3.3 API Route Structure
+
+The API follows RESTful conventions. All API routes live in `app/api/`:
+
+```
+app/api/
+├── auth/
+│   ├── login/route.js          POST  — Login, returns JWT
+│   ├── logout/route.js         POST  — Clears JWT cookie
+│   ├── me/route.js             GET   — Get current user from JWT
+│   └── register/route.js       POST  — Citizen self-registration
+├── issues/
+│   ├── route.js                GET (list), POST (create)
+│   ├── public/route.js         GET   — Public list (no auth)
+│   ├── check-duplicate/route.js POST  — Duplicate detection
+│   ├── [id]/
+│   │   ├── route.js            GET, PATCH, DELETE
+│   │   ├── assign/route.js     PATCH — Assign to department
+│   │   ├── priority/route.js   PATCH — Override priority
+│   │   ├── quick-action/route.js PATCH — Quick status change
+│   │   ├── rate/route.js       POST  — Submit rating
+│   │   ├── update-status/route.js PATCH — Full status update
+│   │   └── upvote/route.js     POST  — Toggle upvote
+│   ├── department/
+│   │   ├── route.js            GET   — Issues for logged-in dept staff
+│   │   ├── assigned/route.js   GET   — Assigned issues for dept
+│   │   ├── resolved/route.js   GET   — Resolved by dept
+│   │   └── stats/route.js      GET   — Department stats
+│   └── admin/route.js          GET   — Admin: all issues with filters
+├── departments/
+│   ├── route.js                GET (list), POST (create)
+│   └── [id]/route.js           GET, PUT, DELETE
+├── admin/
+│   ├── create-user/route.js    POST  — Admin creates any user
+│   └── analytics/
+│       ├── overview/route.js   GET   — System-wide stats
+│       ├── departments/route.js GET   — Per-department analytics
+│       ├── trends/route.js     GET   — Issue trends over time
+│       ├── stuck/route.js      GET   — Issues stuck for too long
+│       └── workflow/route.js   GET   — Workflow efficiency metrics
+├── upload/route.js             POST  — Upload image to Cloudinary
+├── ai/route.js                 POST  — Analyze image with AI
+├── notifications/route.js      GET   — User notifications
+├── stats/route.js              GET   — High-level system stats
+├── public-dashboard/route.js   GET   — Public stats (no auth)
+├── reports/
+│   ├── route.js                GET   — Generate report data
+│   └── download/route.js       GET   — Download report as CSV/JSON
+├── sla/route.js                GET   — SLA monitoring data
+├── performance/route.js        GET   — Performance metrics
+├── citizen-engagement/route.js GET   — Citizen engagement stats
+└── health/route.js             GET   — Health check endpoint
+```
+
+---
+
+## Chapter 4: Authentication & Security
+
+### 4.1 Authentication Strategy
+
+CivicPulse uses **custom JWT authentication** (not NextAuth). The decision to use custom JWT was made to have full control over token contents, cookie behavior, and role-normalization logic.
+
+**The flow:**
+
+```
+1. User submits email + password to POST /api/auth/login
+2. Server fetches user from MongoDB (with `select('+password')` to include the
+   password field that is normally excluded)
+3. bcrypt.compare() verifies the password against the hash
+4. If valid, generateToken(user) creates a JWT with 7-day expiry
+5. setTokenCookie(token) sets the JWT as an HTTP-only cookie named "token"
+6. On every subsequent request, the browser automatically sends the cookie
+7. API routes call getUser(request) to decode the JWT and get user data
+8. The Edge Middleware (middleware.js) independently verifies the JWT using
+   jose (Edge-compatible JWT library)
+```
+
+### 4.2 The JWT Token
+
+Every JWT created by `generateToken()` contains this payload:
+
+```javascript
+{
+  userId: "507f1f77bcf86cd799439011",  // MongoDB _id as string
+  name: "John Doe",
+  email: "john@example.com",
+  role: "CITIZEN",                     // The user's role
+  wardId: "ward-3",                    // Only set for FIELD_OFFICER
+  departmentId: "waste",               // Only set for DEPARTMENT_MANAGER/FIELD_OFFICER
+  isActive: true,
+  iat: 1704067200,                     // Issued at (Unix timestamp)
+  exp: 1704672000                      // Expires at (7 days later)
+}
+```
+
+**Why store wardId and departmentId in the token?**
+This allows API routes to know which ward/department a field officer belongs to *without* making a database query. When filtering issues for a specific officer, the route reads `req.user.wardId` directly from the JWT payload.
+
+### 4.3 HTTP-Only Cookie Security
+
+The token is stored as an **HTTP-only cookie**, which means:
+
+- JavaScript running in the browser **cannot read it** (prevents XSS token theft)
+- It is automatically sent with every request to the same origin
+- In production, it requires HTTPS (`secure: true`)
+
+```javascript
+// lib/auth.js
+cookies().set('token', token, {
+  httpOnly: true,          // JS cannot access this cookie
+  secure: process.env.NODE_ENV === 'production',  // HTTPS only in prod
+  sameSite: 'lax',         // Prevents CSRF in most scenarios  
+  maxAge: 60 * 60 * 24 * 7,  // 7 days in seconds
+  path: '/',               // Available to all routes
+})
+```
+
+### 4.4 Role System & Normalization
+
+The system has **two naming conventions for roles** (a legacy situation from a migration):
+
+| Legacy Name | Current Name |
+|-------------|-------------|
+| `citizen` | `CITIZEN` |
+| `department` | `FIELD_OFFICER` |
+| `municipal` | `DEPARTMENT_MANAGER` |
+| `commissioner` | `MUNICIPAL_COMMISSIONER` |
+| `admin` | `SYSTEM_ADMIN` |
+
+Both formats are supported in the database schema enum. The `normalizeRole()` function in `lib/auth.js` maps any variant to the canonical uppercase format. This is used in middleware to ensure consistent role comparison:
+
+```javascript
+const roleMap = {
+  'CITIZEN': 'CITIZEN',
+  'FIELD_OFFICER': 'FIELD_OFFICER',
+  'DEPARTMENT_MANAGER': 'DEPARTMENT_MANAGER',
+  'DEPARTMENT': 'DEPARTMENT_MANAGER',   // legacy alias
+  'MUNICIPAL_COMMISSIONER': 'MUNICIPAL_COMMISSIONER',
+  'COMMISSIONER': 'MUNICIPAL_COMMISSIONER',  // legacy alias
+  'SYSTEM_ADMIN': 'SYSTEM_ADMIN',
+  'ADMIN': 'SYSTEM_ADMIN',              // legacy alias
+};
+```
+
+### 4.5 Edge Middleware — Route Guards
+
+`middleware.js` (at the project root) runs **at the CDN edge** before any page loads. It enforces routing rules:
+
+```javascript
+// Route permissions — which role can access which URL prefix
+const ROUTE_PERMISSIONS = {
+  '/citizen': ['CITIZEN'],
+  '/field-officer': ['FIELD_OFFICER'],
+  '/department': ['DEPARTMENT_MANAGER'],
+  '/commissioner': ['MUNICIPAL_COMMISSIONER'],
+  '/admin': ['SYSTEM_ADMIN'],
+};
+```
+
+If a user tries to access `/admin/dashboard` but has role `CITIZEN`, they are **redirected to their correct dashboard** (`/citizen/dashboard`) rather than shown an error. This prevents role confusion.
+
+**Public paths** that bypass the middleware entirely:
+```javascript
+const PUBLIC_PATHS = [
+  '/', '/login', '/register',
+  '/forgot-password', '/reset-password',
+  '/track', '/map', '/privacy-policy',
+  '/terms-of-service', '/know-your-district',
+];
+```
+
+**The middleware also covers API routes:**
+```javascript
+export const config = {
+  matcher: [
+    '/citizen/:path*',
+    '/field-officer/:path*',
+    '/department/:path*',
+    '/commissioner/:path*',
+    '/admin/:path*',
+    '/api/issues/:path*',       // Protected issue APIs
+    '/api/admin/:path*',        // Admin-only APIs
+    '/api/commissioner/:path*', // Commissioner-only APIs
+  ]
+}
+```
+
+### 4.6 API-Level Middleware (`lib/middleware.js`)
+
+In addition to the Edge Middleware, API routes use a second layer: `strictRoleMiddleware()` and `createPathMiddleware()`. These are higher-order functions that wrap API route handlers:
+
+```javascript
+// Example: Admin-only API
+export const GET = strictRoleMiddleware(
+  ['admin', 'SYSTEM_ADMIN', 'MUNICIPAL_COMMISSIONER']
+)(async (req) => {
+  // Only reaches here if role check passes
+  const data = await fetchAdminData();
+  return Response.json(data);
+});
+```
+
+`strictRoleMiddleware` does:
+1. Calls `getTokenData()` to decode the JWT from the request cookie
+2. Normalizes the role
+3. Checks if the role is in the allowed list
+4. Validates that DEPARTMENT_MANAGER users have a departmentId assigned
+5. Attaches `req.user` with the decoded JWT payload
+
+### 4.7 Password Security
+
+- Passwords are **never stored in plain text**
+- On user creation/update, `bcrypt.genSalt(10)` generates a salt, and `bcrypt.hash()` creates the hash
+- The `password` field in the User model has `select: false`, meaning it is **never returned** by default in queries — you must explicitly call `.select('+password')` to get it
+- Login uses `bcrypt.compare(plaintext, hash)` — this is a timing-safe comparison that prevents timing attacks
+
+### 4.8 OTP System (Password Reset)
+
+For "forgot password" flows:
+1. User submits their email
+2. System generates a 6-digit OTP and stores it hashed in `user.otp` with `user.otpExpires` set 10 minutes in the future
+3. A styled OTP email is sent via Resend
+4. User submits the OTP — system verifies it hasn't expired
+5. User sets a new password
+
+The OTP email template is dark-themed with an amber OTP display and a security warning: *"Never share this OTP with anyone."*
+
+---
+
+## Chapter 5: Database Models
+
+MongoDB stores data in 7 collections, managed by Mongoose schemas.
+
+### 5.1 User Model (`models/User.js`)
+
+The User model covers all 5 roles in a single collection. Role-specific fields are conditionally populated.
+
+```
+Collection: users
+```
+
+**Fields:**
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `name` | String | ✅ | Trimmed |
+| `email` | String | ✅ | Unique, lowercase, trimmed |
+| `password` | String | ✅ | bcrypt hash. `select: false` — never returned by default |
+| `phone` | String | ❌ | Optional contact number |
+| `role` | String (enum) | ✅ | See role enum below. Default: `CITIZEN` |
+| `wardId` | String | ❌ | `ward-1` through `ward-16`. Required for FIELD_OFFICER only |
+| `departmentId` | String | ❌ | `roads`, `lighting`, etc. Required for DEPARTMENT_MANAGER |
+| `department` | ObjectId → Department | ❌ | Legacy ref to Department collection |
+| `googleId` | String | ❌ | For future Google OAuth integration (sparse index) |
+| `address.street/city/state/pincode` | String | ❌ | Optional address |
+| `isActive` | Boolean | — | Default: `true`. Deactivated users cannot log in |
+| `welcomeEmailSent` | Boolean | — | Prevents duplicate welcome emails |
+| `otp` | String | ❌ | Password reset OTP |
+| `otpExpires` | Date | ❌ | OTP expiry timestamp |
+| `createdAt` | Date | — | Auto-set to `Date.now` |
+
+**Role Enum (both legacy and current):**
+```javascript
+enum: [
+  'citizen', 'department', 'municipal', 'admin', 'commissioner', // legacy
+  'CITIZEN', 'FIELD_OFFICER', 'DEPARTMENT_MANAGER', 'SYSTEM_ADMIN', 'MUNICIPAL_COMMISSIONER' // current
+]
+```
+
+**Indexes:**
+- `{ phone: 1 }` — sparse (not all users have phones)
+- `{ wardId: 1, departmentId: 1 }` — composite for filtering staff by assignment
+- `{ role: 1, departmentId: 1 }` — finding all staff in a department
+- `{ role: 1, isActive: 1 }` — finding active users by role
+- `{ department: 1 }` — legacy department reference lookups
+- `{ role: 1 }` — role-based queries
+
+**Pre-save hooks:**
+1. **Password hashing** — If `password` is modified, auto-hash with bcrypt before saving
+2. **Department field cleanup** — If role is not a department-type role, `department`, `departmentId`, and `wardId` are cleared to `null/undefined`
+
+### 5.2 Issue Model (`models/Issue.js`)
+
+The most complex model. An issue represents a single civic complaint from creation through resolution.
+
+```
+Collection: issues
+```
+
+**Core Fields:**
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `reportId` | String | Unique. Auto-generated as `R00001`, `R00002`, etc. Used for public tracking |
+| `title` | String | Required. 10–200 characters |
+| `description` | String | Required. 30–2000 characters |
+| `category` | String (enum) | Required. One of 8 categories |
+| `subcategory` | String | Required. Specific sub-type within category |
+| `priority` | String (enum) | `low`, `medium`, `high`, `urgent`. Default: `medium` |
+| `status` | String (enum) | `pending`, `assigned`, `in-progress`, `resolved`, `rejected`, `reopened`, `escalated` |
+| `ward` | String | Required. `ward-1` through `ward-16`. Determines zone + department |
+
+**Location Object:**
+```javascript
+location: {
+  address: String,       // Human-readable address
+  coordinates: {
+    type: "Point",         // GeoJSON type for geospatial queries
+    coordinates: [lng, lat]  // NOTE: MongoDB uses [longitude, latitude] order!
+  },
+  city: String,
+  state: String,
+  pincode: String
+}
+```
+
+> ⚠️ **Important:** MongoDB GeoJSON uses `[longitude, latitude]` order, which is the **reverse** of common conventions like `[lat, lng]`. This must be handled carefully when interfacing with Leaflet which uses `[lat, lng]`.
+
+**AI Detection Fields:**
+```javascript
+detectionSource: 'roboflow' | 'gemini' | 'openai' | 'keyword' | 'manual' | 'AI_CONFIRMED' | 'AI_OVERRIDDEN'
+cvModelResults: Mixed    // Raw AI response stored for auditing
+aiAnalysis: {
+  category: String,
+  priority: String,
+  sentiment: String,
+  keywords: [String]
+}
+```
+
+**SLA Object:**
+```javascript
+sla: {
+  deadline: Date,            // Auto-calculated from priority
+  hoursRemaining: Number,    // Recalculated on every save
+  isOverdue: Boolean,        // true if deadline < now
+  escalationLevel: Number,   // 1, 2, or 3
+  escalationHistory: [{
+    level: Number,
+    escalatedAt: Date,
+    escalatedTo: String,     // 'Department Staff' | 'Department Head' | 'Commissioner/Mayor'
+    reason: String
+  }]
+}
+```
+
+**SLA Deadlines by Priority:**
+| Priority | Deadline |
+|----------|----------|
+| `urgent` | 24 hours |
+| `high` | 48 hours |
+| `medium` | 72 hours |
+| `low` | 120 hours |
+
+**Upvoting:**
+```javascript
+upvotes: Number,          // Count
+upvotedBy: [ObjectId]     // User IDs who upvoted (prevents duplicates)
+```
+
+**Feedback/Rating:**
+```javascript
+feedback: {
+  rating: Number,          // 1–5 stars
+  isResolved: Boolean,     // Citizen confirms if resolved
+  comment: String,
+  submittedAt: Date,
+  submittedBy: ObjectId    // User who gave feedback
+}
+```
+
+If citizen marks `isResolved: false`, the issue status changes to `reopened`.
+
+**Performance Tracking:**
+```javascript
+resolutionTime: Number,   // Hours from creation to resolution (calculated on save)
+penaltyPoints: Number     // Accumulated from escalations (level × 10 points each)
+```
+
+**Pre-save Hooks (in order):**
+1. **reportId generation** — Finds the highest existing ID, increments by 1, formats as `R#####`
+2. **dueTime setting** — Set to `createdAt + 7 days` if not provided
+3. **SLA auto-calculation** — Every save recalculates `hoursRemaining` and `isOverdue`; calculates `resolutionTime` when status becomes `resolved`
+
+**Instance Methods:**
+
+- `escalate(reason)` — Increments escalation level (max 3), sets status to `escalated`, records in history, adds penalty points
+- `getEscalationTarget()` — Returns who the issue escalates to at each level
+- `addUpvote(userId)` — Instance-level upvote (pre-checks duplicate)
+- `submitFeedback(rating, comment, isResolved, userId)` — Records citizen feedback
+
+**Static Methods:**
+
+- `Issue.addUpvote(issueId, userId)` — **Atomic** upvote using `findOneAndUpdate` with `$ne` check (prevents race conditions with concurrent upvotes)
+- `Issue.removeUpvote(issueId, userId)` — Atomic upvote removal
+
+### 5.3 Notification Model (`models/Notification.js`)
+
+Simple model for in-app notifications.
+
+```javascript
+{
+  userId: ObjectId,       // Who this notification is for
+  message: String,        // Notification text
+  type: String,           // e.g., 'status_update', 'assignment'
+  isRead: Boolean,
+  createdAt: Date
+}
+```
+
+### 5.4 StateHistory Model (`models/StateHistory.js`)
+
+Records every status change for an issue — creates an audit trail.
+
+```javascript
+{
+  issueId: ObjectId,
+  fromStatus: String,
+  toStatus: String,
+  changedBy: ObjectId,    // Who made the change
+  reason: String,         // Optional reason
+  timestamp: Date
+}
+```
+
+### 5.5 StaffPerformance Model (`models/StaffPerformance.js`)
+
+Tracks individual field officer metrics.
+
+```javascript
+{
+  staffId: ObjectId,
+  totalAssigned: Number,
+  totalResolved: Number,
+  averageResolutionTime: Number,  // In hours
+  overdueCount: Number,
+  penaltyPoints: Number,
+  period: String,         // e.g., '2024-01' for monthly rollup
+  updatedAt: Date
+}
+```
+
+### 5.6 DepartmentPerformance Model (`models/DepartmentPerformance.js`)
+
+Aggregated department-level metrics:
+
+```javascript
+{
+  departmentId: String,
+  totalIssues: Number,
+  resolvedIssues: Number,
+  averageResolutionTime: Number,
+  slaCompliance: Number,          // Percentage
+  citizenSatisfactionScore: Number, // Average rating
+  overdueIssues: Number,
+  escalationCount: Number,
+  period: String
+}
+```
+
+### 5.7 OTP Model (`models/OTP.js`)
+
+A separate collection for OTP management (alternative to storing OTP on the user):
+
+```javascript
+{
+  email: String,
+  otp: String,           // Hashed OTP
+  expiresAt: Date,
+  used: Boolean
+}
+```
+
+---
+
+## Chapter 6: Geography — Wards, Zones & Departments
+
+### 6.1 Overview
+
+CivicPulse models a fictional municipality divided into **16 wards** organized into **2 zones**: North and South. Each ward is **permanently assigned to one department**.
+
+This is the **single source of truth** — defined in `lib/wards.js`. No other file should hardcode ward data.
+
+### 6.2 The Ward Map
+
+```
+NORTH ZONE (Wards 1-8)
+┌─────────┬────────────────────────────┬─────────────────────────────┐
+│ Ward ID │ Ward                       │ Department                  │
+├─────────┼────────────────────────────┼─────────────────────────────┤
+│ ward-1  │ Ward 1 — North Zone        │ 🛣️ Roads & Infrastructure    │
+│ ward-2  │ Ward 2 — North Zone        │ 💡 Street Lighting          │
+│ ward-3  │ Ward 3 — North Zone        │ 🗑️ Waste Management         │
+│ ward-4  │ Ward 4 — North Zone        │ 💧 Water & Drainage         │
+│ ward-5  │ Ward 5 — North Zone        │ 🌳 Parks & Public Spaces    │
+│ ward-6  │ Ward 6 — North Zone        │ 🚦 Traffic & Signage        │
+│ ward-7  │ Ward 7 — North Zone        │ 🏥 Public Health & Safety   │
+│ ward-8  │ Ward 8 — North Zone        │ 📋 Other / General          │
+└─────────┴────────────────────────────┴─────────────────────────────┘
+
+SOUTH ZONE (Wards 9-16)
+┌─────────┬────────────────────────────┬─────────────────────────────┐
+│ ward-9  │ Ward 9 — South Zone        │ 🛣️ Roads & Infrastructure    │
+│ ward-10 │ Ward 10 — South Zone       │ 💡 Street Lighting          │
+│ ward-11 │ Ward 11 — South Zone       │ 🗑️ Waste Management         │
+│ ward-12 │ Ward 12 — South Zone       │ 💧 Water & Drainage         │
+│ ward-13 │ Ward 13 — South Zone       │ 🌳 Parks & Public Spaces    │
+│ ward-14 │ Ward 14 — South Zone       │ 🚦 Traffic & Signage        │
+│ ward-15 │ Ward 15 — South Zone       │ 🏥 Public Health & Safety   │
+│ ward-16 │ Ward 16 — South Zone       │ 📋 Other / General          │
+└─────────┴────────────────────────────┴─────────────────────────────┘
+```
+
+This means every department has **exactly 2 wards** — one in North zone and one in South zone. The Roads department responds to issues in ward-1 (North) and ward-9 (South).
+
+### 6.3 Ward Helper Functions
+
+```javascript
+// Get full label: "Ward 3 — North Zone · Waste Management"
+getWardLabel('ward-3')
+
+// Get both wards for the Roads department: ['ward-1', 'ward-9']
+getDepartmentWards('roads')
+
+// Get all 8 north wards: ['ward-1', 'ward-2', ..., 'ward-8']
+getZoneWards('north')
+
+// Get zone from ward: 'north'
+getWardZone('ward-3')
+
+// Get department from ward: 'waste'
+getWardDepartment('ward-3')
+
+// Find the ward at the intersection of south zone + roads: ward-9
+getWardByZoneDept('south', 'roads')
+```
+
+### 6.4 Ward Assignments for Users
+
+- **FIELD_OFFICER** — Has a `wardId` (e.g., `ward-3`). They can only see and work on issues in their specific ward.
+- **DEPARTMENT_MANAGER** — Has a `departmentId` (e.g., `waste`). They see issues from all wards under their department (ward-3 + ward-11 for Waste Management department).
+- **MUNICIPAL_COMMISSIONER / SYSTEM_ADMIN** — No ward/department restriction. Can see all issues.
+- **CITIZEN** — No ward assignment. Can report issues in any ward.
+
+### 6.5 The 8 Departments
+
+| Department ID | Display Name | Icon | Issue Category |
+|--------------|-------------|------|---------------|
+| `roads` | Roads & Infrastructure | 🛣️ | `roads-infrastructure` |
+| `lighting` | Street Lighting | 💡 | `street-lighting` |
+| `waste` | Waste Management | 🗑️ | `waste-management` |
+| `water` | Water & Drainage | 💧 | `water-drainage` |
+| `parks` | Parks & Public Spaces | 🌳 | `parks-public-spaces` |
+| `traffic` | Traffic & Signage | 🚦 | `traffic-signage` |
+| `health` | Public Health & Safety | 🏥 | `public-health-safety` |
+| `other` | Other / General | 📋 | `other` |
+
+---
+
+*End of Part 1. Continue to Part 2 for Issue Lifecycle, AI Integration, Priority Engine, SLA System, and API Reference.*

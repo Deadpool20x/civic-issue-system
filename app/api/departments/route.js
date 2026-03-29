@@ -3,15 +3,25 @@ import connectDB from '@/lib/mongodb';
 import Department from '@/lib/models/Department';
 import Issue from '@/models/Issue';
 import { withAuth, createErrorResponse } from '@/lib/utils';
+import { normalizeRole } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 /**
  * GET - List all departments with workload counts
+ * Accessible by: admin, commissioner, department manager
  */
 export const GET = withAuth(async (req) => {
     try {
+        // Check role - allow admin, commissioner, and department roles
+        const userRole = normalizeRole(req.user.role);
+        const allowedRoles = ['SYSTEM_ADMIN', 'MUNICIPAL_COMMISSIONER', 'DEPARTMENT_MANAGER'];
+        
+        if (!allowedRoles.includes(userRole)) {
+            return createErrorResponse('Unauthorized - Invalid role for departments', 403);
+        }
+
         await connectDB();
 
         const { searchParams } = new URL(req.url);
@@ -66,7 +76,8 @@ export const GET = withAuth(async (req) => {
 export const POST = withAuth(async (req) => {
     try {
         // Check admin role
-        if (req.user.role !== 'admin') {
+        const userRole = normalizeRole(req.user.role);
+        if (userRole !== 'SYSTEM_ADMIN') {
             return createErrorResponse('Admin access required', 403);
         }
 

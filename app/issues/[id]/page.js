@@ -2,9 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { useUser } from '@/lib/contexts/UserContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import StatusTimeline from '@/components/StatusTimeline';
 import RatingModal from '@/components/RatingModal';
+import IssueStatusUpdater from '@/components/IssueStatusUpdater';
+import IssueManagementPanel from '@/components/IssueManagementPanel';
+import IssueResponseEditor from '@/components/IssueResponseEditor';
+import IssueComments from '@/components/IssueComments';
 import toast from 'react-hot-toast';
 
 /* PAGE 24: Issue Detail Page (Dark Theme) */
@@ -22,20 +27,16 @@ const STATUS_STYLES = {
 
 export default function IssueDetailPage() {
     const params = useParams();
+    const { user: currentUser, loading: userLoading } = useUser();
     const [issue, setIssue] = useState(null);
     const [stateHistory, setStateHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showRatingModal, setShowRatingModal] = useState(false);
-    const [currentUser, setCurrentUser] = useState(null);
 
     useEffect(() => {
         const fetchAll = async () => {
             try {
-                const [uRes, iRes] = await Promise.all([
-                    fetch('/api/auth/me').catch(() => null),
-                    fetch(`/api/issues/${params.id}`),
-                ]);
-                if (uRes && uRes.ok) setCurrentUser(await uRes.json());
+                const iRes = await fetch(`/api/issues/${params.id}`);
                 if (iRes.ok) {
                     const data = await iRes.json();
                     setIssue(data.issue);
@@ -67,6 +68,12 @@ export default function IssueDetailPage() {
                 toast.error(data.error || 'Failed to submit rating');
             }
         } catch { toast.error('Error submitting rating'); }
+    };
+
+    const handleIssueUpdate = (updatedIssue) => {
+        setIssue(updatedIssue);
+        // Refresh to get updated state history
+        window.location.reload();
     };
 
     if (loading) return (
@@ -200,6 +207,34 @@ export default function IssueDetailPage() {
                         <StatusTimeline history={stateHistory} currentStatus={issue.status} />
                     </div>
                 </div>
+
+                {/* Comments & Responses - For everyone to see and add */}
+                <IssueComments
+                    issue={issue}
+                    currentUser={currentUser}
+                    onUpdate={handleIssueUpdate}
+                />
+
+                {/* Response Editor - For Managers & Commissioner to edit/approve responses */}
+                <IssueResponseEditor
+                    issue={issue}
+                    currentUser={currentUser}
+                    onUpdate={handleIssueUpdate}
+                />
+
+                {/* Issue Management Panel - Only for Managers & Commissioner */}
+                <IssueManagementPanel
+                    issue={issue}
+                    currentUser={currentUser}
+                    onUpdate={handleIssueUpdate}
+                />
+
+                {/* Status Updater - For all authorized staff */}
+                <IssueStatusUpdater
+                    issue={issue}
+                    currentUser={currentUser}
+                    onUpdate={handleIssueUpdate}
+                />
 
             </div>
 

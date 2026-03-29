@@ -38,23 +38,28 @@ const userSchema = new mongoose.Schema({
   wardId: {
     type: String,
     default: null,
-    trim: true
-    // Format: "ward-1" to "ward-16"
+    // Valid values: 'ward-1' through 'ward-16' or null
+    // Required for: FIELD_OFFICER only
+    // Null for: all other roles (including Dept Managers)
   },
   departmentId: {
     type: String,
     default: null,
-    trim: true
-    // Values: "roads" | "water" | "waste" | "lighting" | "parks" | "traffic" | "health" | "general"
+    // Valid values: 'roads','lighting','waste','water',
+    //               'parks','traffic','health','other'
+    // Required for: DEPARTMENT_MANAGER only
+    // For FIELD_OFFICER: derive from wardId using getWardDepartment()
+    // Null for: CITIZEN, MUNICIPAL_COMMISSIONER, SYSTEM_ADMIN
   },
   department: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Department',
     required: false
   },
-  ward: {
+  googleId: {
     type: String,
-    trim: true
+    default: null,
+    sparse: true
   },
   address: {
     street: String,
@@ -70,11 +75,21 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  otp: {
+    type: String,
+    default: null
+  },
+  otpExpires: {
+    type: Date,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now
   }
 });
+
+userSchema.index({ phone: 1 }, { sparse: true });
 
 // Indexes
 userSchema.index({ wardId: 1, departmentId: 1 });

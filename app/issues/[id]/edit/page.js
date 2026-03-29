@@ -38,7 +38,7 @@ export default function EditIssuePage() {
                 throw new Error('Failed to fetch issue');
             }
             const issue = await response.json();
-            
+
             // Check if user can edit this issue
             if (user.role === 'citizen' && issue.reportedBy._id !== user.userId) {
                 toast.error('You can only edit your own issues');
@@ -157,7 +157,8 @@ export default function EditIssuePage() {
             (error) => {
                 toast.error('Failed to get current location');
                 console.error('Geolocation error:', error);
-            }
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     };
 

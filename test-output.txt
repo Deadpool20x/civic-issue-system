@@ -1,0 +1,49 @@
+[dotenv@17.3.1] injecting env (15) from .env.local -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+Connected to DB
+
+Admin user found:
+  Email: admin@civicpulse.in
+  Role: SYSTEM_ADMIN
+  Password starts with: $2b$10$/ck
+  Is bcrypt hash: true
+
+Roads Manager found:
+  Email: roads.manager@civicpulse.in
+  Role: DEPARTMENT_MANAGER
+  departmentId: roads
+  Password starts with: $2b$10$2AZ
+
+Officer Ward 1 found:
+  Email: officer.ward1@civicpulse.in
+  Role: FIELD_OFFICER
+  wardId: ward-1
+
+
+All civicpulse.in users:
+  admin@civicpulse.in - SYSTEM_ADMIN - ward:null - dept:null
+  citizen@civicpulse.in - CITIZEN - ward:null - dept:null
+  commissioner@civicpulse.in - MUNICIPAL_COMMISSIONER - ward:null - dept:null
+  general.manager@civicpulse.in - DEPARTMENT_MANAGER - ward:null - dept:other
+  health.manager@civicpulse.in - DEPARTMENT_MANAGER - ward:null - dept:health
+  lighting.manager@civicpulse.in - DEPARTMENT_MANAGER - ward:null - dept:lighting
+  officer.ward10@civicpulse.in - FIELD_OFFICER - ward:ward-10 - dept:null
+  officer.ward11@civicpulse.in - FIELD_OFFICER - ward:ward-11 - dept:null
+  officer.ward12@civicpulse.in - FIELD_OFFICER - ward:ward-12 - dept:null
+  officer.ward13@civicpulse.in - FIELD_OFFICER - ward:ward-13 - dept:null
+  officer.ward14@civicpulse.in - FIELD_OFFICER - ward:ward-14 - dept:null
+  officer.ward15@civicpulse.in - FIELD_OFFICER - ward:ward-15 - dept:null
+  officer.ward16@civicpulse.in - FIELD_OFFICER - ward:ward-16 - dept:null
+  officer.ward1@civicpulse.in - FIELD_OFFICER - ward:ward-1 - dept:null
+  officer.ward2@civicpulse.in - FIELD_OFFICER - ward:ward-2 - dept:null
+  officer.ward3@civicpulse.in - FIELD_OFFICER - ward:ward-3 - dept:null
+  officer.ward4@civicpulse.in - FIELD_OFFICER - ward:ward-4 - dept:null
+  officer.ward5@civicpulse.in - FIELD_OFFICER - ward:ward-5 - dept:null
+  officer.ward6@civicpulse.in - FIELD_OFFICER - ward:ward-6 - dept:null
+  officer.ward7@civicpulse.in - FIELD_OFFICER - ward:ward-7 - dept:null
+  officer.ward8@civicpulse.in - FIELD_OFFICER - ward:ward-8 - dept:null
+  officer.ward9@civicpulse.in - FIELD_OFFICER - ward:ward-9 - dept:null
+  parks.manager@civicpulse.in - DEPARTMENT_MANAGER - ward:null - dept:parks
+  roads.manager@civicpulse.in - DEPARTMENT_MANAGER - ward:null - dept:roads
+  traffic.manager@civicpulse.in - DEPARTMENT_MANAGER - ward:null - dept:traffic
+  waste.manager@civicpulse.in - DEPARTMENT_MANAGER - ward:null - dept:waste
+  water.manager@civicpulse.in - DEPARTMENT_MANAGER - ward:null - dept:water

@@ -85,7 +85,7 @@ function SLAContent() {
                         </select>
                         <select value={ward} onChange={e => setWard(e.target.value)} className={inputCls}>
                             <option value="all">All Wards</option>
-                            {slaData?.issues?.map(i => i.ward).filter((w, i, a) => w && a.indexOf(w) === i).map(w => (
+                            {Array.isArray(slaData?.issues) && slaData.issues.map(i => i.ward).filter((w, i, a) => w && a.indexOf(w) === i).map(w => (
                                 <option key={w} value={w}>{w}</option>
                             ))}
                         </select>
@@ -147,7 +147,7 @@ function SLAContent() {
                             <tbody>
                                 {(!slaData?.issues || slaData.issues.length === 0) ? (
                                     <tr><td colSpan={7} className="text-center py-8 text-text-secondary">No issues found</td></tr>
-                                ) : slaData.issues.map(issue => {
+                                ) : Array.isArray(slaData?.issues) && slaData.issues.map(issue => {
                                     const tag = getSlaTag(issue.sla?.hoursRemaining, issue.sla?.isOverdue);
                                     return (
                                         <tr key={issue._id}>

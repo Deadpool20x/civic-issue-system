@@ -1,5 +1,6 @@
 import { connectDB } from '@/lib/mongodb';
 import { strictRoleMiddleware } from '@/lib/middleware';
+import { normalizeRole } from '@/lib/auth';
 import Issue from '@/models/Issue';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +10,7 @@ export const runtime = 'nodejs';
  * GET /api/admin/analytics/overview
  * Admin-only: Returns system-wide issue statistics
  */
-export const GET = strictRoleMiddleware(['admin'])(async (req) => {
+export const GET = strictRoleMiddleware(['admin', 'SYSTEM_ADMIN', 'commissioner', 'MUNICIPAL_COMMISSIONER'])(async (req) => {
     try {
         await connectDB();
 

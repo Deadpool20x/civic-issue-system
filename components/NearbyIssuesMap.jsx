@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/useStaticTranslation'
 
 const MapContainer = dynamic(() => import('react-leaflet').then(m => m.MapContainer), { ssr: false })
 const TileLayer = dynamic(() => import('react-leaflet').then(m => m.TileLayer), { ssr: false })
@@ -18,12 +18,19 @@ export default function NearbyIssuesMap({ center }) {
             setL(leaflet.default)
         })
 
-        if (center) {
-            fetch(`/api/issues/nearby?lat=${center[0]}&lng=${center[1]}&radius=5`)
-                .then(res => res.json())
-                .then(data => setIssues(data.issues || []))
-                .catch(err => console.error('Map fetch error:', err))
-        }
+        const fetchNearby = () => {
+            if (center) {
+                fetch(`/api/issues/nearby?lat=${center[0]}&lng=${center[1]}&radius=5`)
+                    .then(res => res.json())
+                    .then(data => setIssues(data.issues || []))
+                    .catch(err => console.error('Map fetch error:', err))
+            }
+        };
+
+        fetchNearby();
+        const interval = setInterval(fetchNearby, 30000); // Poll every 30 seconds
+
+        return () => clearInterval(interval);
     }, [center])
 
     if (!center || !L) return <div className="h-64 bg-white/5 animate-pulse rounded-3xl border border-border" />

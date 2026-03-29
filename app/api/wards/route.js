@@ -1,28 +1,30 @@
-import { connectDB } from '@/lib/mongodb';
-import mongoose from 'mongoose';
+import { WARD_MAP, DEPARTMENTS } from '@/lib/wards';
 
-const wardSchema = new mongoose.Schema({
-    wardNumber: Number,
-    wardId: { type: String, unique: true },
-    wardName: String,
-    zone: String,
-});
-
-const Ward = mongoose.models.Ward || mongoose.model('Ward', wardSchema);
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
     try {
-        await connectDB();
+        const northZone = [];
+        const southZone = [];
 
-        const wards = await Ward.find().sort({ wardNumber: 1 });
+        Object.entries(WARD_MAP).forEach(([wardId, data]) => {
+            const wardInfo = {
+                wardId,
+                wardName: `Ward ${data.wardNumber} - ${DEPARTMENTS[data.departmentId].name}`,
+                zone: data.zone
+            };
 
-        const northZone = wards.filter(w => w.zone === 'North Zone');
-        const southZone = wards.filter(w => w.zone === 'South Zone');
+            if (data.zone === 'north') {
+                northZone.push(wardInfo);
+            } else {
+                southZone.push(wardInfo);
+            }
+        });
 
         return Response.json({
+            success: true,
             northZone,
-            southZone,
-            all: wards
+            southZone
         });
     } catch (error) {
         console.error('Error fetching wards:', error);

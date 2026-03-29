@@ -1,0 +1,315 @@
+
+> civic-issue-system@0.1.0 predev
+> echo "Starting Civic Issue System..." && echo "Checking configuration..."
+
+"Starting Civic Issue System..." 
+"Checking configuration..."
+
+> civic-issue-system@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.15
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1432ms
+ ○ Compiling / ...
+ ✓ Compiled / in 7.4s (702 modules)
+ GET / 200 in 8226ms
+ ✓ Compiled in 823ms (342 modules)
+ ○ Compiling /api/auth/me ...
+ ✓ Compiled /api/auth/me in 1499ms (446 modules)
+MongoDB connected successfully
+ GET /api/auth/me 404 in 2167ms
+ GET /api/auth/me 404 in 2175ms
+ ○ Compiling /api/auth/[...nextauth] ...
+ ✓ Compiled /api/auth/[...nextauth] in 695ms (671 modules)
+ GET /api/auth/session 200 in 1845ms
+ GET /api/auth/session 200 in 31ms
+ ✓ Compiled /login in 467ms (1005 modules)
+ ○ Compiling /api/auth/login ...
+ ✓ Compiled /api/auth/login in 1379ms (935 modules)
+Login attempt for email: yashvraj@gmail.com
+User found: false
+ POST /api/auth/login 401 in 1578ms
+ ✓ Compiled in 368ms (355 modules)
+ ✓ Compiled in 562ms (344 modules)
+ ✓ Compiled in 514ms (344 modules)
+ ✓ Compiled in 520ms (344 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ✓ Compiled in 1230ms (699 modules)
+ GET /login 200 in 392ms
+ ✓ Compiled /api/auth/me in 393ms (450 modules)
+[DEBUG] getTokenData - Token decoded successfully, role: citizen
+[DEBUG] getTokenData - Token decoded successfully, role: citizen
+[DEBUG] /api/auth/me - userData from token: {
+  userId: '6957985a16e5959ff3629ab8',
+  email: 'yashvraj@gmail.com',
+  role: 'citizen',
+  department: null,
+  ward: null,
+  wardId: null,
+  departmentId: null,
+  iat: 1772795276,
+  exp: 1773400076
+}
+[DEBUG] /api/auth/me - userData from token: {
+  userId: '6957985a16e5959ff3629ab8',
+  email: 'yashvraj@gmail.com',
+  role: 'citizen',
+  department: null,
+  ward: null,
+  wardId: null,
+  departmentId: null,
+  iat: 1772795276,
+  exp: 1773400076
+}
+ GET /api/auth/me 404 in 566ms
+ GET /api/auth/me 404 in 571ms
+ ✓ Compiled /api/auth/[...nextauth] in 280ms (675 modules)
+ GET /api/auth/session 200 in 453ms
+ GET /api/auth/session 200 in 12ms
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ✓ Compiled in 855ms (1005 modules)
+ GET /login 200 in 818ms
+[DEBUG] getTokenData - Token decoded successfully, role: citizen
+[DEBUG] getTokenData - Token decoded successfully, role: citizen
+[DEBUG] /api/auth/me - userData from token: {
+  userId: '6957985a16e5959ff3629ab8',
+  email: 'yashvraj@gmail.com',
+  role: 'citizen',
+  department: null,
+  ward: null,
+  wardId: null,
+  departmentId: null,
+  iat: 1772795276,
+  exp: 1773400076
+}
+[DEBUG] /api/auth/me - userData from token: {
+  userId: '6957985a16e5959ff3629ab8',
+  email: 'yashvraj@gmail.com',
+  role: 'citizen',
+  department: null,
+  ward: null,
+  wardId: null,
+  departmentId: null,
+  iat: 1772795276,
+  exp: 1773400076
+}
+ GET /api/auth/me 404 in 61ms
+ GET /api/auth/me 404 in 56ms
+ GET /api/auth/session 200 in 77ms
+ GET /api/auth/session 200 in 21ms
+ GET /api/auth/callback/google?state=a6aiwBhmhqghdlJ21wvbQh5COBnnhPq6E6ydKiLY-44&iss=https%3A%2F%2Faccounts.google.com&code=4%2F0AfrIepDq87XVJwa06ojwMhmWMsZCzdFZnkZdEr73gu0uHh00_m5-pj_7BcBFqSB3wDZYyg&scope=email+profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile+openid+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email&authuser=0&prompt=none 302 in 644ms
+ GET /api/auth/error?error=OAuthAccountNotLinked 302 in 29ms
+ GET /api/auth/signin?error=OAuthAccountNotLinked 302 in 25ms
+ GET /login?callbackUrl=http%3A%2F%2Flocalhost%3A3000%2Fcitizen%2Fdashboard&error=OAuthAccountNotLinked 200 in 94ms
+[DEBUG] getTokenData - Token decoded successfully, role: citizen
+[DEBUG] getTokenData - Token decoded successfully, role: citizen
+[DEBUG] /api/auth/me - userData from token: {
+  userId: '6957985a16e5959ff3629ab8',
+  email: 'yashvraj@gmail.com',
+  role: 'citizen',
+  department: null,
+  ward: null,
+  wardId: null,
+  departmentId: null,
+  iat: 1772795276,
+  exp: 1773400076
+}
+[DEBUG] /api/auth/me - userData from token: {
+  userId: '6957985a16e5959ff3629ab8',
+  email: 'yashvraj@gmail.com',
+  role: 'citizen',
+  department: null,
+  ward: null,
+  wardId: null,
+  departmentId: null,
+  iat: 1772795276,
+  exp: 1773400076
+}
+ GET /api/auth/me 404 in 42ms
+ GET /api/auth/me 404 in 44ms
+ GET /api/auth/session 200 in 37ms
+ GET /api/auth/session 200 in 20ms
+ ○ Compiling /register ...
+ ✓ Compiled /register in 1037ms (1025 modules)
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 574ms (1014 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /_next/static/webpack/44454b13a07c0dff.webpack.hot-update.json 404 in 889ms
+ GET /register 200 in 71ms
+[DEBUG] getTokenData - Token decoded successfully, role: citizen
+[DEBUG] getTokenData - Token decoded successfully, role: citizen
+[DEBUG] /api/auth/me - userData from token: {
+  userId: '6957985a16e5959ff3629ab8',
+  email: 'yashvraj@gmail.com',
+  role: 'citizen',
+  department: null,
+  ward: null,
+  wardId: null,
+  departmentId: null,
+  iat: 1772795276,
+  exp: 1773400076
+}
+[DEBUG] /api/auth/me - userData from token: {
+  userId: '6957985a16e5959ff3629ab8',
+  email: 'yashvraj@gmail.com',
+  role: 'citizen',
+  department: null,
+  ward: null,
+  wardId: null,
+  departmentId: null,
+  iat: 1772795276,
+  exp: 1773400076
+}
+ GET /api/auth/me 404 in 71ms
+ GET /api/auth/me 404 in 72ms
+ GET /api/auth/session 200 in 103ms
+ GET /api/auth/session 200 in 27ms
+ ○ Compiling /api/auth/register ...
+ ✓ Compiled /api/auth/register in 695ms (940 modules)
+Registration attempt for email: meet@gmail.com role: citizen
+User created successfully with ID: new ObjectId('69aaf4107f48c8c86b63db9d')
+[email] RESEND_API_KEY not found in environment variables
+Confirmation email sent to: meet@gmail.com
+ POST /api/auth/register 201 in 1013ms
+ ○ Compiling /citizen/dashboard ...
+ ✓ Compiled /citizen/dashboard in 1571ms (1386 modules)
+ GET /citizen/dashboard 200 in 1946ms
+[DEBUG] getTokenData - Token decoded successfully, role: citizen
+[DEBUG] getTokenData - Token decoded successfully, role: citizen
+[DEBUG] /api/auth/me - userData from token: {
+  userId: '69aaf4107f48c8c86b63db9d',
+  email: 'meet@gmail.com',
+  role: 'citizen',
+  department: null,
+  ward: null,
+  wardId: null,
+  departmentId: null,
+  iat: 1772811280,
+  exp: 1773416080
+}
+[DEBUG] /api/auth/me - userData from token: {
+  userId: '69aaf4107f48c8c86b63db9d',
+  email: 'meet@gmail.com',
+  role: 'citizen',
+  department: null,
+  ward: null,
+  wardId: null,
+  departmentId: null,
+  iat: 1772811280,
+  exp: 1773416080
+}
+[DEBUG] /api/auth/me - user from DB, role: citizen
+ GET /api/auth/me 200 in 66ms
+[DEBUG] /api/auth/me - user from DB, role: citizen
+ GET /api/auth/me 200 in 71ms
+ ✓ Compiled /api/issues in 364ms (1010 modules)
+[DEBUG] getTokenData - Token decoded successfully, role: citizen
+ GET /api/issues 200 in 614ms
+[DEBUG] getTokenData - Token decoded successfully, role: citizen
+ GET /api/issues 200 in 47ms
+ ○ Compiling /citizen/report ...
+ ✓ Compiled /citizen/report in 1063ms (1449 modules)
+ ○ Compiling /api/issues/nearby ...
+ ✓ Compiled /api/issues/nearby in 526ms (1043 modules)
+ GET /api/issues/nearby?lat=22.521233599442382&lng=72.91647724535315&radius=5 200 in 1081ms
+ GET /api/issues/nearby?lat=22.521233599442382&lng=72.91647724535315&radius=5 200 in 33ms
+ ✓ Compiled /api/wards in 243ms (1045 modules)
+ GET /api/wards 200 in 348ms
+ GET /api/wards 200 in 27ms
+ ○ Compiling /api/upload ...
+ ✓ Compiled /api/upload in 1112ms (1289 modules)
+[DEBUG] getTokenData - Token decoded successfully, role: citizen
+ POST /api/upload 200 in 5050ms
+ ✓ Compiled /api/issues/detect-image in 325ms (1293 modules)
+Roboflow and Gemini both failed/timed out, falling back to OpenAI... {
+  roboflowErr: 'Roboflow response not OK: 403',
+  geminiErr: '[GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.'
+}
+All CV models failed: Error: OpenAI response not OK
+    at AIAnalyzer.analyzeWithOpenAIFallback (webpack-internal:///(rsc)/./lib/ai.js:135:37)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async POST (webpack-internal:///(rsc)/./app/api/issues/detect-image/route.js:45:34)
+    at async D:\Projects\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:55778
+    at async eO.execute (D:\Projects\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:46527)
+    at async eO.handle (D:\Projects\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:6:57112)
+    at async doRender (D:\Projects\node_modules\next\dist\server\base-server.js:1352:42)
+    at async cacheEntry.responseCache.get.routeKind (D:\Projects\node_modules\next\dist\server\base-server.js:1574:28)
+    at async DevServer.renderToResponseWithComponentsImpl (D:\Projects\node_modules\next\dist\server\base-server.js:1482:28)
+    at async DevServer.renderPageComponent (D:\Projects\node_modules\next\dist\server\base-server.js:1908:24)
+    at async DevServer.renderToResponseImpl (D:\Projects\node_modules\next\dist\server\base-server.js:1946:32)
+    at async DevServer.pipeImpl (D:\Projects\node_modules\next\dist\server\base-server.js:921:25)
+    at async NextNodeServer.handleCatchallRenderRequest (D:\Projects\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (D:\Projects\node_modules\next\dist\server\base-server.js:817:17)
+    at async D:\Projects\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\Projects\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\Projects\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\Projects\node_modules\next\dist\server\lib\router-server.js:173:21)
+    at async handleRequest (D:\Projects\node_modules\next\dist\server\lib\router-server.js:350:24)
+    at async requestHandlerImpl (D:\Projects\node_modules\next\dist\server\lib\router-server.js:374:13)
+    at async Server.requestListener (D:\Projects\node_modules\next\dist\server\lib\start-server.js:141:13)
+ POST /api/issues/detect-image 200 in 3372ms
+ ✓ Compiled /api/auth/logout in 348ms (436 modules)
+ POST /api/auth/logout 200 in 480ms
+ ✓ Compiled /api/auth/[...nextauth] in 194ms (668 modules)
+ GET /api/auth/csrf 200 in 441ms
+ POST /api/auth/signout 200 in 56ms
+ ✓ Compiled /api/auth/me in 344ms (747 modules)
+[DEBUG] getTokenData - No token found in cookies
+[DEBUG] /api/auth/me - userData from token: null
+ GET /api/auth/me 401 in 727ms
+ GET /api/auth/session 200 in 80ms
+ ○ Compiling /api/auth/login ...
+ ✓ Compiled /api/auth/login in 713ms (1007 modules)
+Login attempt for email: yashvraj@gmail.com
+User found: true
+Password valid with model method: false
+ POST /api/auth/login 401 in 1070ms
+ GET /login 200 in 186ms
+[DEBUG] getTokenData - No token found in cookies
+[DEBUG] getTokenData - No token found in cookies
+[DEBUG] /api/auth/me - userData from token: null
+[DEBUG] /api/auth/me - userData from token: null
+ GET /api/auth/me 401 in 51ms
+ GET /api/auth/me 401 in 45ms
+ GET /api/auth/session 200 in 68ms
+ GET /api/auth/session 200 in 28ms
+Login attempt for email: admin@civicpulse.in
+User found: false
+ POST /api/auth/login 401 in 29ms
+ GET /login 200 in 69ms
+[DEBUG] getTokenData - No token found in cookies
+[DEBUG] getTokenData - No token found in cookies
+[DEBUG] /api/auth/me - userData from token: null
+[DEBUG] /api/auth/me - userData from token: null
+ GET /api/auth/me 401 in 36ms
+ GET /api/auth/me 401 in 33ms
+ GET /api/auth/session 200 in 38ms
+ GET /api/auth/session 200 in 29ms
+Login attempt for email: meet@gmail.com
+User found: true
+Password valid with model method: true
+[DEBUG] Login - Generated token payload: {
+  userId: '69aaf4107f48c8c86b63db9d',
+  email: 'meet@gmail.com',
+  role: 'citizen',
+  department: null,
+  ward: null,
+  wardId: null,
+  departmentId: null
+}
+ POST /api/auth/login 200 in 138ms
+[email] RESEND_API_KEY not found in environment variables
+Welcome email sent to: meet@gmail.com
+ ✓ Compiled /api/issues in 405ms (1020 modules)
+[DEBUG] getTokenData - Token decoded successfully, role: citizen
+ GET /api/issues 200 in 593ms
+ ✓ Compiled /api/issues/nearby in 491ms (1044 modules)
+[DEBUG] getTokenData - Token decoded successfully, role: citizen
+ GET /api/issues 200 in 931ms
+ GET /api/issues/nearby?lat=22.52121520675453&lng=72.91648948764416&radius=5 200 in 966ms
+ GET /api/issues/nearby?lat=22.52121520675453&lng=72.91648948764416&radius=5 200 in 31ms
+^C

@@ -1,10 +1,11 @@
 'use client';
-import { useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useEffect, useState } from 'react';
+import { useTranslation } from '@/lib/useStaticTranslation';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUser } from '@/lib/contexts/UserContext';
-import LanguageSelector from '@/components/LanguageSelector';
+// import LanguageSelector from '@/components/LanguageSelector';
+import LottiePlayer from '@/components/LottiePlayer';
 
 const ROLE_DASHBOARDS = {
   'admin': '/admin/dashboard',
@@ -23,6 +24,7 @@ export default function HomePage() {
   const { user, loading } = useUser();
   const router = useRouter();
   const { t } = useTranslation();
+  const [openFaq, setOpenFaq] = useState(null);
 
   // Auto-redirect if logged in
   useEffect(() => {
@@ -51,10 +53,10 @@ export default function HomePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
               </div>
-              <span className="text-lg font-bold text-white tracking-tight">Civic System</span>
+              <span className="text-lg font-bold text-white tracking-tight">{t('nav.title', 'Civic System')}</span>
             </div>
             <div className="flex items-center gap-4">
-              <LanguageSelector />
+              {/* <LanguageSelector /> */}
               <div className="h-6 w-px bg-border mx-1" />
               <Link
                 href="/login"
@@ -74,45 +76,56 @@ export default function HomePage() {
       </nav>
 
       {/* ── Hero Section ── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20 text-center">
-        <h1 className="text-5xl md:text-7xl font-black text-white mb-8 leading-[1.1] tracking-tight">
-          {t('landing.hero').split('.')[0]}
-          <span className="block text-gold mt-2 drop-shadow-[0_0_15px_rgba(245,166,35,0.3)]">
-            {t('landing.hero').split('.')[1] || ''}
-          </span>
-        </h1>
-        <p className="text-xl text-text-secondary mb-12 max-w-2xl mx-auto font-medium leading-relaxed opacity-80">
-          {t('landing.subtext')}
-        </p>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-20 relative overflow-hidden">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="text-left">
+            <h1 className="text-5xl md:text-7xl font-black text-white mb-8 leading-[1.1] tracking-tight">
+              {t('landing.hero').split('.')[0]}
+              <span className="block text-gold mt-2 drop-shadow-[0_0_15px_rgba(245,166,35,0.3)]">
+                {t('landing.hero').split('.')[1] || ''}
+              </span>
+            </h1>
+            <p className="text-xl text-text-secondary mb-12 max-w-2xl font-medium leading-relaxed opacity-80">
+              {t('landing.subtext')}
+            </p>
 
-        <div className="flex flex-col sm:flex-row gap-5 justify-center mb-12">
-          <Link
-            href="/register"
-            className="btn-gold px-10 py-4 text-base font-bold shadow-xl shadow-gold/20 hover:scale-105 transition-transform"
-          >
-            {t('landing.reportButton')}
-          </Link>
-          <Link
-            href="/login"
-            className="px-10 py-4 text-base font-bold border-2 border-border text-white rounded-pill hover:bg-white/5 transition-all hover:border-white"
-          >
-            {t('nav.signIn')}
-          </Link>
+            <div className="flex flex-col sm:flex-row gap-5 mb-12">
+              <Link
+                href="/register"
+                className="btn-gold px-10 py-4 text-base font-bold shadow-xl shadow-gold/20 hover:scale-105 transition-transform"
+              >
+                {t('landing.reportButton')}
+              </Link>
+              <Link
+                href="/login"
+                className="px-10 py-4 text-base font-bold border-2 border-border text-white rounded-pill hover:bg-white/5 transition-all hover:border-white"
+              >
+                {t('nav.signIn')}
+              </Link>
+            </div>
+
+            <Link
+              href="/public-dashboard"
+              className="inline-flex items-center gap-3 px-8 py-3.5 bg-card border border-border rounded-pill text-text-secondary hover:text-gold hover:border-gold/40 transition-all font-bold text-sm shadow-xl hover:shadow-gold/10"
+            >
+              🗺️ {t('nav.viewMap')}
+            </Link>
+          </div>
+          <div className="hidden lg:block relative">
+            <div className="absolute inset-0 bg-gold/10 blur-[100px] rounded-full animate-pulse" />
+            <LottiePlayer
+              src="https://lottie.host/81222851-f76e-4467-8480-5a3501a4e158/9S4V8U6F5X.json"
+              style={{ width: '100%', height: '500px' }}
+            />
+          </div>
         </div>
-
-        <Link
-          href="/public-dashboard"
-          className="inline-flex items-center gap-3 px-8 py-3.5 bg-card border border-border rounded-pill text-text-secondary hover:text-gold hover:border-gold/40 transition-all font-bold text-sm shadow-xl hover:shadow-gold/10"
-        >
-          🗺️ {t('nav.viewMap')}
-        </Link>
       </section>
 
       {/* ── How It Works ── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 border-t border-border/10">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-black text-white mb-4 tracking-tight">{t('landing.howItWorks')}</h2>
-          <p className="text-text-secondary text-lg font-medium opacity-70">Simple steps to report and resolve civic issues</p>
+          <p className="text-text-secondary text-lg font-medium opacity-70">{t('landing.howItWorksSubtitle')}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -124,7 +137,7 @@ export default function HomePage() {
             </div>
             <h3 className="text-2xl font-bold text-white mb-4 tracking-tight">{t('report.submit')}</h3>
             <p className="text-text-secondary text-sm leading-relaxed">
-              Citizens can easily report civic issues with photos, location, and detailed descriptions.
+              {t('landing.reportSubmitDesc')}
             </p>
           </div>
 
@@ -135,9 +148,9 @@ export default function HomePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">AI Processing</h3>
+            <h3 className="text-lg font-semibold text-white mb-2">{t('landing.aiProcessing')}</h3>
             <p className="text-text-secondary text-sm leading-relaxed">
-              AI automatically categorizes issues, assigns priority levels, and routes to appropriate departments.
+              {t('landing.aiProcessingDesc')}
             </p>
           </div>
 
@@ -148,27 +161,65 @@ export default function HomePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">Track Progress</h3>
+            <h3 className="text-lg font-semibold text-white mb-2">{t('landing.trackProgress')}</h3>
             <p className="text-text-secondary text-sm leading-relaxed">
-              Real-time tracking of issue status with notifications and updates throughout the resolution process.
+              {t('landing.trackProgressDesc')}
             </p>
           </div>
+        </div>
+      </section>
+
+      {/* ── FAQ Section ── */}
+      <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-black text-white mb-4 tracking-tight">{t('landing.faq')}</h2>
+          <p className="text-text-secondary text-lg font-medium opacity-70">{t('landing.faqSubtitle')}</p>
+        </div>
+
+        <div className="space-y-3">
+          {[
+            { q: t('faq.q1'), a: t('faq.a1') },
+            { q: t('faq.q2'), a: t('faq.a2') },
+            { q: t('faq.q3'), a: t('faq.a3') },
+            { q: t('faq.q4'), a: t('faq.a4') },
+            { q: t('faq.q5'), a: t('faq.a5') },
+            { q: t('faq.q6'), a: t('faq.a6') },
+            { q: t('faq.q7'), a: t('faq.a7') },
+            { q: t('faq.q8'), a: t('faq.a8') }
+          ].map((faq, i) => (
+            <div key={i} className="bg-card border border-border rounded-2xl overflow-hidden">
+              <button
+                onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                className="w-full flex items-center justify-between px-6 py-4 text-left"
+              >
+                <span className="text-white font-medium pr-4">{faq.q}</span>
+                <span className={`text-gold text-xl transition-transform flex-shrink-0 ${openFaq === i ? 'rotate-45' : ''}`}>
+                  +
+                </span>
+              </button>
+              {openFaq === i && (
+                <div className="px-6 pb-5 border-t border-border pt-4">
+                  <p className="text-text-secondary leading-relaxed">{faq.a}</p>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </section>
 
       {/* ── Roles Section ── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 mb-10">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-black text-white mb-4 tracking-tight">Supporting Roles</h2>
-          <p className="text-text-secondary text-lg font-medium opacity-70">A complete ecosystem for civic governance</p>
+          <h2 className="text-4xl font-black text-white mb-4 tracking-tight">{t('landing.supportingRoles')}</h2>
+          <p className="text-text-secondary text-lg font-medium opacity-70">{t('landing.rolesSubtitle')}</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {[
-            { title: t('citizen.citizen'), desc: 'Report and track civic issues in your neighborhood', emoji: '👤', color: 'gold' },
-            { title: t('status.resolved'), desc: 'Manage departments and monitor SLA compliance', emoji: '🏛️', color: 'blue-400' },
-            { title: 'Departments', desc: 'Field officers resolve issues ward by ward', emoji: '🔧', color: 'green-400' },
-            { title: 'Admins', desc: 'System configuration and user management', emoji: '⚙️', color: 'purple-400' },
+            { title: t('roles.citizen'), desc: t('citizen.dashboardDesc', 'Report and track civic issues in your neighborhood'), emoji: '👤', color: 'gold' },
+            { title: t('roles.municipal'), desc: t('department.managerDesc', 'Manage departments and monitor SLA compliance'), emoji: '🏛️', color: 'blue-400' },
+            { title: t('roles.department'), desc: t('department.fieldDesc', 'Field officers resolve issues ward by ward'), emoji: '🔧', color: 'green-400' },
+            { title: t('roles.admin'), desc: t('admin.systemDesc', 'System configuration and user management'), emoji: '⚙️', color: 'purple-400' },
           ].map((role) => (
             <div
               key={role.title}
@@ -184,21 +235,47 @@ export default function HomePage() {
 
       {/* ── Footer: bg-[#080808] ── */}
       <footer className="bg-navbar border-t border-border py-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="w-6 h-6 bg-gold rounded-md flex items-center justify-center">
-              <svg className="w-3 h-3 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+            <div>
+              <div className="flex items-center justify-center gap-3 mb-3">
+                <div className="w-6 h-6 bg-gold rounded-md flex items-center justify-center">
+                  <svg className="w-3 h-3 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+                <h3 className="text-base font-semibold text-white">{t('nav.title')}</h3>
+              </div>
+              <p className="text-text-muted text-sm text-center">
+                {t('footer.tagline')}
+              </p>
             </div>
-            <h3 className="text-base font-semibold text-white">Civic Issue System</h3>
+            <div>
+              <h4 className="text-white font-semibold mb-4 text-center">{t('footer.quickLinks')}</h4>
+              <div className="space-y-2 text-center">
+                <Link href="/public-dashboard" className="block text-text-muted hover:text-gold text-sm">{t('nav.sidebar.publicDashboard')}</Link>
+                <Link href="/track" className="block text-text-muted hover:text-gold text-sm">{t('footer.trackComplaint')}</Link>
+                <Link href="/know-your-district" className="block text-text-muted hover:text-gold text-sm">{t('footer.knowDistrict')}</Link>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-4 text-center">{t('footer.legal')}</h4>
+              <div className="space-y-2 text-center">
+                <Link href="/privacy-policy" className="block text-text-muted hover:text-gold text-sm">{t('footer.privacyPolicy')}</Link>
+                <Link href="/terms-of-service" className="block text-text-muted hover:text-gold text-sm">{t('footer.termsOfService')}</Link>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-4 text-center">{t('footer.contact')}</h4>
+              <p className="text-text-muted text-sm text-center">support@civicpulse.in</p>
+              <p className="text-text-muted text-sm text-center mt-2">{t('district.subtitle')}</p>
+            </div>
           </div>
-          <p className="text-text-muted text-sm">
-            Enhancing transparency, accountability, and responsiveness in civic governance.
-          </p>
-          <p className="text-text-muted text-xs mt-4">
-            © {new Date().getFullYear()} Civic Issue System. All rights reserved.
-          </p>
+          <div className="border-t border-border pt-6 text-center">
+            <p className="text-text-muted text-xs">
+              {t('footer.copyright', { year: new Date().getFullYear() })}
+            </p>
+          </div>
         </div>
       </footer>
     </div>

@@ -1,7 +1,11 @@
 import mongoose from 'mongoose';
+import dotenv from 'dotenv';
 
-// Direct MongoDB connection for scripts
-const MONGODB_URI = 'mongodb://localhost:27017/civic-issue-system';
+// Load environment variables
+dotenv.config({ path: '.env.local' });
+
+// Use environment variable for MongoDB connection
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/civic-issue-system';
 
 async function connectDB() {
     try {
