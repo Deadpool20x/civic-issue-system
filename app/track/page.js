@@ -16,14 +16,14 @@ function StatusBadge({ status }) {
     'resolved': 'bg-green-500/20 text-green-400 border border-green-500/40',
     'rejected': 'bg-red-500/20 text-red-400 border border-red-500/40',
     'escalated': 'bg-red-600/20 text-red-300 border border-red-600/40',
-    'reopened': 'bg-purple-500/20 text-purple-400 border border-purple-500/40',
+    'reopened': 'bg-teal-500/20 text-teal-400 border border-teal-500/40',
   };
 
   const style = statusStyles[status?.toLowerCase()] || statusStyles.pending;
   
   return (
     <span className={`px-3 py-1 rounded-full text-xs font-medium ${style}`}>
-      {(t(`status.${status?.toLowerCase()}`) || status?.replace('-', ' ')).toUpperCase()}
+      {(t(`status.${status?.toLowerCase()}`) || status?.replace('-', ' ') || 'UNKNOWN').toUpperCase()}
     </span>
   );
 }
@@ -115,7 +115,7 @@ function StatusTimeline({ statusHistory }) {
             <div className="flex-1">
               <div className="flex items-center justify-between">
                 <span className={`text-sm font-medium ${isCompleted ? 'text-white' : 'text-[#AAAAAA]'}`}>
-                  {(t(`status.${entry.status?.toLowerCase()}`) || entry.status?.replace('-', ' ')).toUpperCase()}
+                  {(t(`status.${entry.status?.toLowerCase()}`) || entry.status?.replace('-', ' ') || 'UNKNOWN').toUpperCase()}
                 </span>
                 <span className="text-xs text-[#666666]">
                   {formatDate(entry.timestamp)}

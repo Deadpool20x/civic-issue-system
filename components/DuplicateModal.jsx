@@ -29,7 +29,7 @@ export default function DuplicateModal({ duplicates, onSubmitAnyway, onUpvote, o
     const colors = {
       'submitted': 'bg-status-warning/10 text-status-warning',
       'acknowledged': 'bg-blue-100 text-blue-700',
-      'assigned': 'bg-purple-100 text-purple-700',
+      'assigned': 'bg-teal-100 text-teal-700',
       'in-progress': 'bg-brand-primary/10 text-brand-primary',
     };
     return colors[status] || 'bg-neutral-bg text-contrast-secondary';

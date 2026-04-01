@@ -27,7 +27,7 @@ const ROLE_ROUTES = {
 const ROUTE_PERMISSIONS = {
     '/citizen': ['citizen', 'CITIZEN'],
     '/field-officer': ['field_officer', 'FIELD_OFFICER'],
-    '/department': ['department', 'field_officer', 'FIELD_OFFICER', 'department_manager', 'DEPARTMENT_MANAGER'],
+    '/department': ['department', 'department_manager', 'DEPARTMENT_MANAGER'],
     '/commissioner': ['municipal', 'commissioner', 'municipal_commissioner', 'MUNICIPAL_COMMISSIONER', 'COMMISSIONER'],
     '/municipal': ['municipal', 'commissioner', 'municipal_commissioner', 'MUNICIPAL_COMMISSIONER', 'COMMISSIONER'],
     '/admin': ['admin', 'system_admin', 'SYSTEM_ADMIN', 'ADMIN'],

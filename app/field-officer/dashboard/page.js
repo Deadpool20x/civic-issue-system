@@ -5,38 +5,13 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import DashboardLayout from '@/components/DashboardLayout';
+import DashboardProtection from '@/components/DashboardProtection';
 import { WARD_MAP, DEPARTMENTS, ZONES } from '@/lib/wards';
 
 export default function FieldOfficerDashboard() {
   const { user, loading } = useUser()
   const router = useRouter()
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login')
-    }
-  }, [user, loading, router])
-
-  // Show nothing while checking auth
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 border-2 border-[#F5A623] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-[#AAAAAA] text-sm">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Not logged in — useEffect will redirect
-  if (!user) return null
-
-  // Wrong role — redirect
-  if (user.role !== 'FIELD_OFFICER') {
-    router.push('/login')
-    return null
-  }
 
   // RENDER DASHBOARD HERE
   function FieldOfficerDashboardContent() {
@@ -105,10 +80,10 @@ export default function FieldOfficerDashboard() {
         bar: 'bg-blue-500'
       };
       return {
-        bg: 'bg-purple-500/10',
-        border: 'border-purple-500/30',
-        text: 'text-purple-400',
-        bar: 'bg-purple-500'
+        bg: 'bg-teal-500/10',
+        border: 'border-teal-500/30',
+        text: 'text-teal-400',
+        bar: 'bg-teal-500'
       };
     };
 
@@ -134,8 +109,30 @@ export default function FieldOfficerDashboard() {
 
     if (loadingState) return (
       <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="w-10 h-10 border-4 border-gold/20 border-t-gold rounded-full animate-spin"></div>
+        <div className="space-y-8 animate-pulse">
+          {/* Header Skeleton */}
+          <div className="space-y-4">
+            <div className="h-8 w-64 bg-white/10 rounded-xl" />
+            <div className="h-4 w-48 bg-white/5 rounded-lg" />
+          </div>
+
+          {/* Ward Card Skeleton */}
+          <div className="h-40 bg-white/5 border border-white/10 rounded-[20px]" />
+
+          {/* Stats Skeleton */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="h-24 bg-white/5 border border-white/10 rounded-[20px]" />
+            <div className="h-24 bg-white/5 border border-white/10 rounded-[20px]" />
+            <div className="h-32 bg-white/10 border border-white/20 rounded-[20px]" />
+            <div className="h-24 bg-white/5 border border-white/10 rounded-[20px]" />
+          </div>
+
+          {/* Action Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="h-32 bg-white/5 border border-white/10 rounded-[20px]" />
+            <div className="h-32 bg-white/5 border border-white/10 rounded-[20px]" />
+            <div className="h-32 bg-white/5 border border-white/10 rounded-[20px]" />
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -148,10 +145,20 @@ export default function FieldOfficerDashboard() {
             <div className="bg-[#1A1A1A] border border-red-500/30 rounded-[20px] p-8 max-w-md text-center">
               <div className="text-4xl mb-4">⚠️</div>
               <h2 className="text-white font-bold text-xl mb-2">Ward Not Assigned</h2>
-              <p className="text-[#AAAAAA] text-sm leading-relaxed">
-                Your account does not have a ward assigned.
-                Please contact your Department Manager or System Admin.
+              <p className="text-[#AAAAAA] text-sm leading-relaxed mb-4">
+                Your Field Officer account does not have a ward assigned.
+                This prevents you from viewing issues and data.
               </p>
+              <div className="bg-[#252525] border border-border rounded-xl p-4 text-left">
+                <p className="text-white text-sm font-medium mb-2">Please contact:</p>
+                <ul className="text-[#AAAAAA] text-sm space-y-1">
+                  <li>• Your Department Manager, or</li>
+                  <li>• System Admin at <span className="text-gold">admin@civicpulse.in</span></li>
+                </ul>
+                <p className="text-[#AAAAAA] text-xs mt-3">
+                  They need to assign you to a ward in the admin panel.
+                </p>
+              </div>
             </div>
           </div>
         </DashboardLayout>
@@ -226,17 +233,17 @@ export default function FieldOfficerDashboard() {
 
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link href="/department/issues" className="bg-[#1A1A1A] border border-gold/20 hover:border-gold/50 rounded-[20px] p-6 transition-all group">
+            <Link href="/field-officer/issues" className="bg-[#1A1A1A] border border-gold/20 hover:border-gold/50 rounded-[20px] p-6 transition-all group">
               <div className="text-3xl mb-3">📋</div>
               <h3 className="text-lg font-bold text-white mb-1 group-hover:text-gold transition-colors">My Issues</h3>
               <p className="text-[#AAAAAA] text-sm">View all assigned issues</p>
             </Link>
-            <Link href="/department/resolved" className="bg-[#1A1A1A] border border-gold/20 hover:border-gold/50 rounded-[20px] p-6 transition-all group">
+            <Link href="/field-officer/resolved" className="bg-[#1A1A1A] border border-gold/20 hover:border-gold/50 rounded-[20px] p-6 transition-all group">
               <div className="text-3xl mb-3">✅</div>
               <h3 className="text-lg font-bold text-white mb-1 group-hover:text-gold transition-colors">Resolved</h3>
               <p className="text-[#AAAAAA] text-sm">View resolved issues</p>
             </Link>
-            <Link href="/department/stats" className="bg-[#1A1A1A] border border-gold/20 hover:border-gold/50 rounded-[20px] p-6 transition-all group">
+            <Link href="/field-officer/profile" className="bg-[#1A1A1A] border border-gold/20 hover:border-gold/50 rounded-[20px] p-6 transition-all group">
               <div className="text-3xl mb-3">📈</div>
               <h3 className="text-lg font-bold text-white mb-1 group-hover:text-gold transition-colors">Performance</h3>
               <p className="text-[#AAAAAA] text-sm">View your stats</p>
@@ -247,7 +254,7 @@ export default function FieldOfficerDashboard() {
           <div className="bg-[#1A1A1A] border border-gold/20 rounded-[20px] p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-white">Recent Active Issues</h3>
-              <Link href="/department/issues" className="text-gold hover:underline text-sm font-medium">
+              <Link href="/field-officer/issues" className="text-gold hover:underline text-sm font-medium">
                 View All →
               </Link>
             </div>
@@ -257,7 +264,7 @@ export default function FieldOfficerDashboard() {
                 {recentIssues.map((issue) => (
                   <Link
                     key={issue._id}
-                    href={`/issues/${issue._id}`}
+                    href={`/field-officer/issues/${issue._id}`}
                     className="block bg-[#252525] hover:bg-[#2A2A2A] border border-border rounded-xl p-4 transition-all"
                   >
                     <div className="flex items-start justify-between mb-2">
@@ -311,6 +318,8 @@ export default function FieldOfficerDashboard() {
   }
 
   return (
-    <FieldOfficerDashboardContent />
+    <DashboardProtection allowedRoles={['FIELD_OFFICER']}>
+      <FieldOfficerDashboardContent />
+    </DashboardProtection>
   );
 }

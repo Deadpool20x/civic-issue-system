@@ -58,8 +58,8 @@ const navigation = {
     dept_manager: [
         { name: 'Dashboard', href: '/department/dashboard', icon: 'dashboard' },
         { name: 'Issues', href: '/department/issues', icon: 'issues' },
-        { name: 'My Officers', href: '/municipal/departments', icon: 'departments' },
-        { name: 'SLA Monitor', href: '/municipal/sla-dashboard', icon: 'sla' },
+        { name: 'My Officers', href: '/department/departments', icon: 'departments' },
+        { name: 'SLA Monitor', href: '/department/sla-monitoring', icon: 'sla' },
         { name: 'Profile', href: '/department/profile', icon: 'profile' },
     ],
 

@@ -156,8 +156,8 @@ export default function HomePage() {
 
           {/* Card 3: Track Progress */}
           <div className="bg-card rounded-card border border-border p-8 text-center hover:border-gold/30 transition-colors group">
-            <div className="w-16 h-16 bg-purple-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5 group-hover:bg-purple-500/20 transition-colors">
-              <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 bg-teal-500/10 rounded-2xl flex items-center justify-center mx-auto mb-5 group-hover:bg-teal-500/20 transition-colors">
+              <svg className="w-8 h-8 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
@@ -219,7 +219,7 @@ export default function HomePage() {
             { title: t('roles.citizen'), desc: t('citizen.dashboardDesc', 'Report and track civic issues in your neighborhood'), emoji: '👤', color: 'gold' },
             { title: t('roles.municipal'), desc: t('department.managerDesc', 'Manage departments and monitor SLA compliance'), emoji: '🏛️', color: 'blue-400' },
             { title: t('roles.department'), desc: t('department.fieldDesc', 'Field officers resolve issues ward by ward'), emoji: '🔧', color: 'green-400' },
-            { title: t('roles.admin'), desc: t('admin.systemDesc', 'System configuration and user management'), emoji: '⚙️', color: 'purple-400' },
+            { title: t('roles.admin'), desc: t('admin.systemDesc', 'System configuration and user management'), emoji: '⚙️', color: 'teal-400' },
           ].map((role) => (
             <div
               key={role.title}

@@ -6,6 +6,7 @@ import PageHeader from '@/components/PageHeader';
 import StatCard from '@/components/StatCard';
 import toast from 'react-hot-toast';
 import DashboardLayout from '@/components/DashboardLayout';
+import DashboardProtection from '@/components/DashboardProtection';
 import Link from 'next/link';
 import { DEPARTMENTS } from '@/lib/wards';
 
@@ -13,33 +14,6 @@ export default function CommissionerDashboard() {
   const { user, loading } = useUser()
   const router = useRouter()
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login')
-    }
-  }, [user, loading, router])
-
-  // Show nothing while checking auth
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 border-2 border-[#F5A623] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-[#AAAAAA] text-sm">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Not logged in — useEffect will redirect
-  if (!user) return null
-
-  // Wrong role — redirect
-  const roleUpper = user.role?.toUpperCase();
-  if (roleUpper !== 'MUNICIPAL_COMMISSIONER') {
-    router.push('/login')
-    return null
-  }
 
   // RENDER DASHBOARD HERE
   function CommissionerDashboardContent() {
@@ -48,15 +22,17 @@ export default function CommissionerDashboard() {
     const [wardStats, setWardStats] = useState([]);
     const [escalations, setEscalations] = useState([]);
     const [loadingState, setLoadingState] = useState(true);
+    const [staffCounts, setStaffCounts] = useState({ officers: 0, managers: 0 });
 
     const fetchDashboardData = useCallback(async () => {
       try {
         setLoadingState(true);
-        const [briefRes, statsRes, wardStatsRes, issuesRes] = await Promise.all([
+        const [briefRes, statsRes, wardStatsRes, issuesRes, staffRes] = await Promise.all([
           fetch('/api/commissioner/briefing'),
           fetch('/api/issues/stats'),
           fetch('/api/issues/ward-stats'),
-          fetch('/api/issues?priority=urgent&limit=10')
+          fetch('/api/issues?priority=urgent&limit=10'),
+          fetch('/api/admin/users/stats')
         ]);
 
         console.log('[DEBUG CommissionerDashboard] API responses:', {
@@ -66,17 +42,24 @@ export default function CommissionerDashboard() {
           issues: issuesRes.status
         });
 
-        const [briefJson, statsJson, wardStatsJson, issuesJson] = await Promise.all([
+        const [briefJson, statsJson, wardStatsJson, issuesJson, staffJson] = await Promise.all([
           briefRes.json(),
           statsRes.json(),
           wardStatsRes.json(),
-          issuesRes.json()
+          issuesRes.json(),
+          staffRes.json()
         ]);
 
         if (briefJson.success) { setBriefing(briefJson.briefing); }
         if (statsJson.success) { setStatsData(statsJson.data); }
         if (wardStatsJson.success) { setWardStats(wardStatsJson.data || []); }
         if (issuesJson.success) { setEscalations(issuesJson.data || []); }
+        if (staffJson.success) {
+          setStaffCounts({
+            officers: staffJson.data.officers || 0,
+            managers: staffJson.data.managers || 0
+          });
+        }
 
       } catch (err) {
         console.error('[DEBUG CommissionerDashboard] Error loading dashboard:', err);
@@ -92,8 +75,14 @@ export default function CommissionerDashboard() {
 
     if (loadingState) return (
       <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="w-10 h-10 border-4 border-gold/20 border-t-gold rounded-full animate-spin"></div>
+        <div className="space-y-8 animate-pulse">
+          <div className="h-12 w-3/4 bg-white/10 rounded-xl" />
+          <div className="h-64 bg-white/5 border border-white/10 rounded-card" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-32 bg-white/5 border border-white/10 rounded-2xl" />
+            ))}
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -248,10 +237,10 @@ export default function CommissionerDashboard() {
                   </div>
 
                   {/* South Zone Row */}
-                  <div className="flex items-center justify-between py-1.5 px-2 rounded bg-purple-500/10 border border-purple-500/20 mb-3">
+                  <div className="flex items-center justify-between py-1.5 px-2 rounded bg-teal-500/10 border border-teal-500/20 mb-3">
                     <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                      <span className="text-xs text-purple-400 font-medium">
+                      <span className="w-2 h-2 rounded-full bg-teal-500"></span>
+                      <span className="text-xs text-teal-400 font-medium">
                         South (Ward {dept.south?.wardNumber || '-'})
                       </span>
                     </div>
@@ -283,7 +272,7 @@ export default function CommissionerDashboard() {
 
                   {/* View All Button */}
                   <Link
-                    href={`/department/dashboard?dept=${dept.id}`}
+                    href={`/commissioner/issues?dept=${dept.id}`}
                     className="block text-center py-1.5 text-xs text-gold hover:text-white border border-gold/30 hover:border-gold rounded transition-colors"
                   >
                     View All →
@@ -345,14 +334,18 @@ export default function CommissionerDashboard() {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-text-secondary">Field Officers</span>
-                    <span className="text-white font-bold">16 active</span>
+                    <span className="text-white font-bold">
+                      {staffCounts.officers} active
+                    </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-text-secondary">Dept Managers</span>
-                    <span className="text-white font-bold">8 active</span>
+                    <span className="text-white font-bold">
+                      {staffCounts.managers} active
+                    </span>
                   </div>
                   <div className="pt-4 border-t border-border/50">
-                    <Link href="/admin/users" className="btn-outline w-full text-center py-2 text-xs">Manage Workforce</Link>
+                    <Link href="/commissioner/staff" className="btn-outline w-full text-center py-2 text-xs">View Workforce</Link>
                   </div>
                 </div>
               </div>
@@ -364,6 +357,8 @@ export default function CommissionerDashboard() {
   }
 
   return (
-    <CommissionerDashboardContent />
+    <DashboardProtection allowedRoles={['MUNICIPAL_COMMISSIONER']}>
+      <CommissionerDashboardContent />
+    </DashboardProtection>
   );
 }

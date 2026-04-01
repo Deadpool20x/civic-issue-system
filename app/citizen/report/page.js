@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useUser } from 'lib/contexts/UserContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -27,8 +28,9 @@ const LocationPicker = dynamic(() => import('@/components/LocationPicker'), {
 export default function ReportIssuePage() {
     const router = useRouter();
     const { t, i18n } = useTranslation();
+    const { user, loading: authLoading, initialized } = useUser();
     const [formData, setFormData] = useState({
-        title: '', description: '', category: '', subcategory: '', priority: 'medium', wardId: '',
+        title: '', description: '', category: '', subcategory: '', priority: 'medium',
     });
     const [locationData, setLocationData] = useState({
         address: '', coordinates: null, city: '', state: '', pincode: '',
@@ -46,14 +48,52 @@ export default function ReportIssuePage() {
     const [duplicates, setDuplicates] = useState([]);
     const [pendingSubmission, setPendingSubmission] = useState(null);
 
-    const [wardData, setWardData] = useState({ northZone: [], southZone: [] });
 
-    useEffect(() => {
-        fetch('/api/wards')
-            .then(r => r.json())
-            .then(data => setWardData(data))
-            .catch(err => console.error('Failed to fetch wards:', err));
-    }, []);
+
+    // Auto-derive ward label from category + coordinates
+    function getWardLabel(category, coordinates) {
+        if (!category || !coordinates) return 'Unknown Ward'
+
+        const CATEGORY_TO_DEPT = {
+            'roads-infrastructure':  'roads',
+            'street-lighting':       'lighting',
+            'waste-management':      'waste',
+            'water-drainage':        'water',
+            'parks-public-spaces':   'parks',
+            'traffic-signage':       'traffic',
+            'public-health-safety':  'health',
+            'other':                 'other',
+        }
+
+        const DEPT_WARD_MAP = {
+            north: {
+                roads: 'Ward 1 — North Zone · Roads',
+                lighting: 'Ward 2 — North Zone · Street Lighting',
+                waste: 'Ward 3 — North Zone · Waste Management',
+                water: 'Ward 4 — North Zone · Water & Drainage',
+                parks: 'Ward 5 — North Zone · Parks & Public Spaces',
+                traffic: 'Ward 6 — North Zone · Traffic & Signage',
+                health: 'Ward 7 — North Zone · Public Health',
+                other: 'Ward 8 — North Zone · General',
+            },
+            south: {
+                roads: 'Ward 9 — South Zone · Roads',
+                lighting: 'Ward 10 — South Zone · Street Lighting',
+                waste: 'Ward 11 — South Zone · Waste Management',
+                water: 'Ward 12 — South Zone · Water & Drainage',
+                parks: 'Ward 13 — South Zone · Parks & Public Spaces',
+                traffic: 'Ward 14 — South Zone · Traffic & Signage',
+                health: 'Ward 15 — South Zone · Public Health',
+                other: 'Ward 16 — South Zone · General',
+            }
+        }
+
+        const BOUNDARY = 22.55
+        const lat = parseFloat(coordinates.lat)
+        const zone = !isNaN(lat) && lat >= BOUNDARY ? 'north' : 'south'
+        const dept = CATEGORY_TO_DEPT[category] || 'other'
+        return DEPT_WARD_MAP[zone][dept]
+    }
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -63,6 +103,13 @@ export default function ReportIssuePage() {
             setFormData(prev => ({ ...prev, [name]: value }));
         }
     };
+
+    // Auth check - redirect to login if not authenticated
+    useEffect(() => {
+        if (initialized && !user) {
+            router.push('/login');
+        }
+    }, [user, initialized, router]);
 
     const handleImagesChange = (urls) => {
         setImageUrls(urls);
@@ -178,6 +225,15 @@ export default function ReportIssuePage() {
         );
     }
 
+    // Show loading while checking authentication
+    if (authLoading || !initialized) {
+        return (
+            <div className="fixed inset-0 z-[100] bg-page flex items-center justify-center">
+                <div className="text-white text-xl">Loading...</div>
+            </div>
+        );
+    }
+
     return (
         <DashboardLayout>
             <div className="max-w-3xl mx-auto space-y-8 animate-fade-in pb-12">
@@ -259,16 +315,25 @@ export default function ReportIssuePage() {
                                 </select>
                             </div>
                             <div>
-                                <label>{t('report.ward')}</label>
-                                <select name="wardId" required value={formData.wardId} onChange={handleChange}>
-                                    <option value="">{t('report.selectWard')}</option>
-                                    <optgroup label="North Zone">
-                                        {wardData.northZone?.map(w => <option key={w.wardId} value={w.wardId}>{w.wardName}</option>)}
-                                    </optgroup>
-                                    <optgroup label="South Zone">
-                                        {wardData.southZone?.map(w => <option key={w.wardId} value={w.wardId}>{w.wardName}</option>)}
-                                    </optgroup>
-                                </select>
+                                <label className="text-[#AAAAAA] text-sm font-medium block mb-2">
+                                    Assigned Ward (Auto-detected)
+                                </label>
+                                {formData.category && locationData.coordinates ? (
+                                    <div className="bg-[#222222] border border-[#F5A623]/30
+                                                    rounded-[12px] px-4 py-3 flex items-center gap-2">
+                                        <span className="text-[#F5A623]">📍</span>
+                                        <span className="text-white text-sm">
+                                            {getWardLabel(formData.category, locationData.coordinates)}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <div className="bg-[#222222] border border-[#333333]
+                                                    rounded-[12px] px-4 py-3">
+                                        <span className="text-[#666666] text-sm">
+                                            Select category and pin location to auto-detect ward
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

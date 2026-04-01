@@ -272,7 +272,46 @@ const issueSchema = new mongoose.Schema({
     remindedAt: {
         type: Date,
         default: null
-    }
+    },
+    // Resolution proof uploaded by field officer
+    resolutionProof: {
+        note: {
+            type: String,
+            trim: true,
+            default: null
+        },
+        images: [{
+            url: String,
+            publicId: String
+        }],
+        videos: [{
+            url: String,
+            publicId: String,
+            thumbnailUrl: String
+        }],
+        uploadedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null
+        },
+        uploadedAt: {
+            type: Date,
+            default: null
+        }
+    },
+    // Status history — tracks all status changes
+    statusHistory: [{
+        status: String,
+        changedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        changedAt: {
+            type: Date,
+            default: Date.now
+        },
+        note: String
+    }]
 });
 
 // Pre-save hook to generate reportId

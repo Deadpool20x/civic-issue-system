@@ -130,7 +130,7 @@ function MunicipalDashboardContent() {
                         {wardStats.map(ward => {
                             const rate = ward.total > 0 ? Math.round((ward.resolved / ward.total) * 100) : 0;
                             const wardInfo = WARD_MAP[ward.wardId];
-                            const zoneColor = ward.zone === 'north' ? 'bg-blue-500/10 text-blue-400' : 'bg-purple-500/10 text-purple-400';
+                            const zoneColor = ward.zone === 'north' ? 'bg-blue-500/10 text-blue-400' : 'bg-teal-500/10 text-teal-400';
                             
                             return (
                                 <div key={ward.wardId} className="card p-4 hover:border-gold/30 transition-all group">

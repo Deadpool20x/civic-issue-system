@@ -2,6 +2,7 @@ import { connectDB } from '@/lib/mongodb';
 import { authMiddleware } from '@/lib/auth';
 import Issue from '@/models/Issue';
 import StateHistory from '@/models/StateHistory';
+import { getDepartmentWards, WARD_MAP } from '@/lib/wards';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -43,7 +44,7 @@ export const GET = authMiddleware(async (req, { params }) => {
         const userRole = req.user.role?.toUpperCase();
 
         // Citizens can only view their own issues
-        if (userRole === 'CITIZEN' && issue.reportedBy._id.toString() !== req.user.userId) {
+        if (userRole === 'CITIZEN' && (!issue.reportedBy || issue.reportedBy._id.toString() !== req.user.userId)) {
             return new Response(
                 JSON.stringify({ error: 'Unauthorized - You can only view your own issues' }),
                 { status: 403, headers: { 'Content-Type': 'application/json' } }
@@ -75,7 +76,6 @@ export const GET = authMiddleware(async (req, { params }) => {
                 );
             }
 
-            const { getDepartmentWards } = require('@/lib/wards');
             const deptWards = getDepartmentWards(req.user.departmentId);
 
             if (!deptWards.includes(issue.ward)) {
@@ -163,7 +163,6 @@ export const PATCH = authMiddleware(async (req, { params }) => {
             }
 
             // Check if the target ward belongs to the manager's department
-            const { WARD_MAP } = require('@/lib/wards');
             const targetWard = WARD_MAP[updates.ward];
 
             if (!targetWard || targetWard.departmentId !== userDepartmentId) {

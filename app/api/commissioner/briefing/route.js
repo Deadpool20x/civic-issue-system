@@ -1,61 +1,70 @@
-import { NextResponse } from 'next/server';
-import { getTokenData } from '@/lib/auth';
-import Issue from '@/models/Issue';
-import User from '@/models/User';
-import { connectDB } from '@/lib/mongodb';
+// app/api/commissioner/briefing/route.js
+import { connectDB } from '@/lib/mongodb'
+import { getUser } from '@/lib/auth'
+import Issue from '@/models/Issue'
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'
 
 export async function GET(request) {
-    try {
-        // Get user from token - works without request parameter
-        const userData = await getTokenData();
-        
-        if (!userData) {
-            return NextResponse.json({ error: 'Unauthorized - No authentication token' }, { status: 401 });
-        }
+  const user = await getUser(request)
+  if (!user) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
-        // Normalize role for comparison
-        const userRole = (userData.role || '').toUpperCase();
-        
-        // Check for commissioner role (supports both 'commissioner' and 'MUNICIPAL_COMMISSIONER')
-        if (userRole !== 'COMMISSIONER' && userRole !== 'MUNICIPAL_COMMISSIONER' && userRole !== 'ADMIN') {
-            return NextResponse.json({ 
-                error: 'Unauthorized - Municipal Commissioner access required',
-                yourRole: userData.role 
-            }, { status: 403 });
-        }
+  if (user.role !== 'MUNICIPAL_COMMISSIONER') {
+    return Response.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
-        await connectDB();
+  await connectDB()
 
-        // Fetch city-wide stats for the briefing
-        const totalIssues = await Issue.countDocuments();
-        const pendingIssues = await Issue.countDocuments({ status: { $in: ['pending', 'assigned'] } });
-        const resolvedIssues = await Issue.countDocuments({ status: 'resolved' });
-        const urgentIssues = await Issue.find({ priority: 'urgent', status: { $ne: 'resolved' } })
-            .select('title reportId ward')
-            .limit(3);
+  // Get city-wide stats for briefing
+  const [total, resolved, pending, overdue, urgent] = await Promise.all([
+    Issue.countDocuments({}),
+    Issue.countDocuments({ status: 'resolved' }),
+    Issue.countDocuments({ status: 'pending' }),
+    Issue.countDocuments({ 'sla.isOverdue': true }),
+    Issue.countDocuments({ priority: 'urgent' }),
+  ])
 
-        const resolutionRate = totalIssues > 0 ? Math.round((resolvedIssues / totalIssues) * 100) : 0;
+  const resolutionRate = total > 0
+    ? Math.round((resolved / total) * 100)
+    : 0
 
-        // Mocking AI Briefing content based on real stats
-        const briefing = {
-            id: 'brief-' + Date.now(),
-            date: new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' }),
-            title: 'Daily City Performance Briefing',
-            summary: `City-wide resolution rate is currently at ${resolutionRate}%. There are ${pendingIssues} active issues requiring attention.`,
-            keyPoints: [
-                `Active baseline has ${pendingIssues} pending requests.`,
-                `${resolvedIssues} issues successfully closed this week.`,
-                `Waste management remains the highest volume category today.`
-            ],
-            criticalAlerts: urgentIssues.map(i => `${i.reportId}: ${i.title} (${i.ward})`),
-            generatedAt: new Date()
-        };
+  const cityHealth = total > 0
+    ? Math.round(((total - overdue) / total) * 100)
+    : 100
 
-        return NextResponse.json({ success: true, briefing });
-    } catch (error) {
-        console.error('Briefing error:', error);
-        return NextResponse.json({ error: 'Failed to generate briefing' }, { status: 500 });
+  // Generate briefing from real data
+  const briefing = {
+    date: new Date().toLocaleDateString('en-IN', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }),
+    title: `Daily City Operations Briefing — Anand District`,
+    summary: `As of today, the city has ${total} total reported issues with a ${resolutionRate}% resolution rate. ${overdue} issues are currently overdue and require immediate attention. City SLA health stands at ${cityHealth}%.`,
+    keyPoints: [
+      `${total} total issues across all 16 wards`,
+      `${resolved} issues resolved (${resolutionRate}% resolution rate)`,
+      `${pending} issues pending assignment`,
+      `${cityHealth}% overall SLA compliance`,
+    ],
+    criticalAlerts: overdue > 0
+      ? [
+          `${overdue} issues have breached SLA deadline`,
+          `${urgent} urgent priority issues require immediate action`,
+        ]
+      : ['No critical SLA breaches at this time'],
+    stats: {
+      total, resolved, pending, overdue, urgent, cityHealth
     }
+  }
+
+  return Response.json({ success: true, briefing })
+}
+
+export async function POST(request) {
+  // Regenerate briefing on demand
+  return GET(request)
 }

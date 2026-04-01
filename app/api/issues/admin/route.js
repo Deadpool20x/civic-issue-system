@@ -1,8 +1,7 @@
 // app/api/issues/admin/route.js
 // Admin endpoint for managing all issues
 import { connectDB } from '@/lib/mongodb';
-import { getTokenData } from '@/lib/auth';
-import { normalizeRole } from '@/lib/auth';
+import { getTokenData, normalizeRole } from '@/lib/auth';
 import Issue from '@/models/Issue';
 
 export const dynamic = 'force-dynamic';

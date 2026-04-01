@@ -235,8 +235,8 @@ export default function KnowYourDistrict() {
 
           {/* South Zone */}
           <div>
-            <h3 className="text-lg font-semibold text-purple-400 mb-4 flex items-center gap-2">
-              <span className="w-3 h-3 bg-purple-400 rounded-full"></span>
+            <h3 className="text-lg font-semibold text-teal-400 mb-4 flex items-center gap-2">
+              <span className="w-3 h-3 bg-teal-400 rounded-full"></span>
               South Zone (Ward 9-16)
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

@@ -4,7 +4,8 @@ import User from '@/models/User'
 
 export async function GET(request) {
   const user = await getUser(request)
-  if (!['SYSTEM_ADMIN','admin'].includes(user?.role)) {
+  const allowedRoles = ['SYSTEM_ADMIN', 'admin', 'DEPARTMENT_MANAGER', 'department', 'MUNICIPAL_COMMISSIONER', 'municipal']
+  if (!allowedRoles.includes(user?.role)) {
     return Response.json({ error: 'Forbidden' }, { status: 403 })
   }
 

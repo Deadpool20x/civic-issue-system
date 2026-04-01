@@ -106,6 +106,7 @@ function LoginContent() {
                 'department_manager': '/department/dashboard',
                 'department': '/department/dashboard',
                 'municipal_commissioner': '/commissioner/dashboard',
+                'municipal': '/commissioner/dashboard',
                 'commissioner': '/commissioner/dashboard',
                 'system_admin': '/admin/dashboard',
                 'admin': '/admin/dashboard',

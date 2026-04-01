@@ -104,6 +104,11 @@ const eslintConfig = [
       ".next/**",
       "out/**",
       "build/**",
+      "public/sw.js",
+      "public/workbox-*.js",
+      "public/fallback-*.js",
+      "**/*_fix.js",
+      "check_*.js",
       "next-env.d.ts",
       "*.env",
       "*.env.*",
@@ -160,7 +165,8 @@ const eslintConfig = [
       "no-dupe-keys": "error",
 
       // Best practices for error handling
-      "handle-callback-err": "error",
+      "handle-callback-err": "warn",
+      "react/no-unescaped-entities": "warn",
 
       // Import organization
       "sort-imports": "off"

@@ -68,13 +68,13 @@ export default function AdminAnalyticsPage() {
 
     return (
         <DashboardLayout>
-            <DashboardProtection requiredRole="admin">
+            <DashboardProtection allowedRoles={['SYSTEM_ADMIN', 'admin']}>
                 <div className="p-6 lg:p-8">
-                    <h1 className="text-2xl font-bold text-contrast-primary mb-8">Admin Analytics Dashboard</h1>
+                    <h1 className="text-2xl font-bold text-white mb-8">Admin Analytics Dashboard</h1>
 
                     {/* Section 1: System Overview */}
                     <section className="mb-12">
-                        <h2 className="text-xl font-semibold text-contrast-primary mb-6">System Overview</h2>
+                        <h2 className="text-xl font-semibold text-white mb-6">System Overview</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             <StatCard
                                 label="Total Issues"
@@ -85,31 +85,31 @@ export default function AdminAnalyticsPage() {
                                 label="Reported"
                                 value={formatNumber(overviewData?.reportedCount || 0)}
                                 iconPath="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                                accent="border-l-4 border-l-status-warning"
-                                iconBg="bg-status-warning/10"
-                                iconColor="text-status-warning"
+                                accent="border-l-4 border-l-status-progress"
+                                iconBg="bg-status-progress/10"
+                                iconColor="text-status-progress"
                             />
                             <StatCard
                                 label="In Progress"
                                 value={formatNumber(overviewData?.inProgressCount || 0)}
                                 iconPath="M13 10V3L4 14h7v7l9-11h-7z"
-                                accent="border-l-4 border-l-brand-primary"
-                                iconBg="bg-brand-soft/30"
-                                iconColor="text-brand-primary"
+                                accent="border-l-4 border-l-gold"
+                                iconBg="bg-gold/30"
+                                iconColor="text-gold"
                             />
                             <StatCard
                                 label="Resolved"
                                 value={formatNumber(overviewData?.resolvedCount || 0)}
                                 iconPath="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                accent="border-l-4 border-l-status-success"
-                                iconBg="bg-status-success/10"
-                                iconColor="text-status-success"
+                                accent="border-l-4 border-l-status-resolved"
+                                iconBg="bg-status-resolved/10"
+                                iconColor="text-status-resolved"
                             />
                         </div>
                         {overviewData && (
                             <div className="mt-6">
-                                <p className="text-sm text-contrast-secondary">
-                                    Resolution Rate: <span className="font-semibold text-contrast-primary">
+                                <p className="text-sm text-text-secondary">
+                                    Resolution Rate: <span className="font-semibold text-white">
                                         {overviewData.resolutionPercentage}%
                                     </span>
                                 </p>
@@ -119,32 +119,32 @@ export default function AdminAnalyticsPage() {
 
                     {/* Section 2: Department Performance */}
                     <section className="mb-12">
-                        <h2 className="text-xl font-semibold text-contrast-primary mb-6">Department Performance</h2>
+                        <h2 className="text-xl font-semibold text-white mb-6">Department Performance</h2>
                         <Card className="overflow-x-auto">
                             <table className="w-full text-left">
-                                <thead className="bg-neutral-bg border-b border-neutral-border">
+                                <thead className="bg-input border-b border-border">
                                     <tr>
-                                        <th className="p-4 font-semibold text-contrast-secondary">Department</th>
-                                        <th className="p-4 font-semibold text-contrast-secondary">Total Assigned</th>
-                                        <th className="p-4 font-semibold text-contrast-secondary">Resolved</th>
-                                        <th className="p-4 font-semibold text-contrast-secondary">Pending</th>
-                                        <th className="p-4 font-semibold text-contrast-secondary">Avg Resolution Time (hours)</th>
+                                        <th className="p-4 font-semibold text-text-secondary">Department</th>
+                                        <th className="p-4 font-semibold text-text-secondary">Total Assigned</th>
+                                        <th className="p-4 font-semibold text-text-secondary">Resolved</th>
+                                        <th className="p-4 font-semibold text-text-secondary">Pending</th>
+                                        <th className="p-4 font-semibold text-text-secondary">Avg Resolution Time (hours)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {departmentData.length > 0 ? (
                                         departmentData.map((dept) => (
-                                            <tr key={dept.departmentId} className="border-b border-neutral-border hover:bg-neutral-bg">
-                                                <td className="p-4 font-medium text-contrast-primary">{dept.departmentName}</td>
-                                                <td className="p-4 text-contrast-secondary">{formatNumber(dept.totalAssignedIssues)}</td>
-                                                <td className="p-4 text-contrast-secondary">{formatNumber(dept.resolvedIssues)}</td>
-                                                <td className="p-4 text-contrast-secondary">{formatNumber(dept.pendingIssues)}</td>
-                                                <td className="p-4 text-contrast-secondary">{dept.avgResolutionTime.toFixed(1)}</td>
+                                            <tr key={dept.departmentId} className="border-b border-border hover:bg-input">
+                                                <td className="p-4 font-medium text-white">{dept.departmentName}</td>
+                                                <td className="p-4 text-text-secondary">{formatNumber(dept.totalAssignedIssues)}</td>
+                                                <td className="p-4 text-text-secondary">{formatNumber(dept.resolvedIssues)}</td>
+                                                <td className="p-4 text-text-secondary">{formatNumber(dept.pendingIssues)}</td>
+                                                <td className="p-4 text-text-secondary">{dept.avgResolutionTime.toFixed(1)}</td>
                                             </tr>
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan="5" className="p-4 text-center text-contrast-secondary">
+                                            <td colSpan="5" className="p-4 text-center text-text-secondary">
                                                 {loading ? 'Loading...' : 'No department data available'}
                                             </td>
                                         </tr>
@@ -156,14 +156,14 @@ export default function AdminAnalyticsPage() {
 
                     {/* Section 3: Trends */}
                     <section className="mb-12">
-                        <h2 className="text-xl font-semibold text-contrast-primary mb-6">Trends</h2>
+                        <h2 className="text-xl font-semibold text-white mb-6">Trends</h2>
                         <Card className="p-6">
                             <div className="flex gap-2 mb-6">
                                 <button
                                     onClick={() => setTrendsRange('7d')}
                                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${trendsRange === '7d'
-                                            ? 'bg-brand-primary text-white'
-                                            : 'bg-neutral-bg text-contrast-secondary hover:bg-neutral-bg/80'
+                                            ? 'bg-gold text-white'
+                                            : 'bg-input text-text-secondary hover:bg-input/80'
                                         }`}
                                 >
                                     Last 7 Days
@@ -171,8 +171,8 @@ export default function AdminAnalyticsPage() {
                                 <button
                                     onClick={() => setTrendsRange('30d')}
                                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${trendsRange === '30d'
-                                            ? 'bg-brand-primary text-white'
-                                            : 'bg-neutral-bg text-contrast-secondary hover:bg-neutral-bg/80'
+                                            ? 'bg-gold text-white'
+                                            : 'bg-input text-text-secondary hover:bg-input/80'
                                         }`}
                                 >
                                     Last 30 Days
@@ -184,18 +184,18 @@ export default function AdminAnalyticsPage() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         {/* Reported Issues Chart */}
                                         <div>
-                                            <h3 className="text-sm font-medium text-contrast-secondary mb-3">Issues Reported</h3>
+                                            <h3 className="text-sm font-medium text-text-secondary mb-3">Issues Reported</h3>
                                             <div className="space-y-4">
                                                 {trendsData.map((item) => (
                                                     <div key={`reported-${item.date}`} className="flex items-center gap-4">
-                                                        <div className="w-20 text-xs text-contrast-secondary">{new Date(item.date).toLocaleDateString()}</div>
-                                                        <div className="flex-1 bg-neutral-bg rounded-full h-2">
+                                                        <div className="w-20 text-xs text-text-secondary">{new Date(item.date).toLocaleDateString()}</div>
+                                                        <div className="flex-1 bg-input rounded-full h-2">
                                                             <div
-                                                                className="bg-status-warning h-2 rounded-full"
+                                                                className="bg-status-progress h-2 rounded-full"
                                                                 style={{ width: `${(item.issuesReported / getMaxTrendValue()) * 100}%` }}
                                                             />
                                                         </div>
-                                                        <div className="w-8 text-right text-sm font-medium text-contrast-primary">{item.issuesReported}</div>
+                                                        <div className="w-8 text-right text-sm font-medium text-white">{item.issuesReported}</div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -203,18 +203,18 @@ export default function AdminAnalyticsPage() {
 
                                         {/* Resolved Issues Chart */}
                                         <div>
-                                            <h3 className="text-sm font-medium text-contrast-secondary mb-3">Issues Resolved</h3>
+                                            <h3 className="text-sm font-medium text-text-secondary mb-3">Issues Resolved</h3>
                                             <div className="space-y-4">
                                                 {trendsData.map((item) => (
                                                     <div key={`resolved-${item.date}`} className="flex items-center gap-4">
-                                                        <div className="w-20 text-xs text-contrast-secondary">{new Date(item.date).toLocaleDateString()}</div>
-                                                        <div className="flex-1 bg-neutral-bg rounded-full h-2">
+                                                        <div className="w-20 text-xs text-text-secondary">{new Date(item.date).toLocaleDateString()}</div>
+                                                        <div className="flex-1 bg-input rounded-full h-2">
                                                             <div
-                                                                className="bg-status-success h-2 rounded-full"
+                                                                className="bg-status-resolved h-2 rounded-full"
                                                                 style={{ width: `${(item.issuesResolved / getMaxTrendValue()) * 100}%` }}
                                                             />
                                                         </div>
-                                                        <div className="w-8 text-right text-sm font-medium text-contrast-primary">{item.issuesResolved}</div>
+                                                        <div className="w-8 text-right text-sm font-medium text-white">{item.issuesResolved}</div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -222,7 +222,7 @@ export default function AdminAnalyticsPage() {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="text-center py-8 text-contrast-secondary">
+                                <div className="text-center py-8 text-text-secondary">
                                     {loading ? 'Loading trends data...' : 'No trends data available'}
                                 </div>
                             )}
@@ -231,51 +231,51 @@ export default function AdminAnalyticsPage() {
 
                     {/* Section 4: Workflow Integrity */}
                     <section className="mb-12">
-                        <h2 className="text-xl font-semibold text-contrast-primary mb-6">Workflow Integrity</h2>
+                        <h2 className="text-xl font-semibold text-white mb-6">Workflow Integrity</h2>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <Card className="p-6 text-center">
-                                <h3 className="text-sm font-medium text-contrast-secondary mb-2">Reported → In Progress</h3>
-                                <p className="text-3xl font-bold text-brand-primary">{formatNumber(workflowData?.reportedToInProgressCount || 0)}</p>
+                                <h3 className="text-sm font-medium text-text-secondary mb-2">Reported → In Progress</h3>
+                                <p className="text-3xl font-bold text-gold">{formatNumber(workflowData?.reportedToInProgressCount || 0)}</p>
                             </Card>
                             <Card className="p-6 text-center">
-                                <h3 className="text-sm font-medium text-contrast-secondary mb-2">In Progress → Resolved</h3>
-                                <p className="text-3xl font-bold text-status-success">{formatNumber(workflowData?.inProgressToResolvedCount || 0)}</p>
+                                <h3 className="text-sm font-medium text-text-secondary mb-2">In Progress → Resolved</h3>
+                                <p className="text-3xl font-bold text-status-resolved">{formatNumber(workflowData?.inProgressToResolvedCount || 0)}</p>
                             </Card>
                             <Card className="p-6 text-center">
-                                <h3 className="text-sm font-medium text-contrast-secondary mb-2">Avg Transition Time (hours)</h3>
-                                <p className="text-3xl font-bold text-contrast-primary">{workflowData?.avgTimePerTransition?.toFixed(1) || '0.0'}</p>
+                                <h3 className="text-sm font-medium text-text-secondary mb-2">Avg Transition Time (hours)</h3>
+                                <p className="text-3xl font-bold text-white">{workflowData?.avgTimePerTransition?.toFixed(1) || '0.0'}</p>
                             </Card>
                         </div>
                     </section>
 
                     {/* Section 5: Stuck Issues */}
                     <section className="mb-12">
-                        <h2 className="text-xl font-semibold text-contrast-primary mb-6">Stuck Issues</h2>
+                        <h2 className="text-xl font-semibold text-white mb-6">Stuck Issues</h2>
                         <Card className="overflow-x-auto">
                             <table className="w-full text-left">
-                                <thead className="bg-neutral-bg border-b border-neutral-border">
+                                <thead className="bg-input border-b border-border">
                                     <tr>
-                                        <th className="p-4 font-semibold text-contrast-secondary">Issue Title</th>
-                                        <th className="p-4 font-semibold text-contrast-secondary">Current Status</th>
-                                        <th className="p-4 font-semibold text-contrast-secondary">Days in State</th>
-                                        <th className="p-4 font-semibold text-contrast-secondary">Department</th>
+                                        <th className="p-4 font-semibold text-text-secondary">Issue Title</th>
+                                        <th className="p-4 font-semibold text-text-secondary">Current Status</th>
+                                        <th className="p-4 font-semibold text-text-secondary">Days in State</th>
+                                        <th className="p-4 font-semibold text-text-secondary">Department</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {stuckIssues.length > 0 ? (
                                         stuckIssues.map((issue) => (
-                                            <tr key={issue.issueId} className="border-b border-neutral-border hover:bg-neutral-bg">
-                                                <td className="p-4 font-medium text-contrast-primary max-w-xs truncate">{issue.title}</td>
+                                            <tr key={issue.issueId} className="border-b border-border hover:bg-input">
+                                                <td className="p-4 font-medium text-white max-w-xs truncate">{issue.title}</td>
                                                 <td className="p-4">
                                                     <StatusBadge status={issue.currentStatus} />
                                                 </td>
-                                                <td className="p-4 text-contrast-secondary">{issue.daysInCurrentState}</td>
-                                                <td className="p-4 text-contrast-secondary">{issue.assignedDepartment}</td>
+                                                <td className="p-4 text-text-secondary">{issue.daysInCurrentState}</td>
+                                                <td className="p-4 text-text-secondary">{issue.assignedDepartment}</td>
                                             </tr>
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan="4" className="p-4 text-center text-contrast-secondary">
+                                            <td colSpan="4" className="p-4 text-center text-text-secondary">
                                                 {loading ? 'Loading...' : 'No stuck issues found'}
                                             </td>
                                         </tr>

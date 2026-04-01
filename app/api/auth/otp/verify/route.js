@@ -22,7 +22,7 @@ export async function POST(req) {
             purpose: 'login',
             used: false,
             expiresAt: { $gt: new Date() }
-        }).sort({ createdAt: -1 });
+        }).sort({ _id: -1 });
 
         if (!otpRecord) {
             return NextResponse.json({

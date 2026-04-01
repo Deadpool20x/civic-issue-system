@@ -22,7 +22,7 @@ function getRoleLabel(role) {
 function getRoleBadgeColor(role) {
   if (['CITIZEN'].includes(role)) return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
   if (role === 'FIELD_OFFICER') return 'bg-green-500/20 text-green-400 border-green-500/30'
-  if (['DEPARTMENT_MANAGER'].includes(role)) return 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+  if (['DEPARTMENT_MANAGER'].includes(role)) return 'bg-teal-500/20 text-teal-400 border-teal-500/30'
   if (['MUNICIPAL_COMMISSIONER'].includes(role)) return 'bg-amber-500/20 text-amber-400 border-amber-500/30'
   if (['SYSTEM_ADMIN'].includes(role)) return 'bg-red-500/20 text-red-400 border-red-500/30'
   return 'bg-gray-500/20 text-gray-400'
@@ -94,7 +94,7 @@ function UsersContent() {
 
       if (usersRes.ok) {
         const usersData = await usersRes.json()
-        setUsers(usersData.users || usersData)
+        setUsers(Array.isArray(usersData.data) ? usersData.data : [])
       }
       if (statsRes.ok) {
         const statsData = await statsRes.json()
@@ -115,10 +115,11 @@ function UsersContent() {
 
   const handleToggleStatus = async (id, active) => {
     try {
-      const res = await fetch(`/api/users/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isActive: !active })
+      const action = active ? 'deactivate' : 'activate'
+      const res = await fetch(`/api/admin/users/${id}/${action}`, {
+        method: 'PATCH'
+
+
       })
       if (!res.ok) throw new Error()
       toast.success('Status updated')
@@ -132,8 +133,14 @@ function UsersContent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       })
-      if (!res.ok) throw new Error()
-      toast.success('Password reset email sent')
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to reset password')
+
+      if (data.temporaryPassword && typeof window !== 'undefined') {
+        window.prompt('Temporary password generated. Copy it now:', data.temporaryPassword)
+      }
+
+      toast.success(data.emailSent ? 'Password reset email sent' : 'Temporary password generated')
     } catch {
       toast.error('Failed to reset password')
     }
@@ -156,7 +163,7 @@ function UsersContent() {
             { label: 'Total', value: stats.total || 0, color: 'text-white' },
             { label: 'Citizens', value: stats.citizens || 0, color: 'text-blue-400' },
             { label: 'Field Officers', value: stats.officers || 0, color: 'text-green-400' },
-            { label: 'Dept Managers', value: stats.managers || 0, color: 'text-purple-400' },
+            { label: 'Dept Managers', value: stats.managers || 0, color: 'text-teal-400' },
             { label: 'Commissioners', value: stats.commissioners || 0, color: 'text-amber-400' },
             { label: 'Admins', value: stats.admins || 0, color: 'text-red-400' }
           ].map((s, i) => (

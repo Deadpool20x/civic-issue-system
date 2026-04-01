@@ -1,13 +1,13 @@
 // app/api/issues/stats/route.js
 import { getRoleFilter } from '@/lib/roleFilter'
 import { connectDB } from '@/lib/mongodb'
-import { getTokenData, normalizeRole } from '@/lib/auth'
+import { getUser, normalizeRole } from '@/lib/auth'
 import Issue from '@/models/Issue'
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
-    const userData = await getTokenData()
+    const userData = await getUser(request)
     
     if (!userData) {
         return Response.json({ error: 'Unauthorized' }, { status: 401 })

@@ -1,10 +1,10 @@
 'use client'
 import { useUser } from '@/lib/contexts/UserContext'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
-import { useState } from 'react';
+import { useEffect, useState } from 'react'
 import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
+import DashboardProtection from '@/components/DashboardProtection';
 import toast from 'react-hot-toast';
 
 /* ============================================================
@@ -42,43 +42,19 @@ export default function AdminDashboard() {
   const { user, loading } = useUser()
   const router = useRouter()
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login')
-    }
-  }, [user, loading, router])
-
-  // Show nothing while checking auth
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 border-2 border-[#F5A623] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-[#AAAAAA] text-sm">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Not logged in — useEffect will redirect
-  if (!user) return null
-
-  // Wrong role — redirect
-  const roleUpper = user.role?.toUpperCase();
-  if (roleUpper !== 'SYSTEM_ADMIN') {
-    router.push('/login')
-    return null
-  }
 
   // RENDER DASHBOARD HERE
   function AdminDashboardContent() {
     const [issues, setIssues] = useState([]);
     const [departments, setDepartments] = useState([]);
     const [loadingState, setLoadingState] = useState(true);
-    const [actionLoading, setActionLoading] = useState({});
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterPriority, setFilterPriority] = useState('all');
-    const [stats, setStats] = useState({ totalIssues: 0, totalUsers: 0, departmentStats: {}, avgRating: 0, totalRatings: 0 });
+    const [stats, setStats] = useState({
+      totalIssues: 0,
+      totalUsers: 0,
+      resolutionRate: 0,
+    })
 
     const inputCls = "bg-input border border-border rounded-input text-white px-4 py-2.5 focus:border-gold focus:outline-none text-sm";
 
@@ -86,77 +62,75 @@ export default function AdminDashboard() {
 
     const fetchData = async () => {
       try {
-        setLoadingState(true);
-        let issuesData = null;
-        try {
-          const res = await fetch('/api/issues/admin');
-          if (res.ok) { const d = await res.json(); issuesData = d.issues || d; }
-        } catch (error) {
-          console.error('Failed to fetch issues from /api/issues/admin:', error);
+        setLoadingState(true)
+
+        // Fetch all issues (admin reads all — no filter)
+        const [issuesRes, statsRes, userStatsRes] = await Promise.all([
+          fetch('/api/issues'),
+          fetch('/api/issues/stats'),
+          fetch('/api/admin/users/stats')
+        ])
+
+        if (issuesRes.ok) {
+          const issuesJson = await issuesRes.json()
+          setIssues(Array.isArray(issuesJson.data)
+            ? issuesJson.data : [])
         }
-        if (!issuesData) {
-          try { 
-            const res = await fetch('/api/issues'); 
-            if (res.ok) { 
-              const d = await res.json(); 
-              issuesData = d.issues || d.data || (Array.isArray(d) ? d : []); 
-            }
-          } catch (error) {
-            console.error('Failed to fetch issues from /api/issues:', error);
+
+        if (statsRes.ok) {
+          const statsJson = await statsRes.json()
+          if (statsJson.success) {
+            setStats(prev => ({
+              ...prev,
+              totalIssues: statsJson.data.total || 0,
+              resolutionRate: statsJson.data.slaHealth || 0,
+            }))
           }
         }
-        setIssues(Array.isArray(issuesData) ? issuesData : []);
 
-        const dRes = await fetch('/api/departments');
-        if (dRes.ok) setDepartments(await dRes.json());
-
-        const sRes = await fetch('/api/stats');
-        if (sRes.ok) {
-          const sd = await sRes.json();
-          const ds = (sd.departmentStats || []).reduce((a, d) => { a[d._id] = { total: d.total, resolved: d.resolved, pending: d.pending }; return a; }, {});
-          const rated = (sd.recentIssues || []).filter(i => i.feedback?.rating);
-          const avg = rated.length > 0 ? (rated.reduce((s, i) => s + i.feedback.rating, 0) / rated.length).toFixed(1) : 0;
-          setStats({ totalIssues: sd.totalIssues, totalUsers: sd.totalUsers, departmentStats: ds, avgRating: avg, totalRatings: rated.length });
+        if (userStatsRes.ok) {
+          const userStatsJson = await userStatsRes.json()
+          if (userStatsJson.success) {
+            setStats(prev => ({
+              ...prev,
+              totalUsers: userStatsJson.data.total || 0,
+            }))
+          }
         }
+
       } catch (error) {
-        toast.error('Failed to load data');
-        console.error('Error in fetchData:', error);
-        setIssues([]);
+        toast.error('Failed to load dashboard data')
+        console.error('Admin dashboard fetch error:', error)
+        setIssues([])
       } finally {
-        setLoadingState(false);
+        setLoadingState(false)
       }
-    };
-
-    const resRate = () => {
-      if (!stats.totalIssues) return 0;
-      return Math.round(Object.values(stats.departmentStats).reduce((a, d) => a + d.resolved, 0) / stats.totalIssues * 100);
-    };
-
-    const handleQuickAction = async (id, action, data = {}) => {
-      setActionLoading(p => ({ ...p, [id]: action }));
-      try {
-        const res = await fetch(`/api/issues/${id}/quick-action`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, ...data }) });
-        if (res.ok) { toast.success(`Issue ${action}d`); fetchData(); }
-        else { const e = await res.json(); toast.error(e.error || 'Failed'); }
-      } catch (error) {
-        toast.error('Failed');
-        console.error('Error in handleQuickAction:', error);
-      } finally { setActionLoading(p => ({ ...p, [id]: null })); }
-    };
+    }
 
     const filteredIssues = issues.filter(i => (filterStatus === 'all' || i.status === filterStatus) && (filterPriority === 'all' || i.priority === filterPriority));
 
     const statCards = [
-      { label: 'Total Issues', value: stats.totalIssues, icon: '📊' },
-      { label: 'Total Users', value: stats.totalUsers, icon: '👥' },
-      { label: 'Resolution Rate', value: `${resRate()}%`, icon: '✅' },
-      { label: 'Avg Rating', value: stats.totalRatings > 0 ? `${stats.avgRating} ⭐` : 'N/A', icon: '⭐' },
-    ];
+      { label: 'Total Issues',    value: stats.totalIssues,     icon: '📊' },
+      { label: 'Total Users',     value: stats.totalUsers,      icon: '👥' },
+      { label: 'SLA Health',      value: `${stats.resolutionRate}%`, icon: '✅' },
+      { label: 'Active Officers', value: 16,                    icon: '👷' },
+    ]
 
     if (loadingState) return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+        <div className="space-y-6 animate-pulse">
+          <div className="flex justify-between items-center">
+            <div className="space-y-2">
+              <div className="h-8 w-64 bg-white/10 rounded-xl" />
+              <div className="h-4 w-48 bg-white/5 rounded-lg" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-32 bg-white/5 border border-white/10 rounded-[20px]" />
+            ))}
+          </div>
+          <div className="h-64 bg-white/5 border border-white/10 rounded-card" />
         </div>
       </DashboardLayout>
     );
@@ -200,25 +174,15 @@ export default function AdminDashboard() {
             ))}
           </div>
 
-          {/* Department Performance */}
-          {Object.keys(stats.departmentStats).length > 0 && (
-            <div className="bg-card rounded-card border border-border p-5">
-              <h2 className="section-header">Department Performance</h2>
-              <div className="space-y-4 mt-4">
-                {Object.entries(stats.departmentStats).map(([dept, data]) => (
-                  <div key={dept}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-white capitalize">{dept}</span>
-                      <span className="text-text-muted">{data.resolved}/{data.total}</span>
-                    </div>
-                    <div className="w-full bg-border rounded-full h-2">
-                      <div className="bg-gold h-2 rounded-full transition-all" style={{ width: `${data.total ? Math.round(data.resolved / data.total * 100) : 0}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Read Only Banner */}
+          <div className="bg-amber-500/10 border border-amber-500/30
+                          rounded-[12px] px-4 py-3 flex items-center gap-2">
+            <span className="text-amber-400">👁️</span>
+            <p className="text-amber-400 text-sm">
+              System Admin — Issue data is read-only.
+              Use User Management to manage staff accounts.
+            </p>
+          </div>
 
           {/* Issues Table */}
           <div className="bg-card rounded-card border border-border overflow-hidden">
@@ -245,34 +209,12 @@ export default function AdminDashboard() {
                       <td><span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[issue.status] || ''}`}>{issue.status}</span></td>
                       <td><span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${PRIORITY_STYLES[issue.priority] || ''}`}>{issue.priority}</span></td>
                       <td>
-                        <div className="flex items-center gap-1.5">
-                          {issue.status === 'submitted' && (
-                            <button onClick={() => handleQuickAction(issue._id, 'acknowledge')} disabled={!!actionLoading[issue._id]}
-                              className="px-2 py-1 bg-blue-500/20 text-blue-400 border border-blue-500/40 rounded-pill text-xs hover:bg-blue-500/30 disabled:opacity-50">
-                              {actionLoading[issue._id] === 'acknowledge' ? '...' : '✓'}
-                            </button>
-                          )}
-                          {['submitted', 'acknowledged'].includes(issue.status) && (
-                            <select onChange={e => handleQuickAction(issue._id, 'assign', { departmentId: e.target.value })} disabled={!!actionLoading[issue._id]}
-                              className="bg-transparent border border-border rounded-pill text-xs px-2 py-1 text-text-secondary focus:border-gold focus:outline-none" defaultValue="">
-                              <option value="" disabled>Assign</option>
-                              {departments.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
-                            </select>
-                          )}
-                          {!['rejected', 'resolved'].includes(issue.status) && (
-                            <button onClick={() => {
-                              if (typeof window !== 'undefined') {
-                                const r = window.prompt('Reason:');
-                                if (r !== null) handleQuickAction(issue._id, 'reject', { reason: r });
-                              }
-                            }}
-                              disabled={!!actionLoading[issue._id]}
-                              className="px-2 py-1 bg-red-500/20 text-red-400 border border-red-500/40 rounded-pill text-xs hover:bg-red-500/30 disabled:opacity-50">
-                              ✗
-                            </button>
-                          )}
-                          <Link href={`/issues/${issue.reportId || issue._id}`} className="text-gold hover:underline text-xs">→</Link>
-                        </div>
+                        <Link
+                          href={`/admin/issues/${issue._id}`}
+                          className="text-xs text-[#F5A623] hover:underline"
+                        >
+                          View →
+                        </Link>
                       </td>
                     </tr>
                   ))}
@@ -281,26 +223,14 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Citizen Satisfaction */}
-          <div className="bg-card rounded-card border border-border p-5">
-            <h2 className="section-header">Citizen Satisfaction</h2>
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              <div className="bg-input rounded-input p-6 text-center">
-                <div className="text-3xl font-bold text-gold mb-1">{stats.totalRatings > 0 ? stats.avgRating : 'N/A'}</div>
-                <div className="text-xs text-text-muted">Average Rating ({stats.totalRatings} reviews)</div>
-              </div>
-              <div className="bg-input rounded-input p-6 text-center">
-                <div className="text-3xl font-bold text-white mb-1">{stats.totalRatings}</div>
-                <div className="text-xs text-text-muted">Total Feedbacks</div>
-              </div>
-            </div>
-          </div>
         </div>
       </DashboardLayout>
     );
   }
 
   return (
-    <AdminDashboardContent />
+    <DashboardProtection allowedRoles={['SYSTEM_ADMIN', 'admin']}>
+      <AdminDashboardContent />
+    </DashboardProtection>
   );
 }

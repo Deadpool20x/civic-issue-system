@@ -8,7 +8,7 @@ const Card = ({
     ...rest
 }) => (
     <div
-        className={`bg-neutral-surface rounded-2xl border border-neutral-border shadow-sm p-6 ${className}`}
+        className={`bg-card rounded-card border border-border shadow-sm p-6 ${className}`}
         {...rest}
     >
         {children}

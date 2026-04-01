@@ -207,7 +207,7 @@ label {
 /* Buttons */
 .btn-gold {
   background: var(--gold);
-  color: #000000;
+  color: #1a1a1a;
   font-weight: 600;
   border-radius: var(--radius-pill);
   padding: 0.75rem 2rem;
@@ -264,7 +264,7 @@ label {
 
 .pill-active {
   background: var(--gold);
-  color: #000000;
+  color: #1a1a1a;
 }
 
 .pill-inactive {

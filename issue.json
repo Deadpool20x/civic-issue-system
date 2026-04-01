@@ -1,0 +1,19 @@
+{
+  "title": "Test pothole on main road",
+  "description": "There is a large pothole causing accidents",
+  "category": "roads-infrastructure",
+  "subcategory": "Pothole",
+  "priority": "medium",
+  "location": {
+    "address": "123 Main Street, Anand",
+    "city": "Anand",
+    "state": "Gujarat",
+    "pincode": "388001",
+    "coordinates": {
+      "lat": 22.56,
+      "lng": 75.77
+    }
+  },
+  "images": [],
+  "videos": []
+}

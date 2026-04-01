@@ -17,9 +17,9 @@ const STATUS_CONFIG = {
   },
   'assigned': {
     icon: '👤',
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50',
-    borderColor: 'border-purple-600',
+    color: 'text-teal-600',
+    bgColor: 'bg-teal-50',
+    borderColor: 'border-teal-600',
     label: 'Assigned'
   },
   'in-progress': {

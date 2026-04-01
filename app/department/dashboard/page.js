@@ -5,39 +5,13 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import DashboardLayout from '@/components/DashboardLayout';
+import DashboardProtection from '@/components/DashboardProtection';
 import { DEPARTMENTS, getDepartmentWards, WARD_MAP } from '@/lib/wards';
 
 export default function DepartmentDashboard() {
   const { user, loading } = useUser()
   const router = useRouter()
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login')
-    }
-  }, [user, loading, router])
-
-  // Show nothing while checking auth
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 border-2 border-[#F5A623] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-[#AAAAAA] text-sm">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Not logged in — useEffect will redirect
-  if (!user) return null
-
-  // Wrong role — redirect
-  const roleUpper = user.role?.toUpperCase();
-  if (roleUpper !== 'DEPARTMENT_MANAGER') {
-    router.push('/login')
-    return null
-  }
 
   // RENDER DASHBOARD HERE
   function DepartmentDashboardContent() {
@@ -99,11 +73,11 @@ export default function DepartmentDashboard() {
         badge: 'bg-blue-500/20 text-blue-300 border-blue-500/30'
       };
       if (zone === 'south') return {
-        bg: 'bg-purple-500/10',
-        border: 'border-purple-500/30',
-        text: 'text-purple-400',
-        bar: 'bg-purple-500',
-        badge: 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+        bg: 'bg-teal-500/10',
+        border: 'border-teal-500/30',
+        text: 'text-teal-400',
+        bar: 'bg-teal-500',
+        badge: 'bg-teal-500/20 text-purple-300 border-teal-500/30'
       };
       return {
         bg: 'bg-gray-500/10',
@@ -134,8 +108,20 @@ export default function DepartmentDashboard() {
 
     if (loadingState) return (
       <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="w-10 h-10 border-4 border-gold/20 border-t-gold rounded-full animate-spin"></div>
+        <div className="space-y-8 animate-pulse">
+          <div className="space-y-2">
+            <div className="h-8 w-64 bg-white/10 rounded-xl" />
+            <div className="h-4 w-96 bg-white/5 rounded-lg" />
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-32 bg-white/5 border border-white/10 rounded-2xl" />
+            ))}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="h-64 bg-white/5 border border-white/10 rounded-[20px]" />
+            <div className="h-64 bg-white/5 border border-white/10 rounded-[20px]" />
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -165,18 +151,25 @@ export default function DepartmentDashboard() {
     // Create exactly 2 ward cards (north and south)
     const wardCards = [];
 
-    if (northWard && northWardStat) {
+    // Always show both ward cards even if no issues yet
+    // Use empty stat object as fallback when no data
+    const emptystat = {
+      total: 0, active: 0, resolved: 0,
+      overdue: 0, slaHealth: 0, officer: null
+    }
+
+    if (northWard) {
       wardCards.push({
         ward: northWard,
-        stat: northWardStat,
+        stat: northWardStat || emptystat,
         zone: 'north'
       });
     }
 
-    if (southWard && southWardStat) {
+    if (southWard) {
       wardCards.push({
         ward: southWard,
-        stat: southWardStat,
+        stat: southWardStat || emptystat,
         zone: 'south'
       });
     }
@@ -334,12 +327,298 @@ export default function DepartmentDashboard() {
               </p>
             </div>
           )}
+
+          {/* ── CRITICAL FEEDBACK LOOP ── */}
+          <CriticalFeedbackLoop
+            departmentId={departmentId}
+            northWardId={northWardId}
+            southWardId={southWardId}
+          />
         </div>
       </DashboardLayout>
     );
   }
 
+function CriticalFeedbackLoop({ departmentId, northWardId, southWardId }) {
+  const [overdueIssues, setOverdueIssues] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [reassigning, setReassigning] = useState(null)
+  const [showReassignModal, setShowReassignModal] = useState(false)
+  const [selectedIssue, setSelectedIssue] = useState(null)
+  const [officers, setOfficers] = useState({ north: null, south: null })
+
+  useEffect(() => {
+    fetchOverdueIssues()
+    fetchOfficers()
+  }, [departmentId])
+
+  async function fetchOverdueIssues() {
+    try {
+      setLoading(true)
+      const res = await fetch('/api/issues?overdue=true')
+      const data = await res.json()
+      if (data.success) {
+        const overdue = (data.data || []).filter(
+          i => i.sla?.isOverdue && i.status !== 'resolved'
+        )
+        setOverdueIssues(overdue)
+      }
+    } catch (err) {
+      console.error('Failed to fetch overdue issues:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function fetchOfficers() {
+    try {
+      const [northRes, southRes] = await Promise.all([
+        fetch(`/api/admin/users?role=FIELD_OFFICER&wardId=${northWardId}`),
+        fetch(`/api/admin/users?role=FIELD_OFFICER&wardId=${southWardId}`)
+      ])
+      const [northData, southData] = await Promise.all([
+        northRes.json(),
+        southRes.json()
+      ])
+      setOfficers({
+        north: northData.data?.[0] || null,
+        south: southData.data?.[0] || null
+      })
+    } catch (err) {
+      console.error('Failed to fetch officers:', err)
+    }
+  }
+
+  async function handleReassign(issueId, newOfficerId) {
+    try {
+      setReassigning(issueId)
+      const res = await fetch(`/api/issues/${issueId}/assign`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ officerId: newOfficerId })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to reassign')
+        return
+      }
+      toast.success('Issue reassigned successfully')
+      setShowReassignModal(false)
+      setSelectedIssue(null)
+      fetchOverdueIssues()
+    } catch {
+      toast.error('Failed to reassign issue')
+    } finally {
+      setReassigning(null)
+    }
+  }
+
+  const getDaysOverdue = (deadline) => {
+    if (!deadline) return 0
+    const diff = new Date() - new Date(deadline)
+    return Math.ceil(diff / (1000 * 60 * 60 * 24))
+  }
+
   return (
-    <DepartmentDashboardContent />
+    <div className="bg-[#1A1A1A] border border-[#333333] rounded-[20px] p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-lg font-bold text-white">
+            Critical Feedback Loop
+          </h3>
+          <p className="text-[#AAAAAA] text-sm mt-0.5">
+            Overdue issues requiring immediate attention
+          </p>
+        </div>
+        {overdueIssues.length > 0 && (
+          <span className="bg-red-500/20 text-red-400 border border-red-500/30
+                           px-3 py-1 rounded-full text-sm font-bold">
+            {overdueIssues.length} overdue
+          </span>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="space-y-2">
+          {[1,2,3].map(i => (
+            <div key={i} className="h-14 bg-white/5 rounded-xl animate-pulse" />
+          ))}
+        </div>
+      ) : overdueIssues.length === 0 ? (
+        <div className="text-center py-10">
+          <span className="text-4xl block mb-3">✅</span>
+          <p className="text-green-400 font-medium">
+            All issues are within SLA deadline
+          </p>
+          <p className="text-[#AAAAAA] text-sm mt-1">
+            No overdue issues right now
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Table header */}
+          <div className="grid grid-cols-5 gap-4 px-4 py-2 mb-2">
+            <span className="text-[#666666] text-xs uppercase tracking-wider col-span-2">
+              Issue
+            </span>
+            <span className="text-[#666666] text-xs uppercase tracking-wider">
+              Ward
+            </span>
+            <span className="text-[#666666] text-xs uppercase tracking-wider">
+              Overdue
+            </span>
+            <span className="text-[#666666] text-xs uppercase tracking-wider">
+              Action
+            </span>
+          </div>
+
+          {/* Table rows */}
+          <div className="space-y-2">
+            {overdueIssues.map(issue => (
+              <div
+                key={issue._id}
+                className="grid grid-cols-5 gap-4 px-4 py-3
+                           bg-red-500/5 border border-red-500/20
+                           rounded-xl items-center"
+              >
+                <div className="col-span-2">
+                  <span className="text-xs font-mono text-[#F5A623]
+                                   bg-[#F5A623]/10 px-2 py-0.5 rounded mr-2">
+                    {issue.reportId}
+                  </span>
+                  <p className="text-white text-sm mt-1 truncate">
+                    {issue.title}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-[#AAAAAA] text-sm">
+                    Ward {WARD_MAP[issue.ward]?.wardNumber || '?'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-red-400 text-sm font-medium">
+                    {getDaysOverdue(issue.sla?.deadline)}d overdue
+                  </span>
+                </div>
+                <div>
+                  <button
+                    onClick={() => {
+                      setSelectedIssue(issue)
+                      setShowReassignModal(true)
+                    }}
+                    className="text-xs bg-[#F5A623] text-black font-bold
+                               px-3 py-1.5 rounded-full hover:bg-[#E09010]
+                               transition"
+                  >
+                    Reassign
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Reassign Modal */}
+      {showReassignModal && selectedIssue && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center
+                        bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-[#1A1A1A] border border-[#333333]
+                          rounded-[20px] p-6 w-full max-w-md">
+            <h3 className="text-white font-bold text-lg mb-2">
+              Reassign Issue
+            </h3>
+            <p className="text-[#AAAAAA] text-sm mb-6">
+              {selectedIssue.reportId} — {selectedIssue.title}
+            </p>
+
+            <div className="space-y-3 mb-6">
+              <p className="text-[#AAAAAA] text-xs uppercase tracking-wider">
+                Select Officer to Reassign To:
+              </p>
+
+              {/* North Zone Officer */}
+              <button
+                onClick={() => officers.north &&
+                  handleReassign(selectedIssue._id, officers.north._id)}
+                disabled={!officers.north || reassigning === selectedIssue._id}
+                className={`w-full p-4 rounded-xl border text-left transition
+                  ${officers.north
+                    ? 'bg-blue-500/10 border-blue-500/30 hover:bg-blue-500/20'
+                    : 'bg-[#222] border-[#333] opacity-50 cursor-not-allowed'
+                  }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-blue-400 text-xs font-bold uppercase mb-1">
+                      North Zone
+                    </p>
+                    <p className="text-white font-medium">
+                      {officers.north?.name || 'No officer assigned'}
+                    </p>
+                    <p className="text-[#AAAAAA] text-xs">
+                      Ward {WARD_MAP[northWardId]?.wardNumber}
+                    </p>
+                  </div>
+                  {selectedIssue.ward === northWardId && (
+                    <span className="text-xs text-[#AAAAAA] bg-[#333]
+                                     px-2 py-1 rounded">Current</span>
+                  )}
+                </div>
+              </button>
+
+              {/* South Zone Officer */}
+              <button
+                onClick={() => officers.south &&
+                  handleReassign(selectedIssue._id, officers.south._id)}
+                disabled={!officers.south || reassigning === selectedIssue._id}
+                className={`w-full p-4 rounded-xl border text-left transition
+                  ${officers.south
+                    ? 'bg-teal-500/10 border-teal-500/30 hover:bg-teal-500/20'
+                    : 'bg-[#222] border-[#333] opacity-50 cursor-not-allowed'
+                  }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-teal-400 text-xs font-bold uppercase mb-1">
+                      South Zone
+                    </p>
+                    <p className="text-white font-medium">
+                      {officers.south?.name || 'No officer assigned'}
+                    </p>
+                    <p className="text-[#AAAAAA] text-xs">
+                      Ward {WARD_MAP[southWardId]?.wardNumber}
+                    </p>
+                  </div>
+                  {selectedIssue.ward === southWardId && (
+                    <span className="text-xs text-[#AAAAAA] bg-[#333]
+                                     px-2 py-1 rounded">Current</span>
+                  )}
+                </div>
+              </button>
+            </div>
+
+            <button
+              onClick={() => {
+                setShowReassignModal(false)
+                setSelectedIssue(null)
+              }}
+              className="w-full py-3 rounded-full border border-[#333]
+                         text-[#AAAAAA] hover:border-white hover:text-white
+                         transition"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+  return (
+    <DashboardProtection allowedRoles={['DEPARTMENT_MANAGER']}>
+      <DepartmentDashboardContent />
+    </DashboardProtection>
   );
 }
